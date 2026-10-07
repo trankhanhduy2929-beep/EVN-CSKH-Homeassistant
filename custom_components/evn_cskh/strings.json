@@ -55,18 +55,50 @@
     }
   },
   "entity": {
+    "button": {
+      "refresh": {
+        "name": "Refresh data"
+      }
+    },
     "sensor": {
       "monthly_energy": {
         "name": "Latest monthly energy {measurement_point}"
       },
+      "prev_month_energy": {
+        "name": "Previous month energy {measurement_point}"
+      },
+      "average_12m_energy": {
+        "name": "Average monthly energy over 12 months {measurement_point}"
+      },
+      "month_over_month": {
+        "name": "Month-over-month change {measurement_point}"
+      },
       "daily_energy": {
         "name": "Latest interval energy {measurement_point}"
+      },
+      "meter_reading": {
+        "name": "Latest meter index {measurement_point}"
+      },
+      "meter_multiplier": {
+        "name": "Meter multiplier {measurement_point}"
+      },
+      "meter_read_date": {
+        "name": "Meter read date {measurement_point}"
       },
       "outstanding_amount": {
         "name": "Outstanding amount"
       },
       "outstanding_count": {
         "name": "Outstanding invoice count"
+      },
+      "latest_invoice_amount": {
+        "name": "Latest invoice amount"
+      },
+      "latest_invoice_status": {
+        "name": "Latest invoice status"
+      },
+      "paid_invoice_count": {
+        "name": "Paid invoice count"
       },
       "next_outage": {
         "name": "Next scheduled outage"

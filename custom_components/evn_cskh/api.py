@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from urllib.parse import quote, unquote, urlsplit
@@ -35,6 +35,25 @@ _INVOICE_PATHS = {
 }
 _REQUEST_TIMEOUT = 30.0
 _LOCAL_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
+_INFO_FIELDS = (
+    "diaChi",
+    "dthoai",
+    "hdMacdinh",
+    "loaiChuthe",
+    "loaiKhang",
+    "maDiaChinh",
+    "maDviCaptct",
+    "maDviqly",
+    "maHdong",
+    "maKhang",
+    "maTinh",
+    "maXa",
+    "powerAlert",
+    "tenKhang",
+    "thanhtoanho",
+    "thoigian",
+    "userId",
+)
 
 
 class EvnError(Exception):
@@ -125,6 +144,27 @@ def _rows(value: Any) -> list[dict[str, Any]]:
     return value
 
 
+def _info_fields(row: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key in _INFO_FIELDS:
+        value = row.get(key)
+        if (
+            isinstance(value, str)
+            and 0 < len(value) <= 256
+            and not any(
+                ord(character) < 32 or ord(character) == 127 for character in value
+            )
+        ):
+            result[key] = value
+    return result
+
+
+def _month_shift(day: date, months: int) -> date:
+    index = day.year * 12 + (day.month - 1) + months
+    year, month = divmod(index, 12)
+    return date(year, month + 1, 1)
+
+
 @dataclass(frozen=True, repr=False)
 class Customer:
     code: str
@@ -143,6 +183,12 @@ class Snapshot:
     invoices: list[dict[str, Any]]
     outages: list[dict[str, Any]]
     fetched_at: datetime
+    info: dict[str, Any] = field(default_factory=dict)
+    contracts: list[dict[str, Any]] = field(default_factory=list)
+    monthly_readings: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    daily_readings: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    paid_invoices: list[dict[str, Any]] = field(default_factory=list)
+    banks: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(repr=False)
@@ -202,11 +248,11 @@ def _owned_rows(
 ) -> list[dict[str, Any]]:
     rows = _rows(value)
     for row in rows:
-        for field, expected in (
+        for column, expected in (
             ("MA_KHANG", customer.code),
             ("MA_DVIQLY", customer.management_unit),
         ):
-            if field in row and _string(row[field]) != expected:
+            if column in row and _string(row[column]) != expected:
                 raise EvnResponseError()
         if point is not None and "MA_DDO" in row and _string(row["MA_DDO"]) != point:
             raise EvnResponseError()
@@ -310,6 +356,7 @@ class EvnClient:
         self._lock = asyncio.Lock()
         self._auth_failed = False
         self._customers: list[Customer] | None = None
+        self._customer_rows: dict[tuple[str, str], dict[str, Any]] = {}
         self._regions: dict[str, str] | None = None
         self._issued_invoices: dict[
             tuple[str, str], dict[tuple[str, str | None], dict[str, Any]]
@@ -470,6 +517,7 @@ class EvnClient:
             raise EvnAuthError() from None
         self._auth_failed = False
         self._customers = None
+        self._customer_rows = {}
         self._store_tokens(tokens)
 
     async def _ensure_login_locked(self) -> None:
@@ -541,6 +589,20 @@ class EvnClient:
                 raise EvnAuthError() from None
         raise EvnAuthError()
 
+    async def _optional_rows_locked(self, base: str, path: str) -> list[dict[str, Any]]:
+        if self._tokens is None or self._auth_failed:
+            return []
+        try:
+            return _rows(
+                await self._send(
+                    "GET",
+                    _join_url(base, path),
+                    access_token=self._tokens.access_token,
+                )
+            )
+        except EvnError:
+            return []
+
     async def customers(self) -> list[Customer]:
         async with self._lock:
             await self._ensure_login_locked()
@@ -559,9 +621,9 @@ class EvnClient:
                 )
                 if customer.code in (".", ".."):
                     raise EvnResponseError()
-                customers.setdefault(
-                    (customer.code, customer.management_unit), customer
-                )
+                key = (customer.code, customer.management_unit)
+                customers.setdefault(key, customer)
+                self._customer_rows.setdefault(key, row)
             self._customers = list(customers.values())
         return self._customers
 
@@ -606,11 +668,11 @@ class EvnClient:
             raise EvnResponseError()
         context = selected["data"]
         region = _string(context.get("maDviCaptct"))
-        for field, expected in (
+        for column, expected in (
             ("maKhang", customer.code),
             ("maDviqly", customer.management_unit),
         ):
-            if field in context and _string(context[field]) != expected:
+            if column in context and _string(context[column]) != expected:
                 raise EvnResponseError()
         if self._tokens is None:
             raise EvnAuthError()
@@ -630,9 +692,13 @@ class EvnClient:
         async with self._lock:
             await self._ensure_login_locked()
             customer = await self._authorized_customer_locked(customer)
+            info = _info_fields(
+                self._customer_rows.get((customer.code, customer.management_unit), {})
+            )
             region, base = await self._select_customer_locked(customer)
             today = datetime.now(_LOCAL_TIMEZONE).date()
             previous_month = today.replace(day=1) - timedelta(days=1)
+            readings_start = _month_shift(today.replace(day=1), -13)
             points = _owned_rows(
                 await self._authenticated_locked(
                     "GET", base, "/api/evn/customers/diemdo"
@@ -644,6 +710,13 @@ class EvnClient:
                 raise EvnResponseError()
             monthly: dict[str, list[dict[str, Any]]] = {}
             daily: dict[str, list[dict[str, Any]]] = {}
+            monthly_readings: dict[str, list[dict[str, Any]]] = {}
+            daily_readings: dict[str, list[dict[str, Any]]] = {}
+            reading_months = {
+                "MA_DVIQLY": customer.management_unit,
+                "TU_THANG_NAM": readings_start.strftime("%m/%Y"),
+                "DEN_THANG_NAM": today.strftime("%m/%Y"),
+            }
             for point in point_codes:
                 monthly[point] = _owned_rows(
                     await self._authenticated_locked(
@@ -678,11 +751,61 @@ class EvnClient:
                     customer,
                     point,
                 )
-            invoices = _owned_rows(
+                monthly_readings[point] = _owned_rows(
+                    await self._authenticated_locked(
+                        "POST",
+                        base,
+                        "/api/evn/tracuu/chisothang",
+                        reading_months | {"MA_DDO": point, "MA_KHANG": customer.code},
+                    ),
+                    customer,
+                    point,
+                )
+                daily_readings[point] = _owned_rows(
+                    await self._authenticated_locked(
+                        "POST",
+                        base,
+                        "/api/evn/tracuu/chisongay",
+                        {
+                            "MA_DVIQLY": customer.management_unit,
+                            "MA_DDO": point,
+                            "TU_NGAY": (today - timedelta(days=31)).strftime(
+                                "%d/%m/%Y"
+                            ),
+                            "DEN_NGAY": (today - timedelta(days=1)).strftime(
+                                "%d/%m/%Y"
+                            ),
+                        },
+                    ),
+                    customer,
+                    point,
+                )
+            contracts = _owned_rows(
                 await self._authenticated_locked(
-                    "POST", base, "/api/evn/tracuu/hoadon-thanhtoan"
+                    "GET", base, "/api/evn/customers/info"
                 ),
                 customer,
+            )
+            invoices = _owned_rows(
+                await self._authenticated_locked(
+                    "POST", base, "/api/evn/tracuu/hoadon"
+                ),
+                customer,
+            )
+            paid_invoices = _owned_rows(
+                await self._authenticated_locked(
+                    "POST",
+                    base,
+                    "/api/evn/tracuu/lichsu-hoadon",
+                    {
+                        "TU_THANG_NAM": readings_start.strftime("%m/%Y"),
+                        "DEN_THANG_NAM": today.strftime("%m/%Y"),
+                    },
+                ),
+                customer,
+            )
+            banks = await self._optional_rows_locked(
+                base, "/api/evn/thanhtoan/danhsach-nganhang"
             )
             outages = _owned_rows(
                 await self._authenticated_locked(
@@ -705,6 +828,12 @@ class EvnClient:
                 invoices=invoices,
                 outages=outages,
                 fetched_at=datetime.now(UTC),
+                info=info,
+                contracts=contracts,
+                monthly_readings=monthly_readings,
+                daily_readings=daily_readings,
+                paid_invoices=paid_invoices,
+                banks=banks,
             )
 
     async def details(

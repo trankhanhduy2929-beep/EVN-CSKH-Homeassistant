@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 from homeassistant.const import Platform
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 DOMAIN = "evn_cskh"
 NAME = "EVN CSKH"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 MIN_HA_VERSION = "2025.12"
-PLATFORMS = (Platform.SENSOR,)
+PLATFORMS = (Platform.SENSOR, Platform.BUTTON)
 
 CONF_CUSTOMERS = "customers"
 CONF_DEVICE_ID = "device_id"
@@ -23,6 +25,23 @@ MAX_UPDATE_INTERVAL = 1440
 
 def account_unique_id(username: str) -> str:
     return hashlib.sha256(username.strip().lower().encode()).hexdigest()
+
+
+def scope_id(*scope: str | None) -> str:
+    return hashlib.sha256(
+        json.dumps(scope, ensure_ascii=False, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def customer_device_info(scope: tuple[str | None, ...]) -> DeviceInfo:
+    device_id = scope_id(*scope)
+    return DeviceInfo(
+        identifiers={(DOMAIN, device_id)},
+        name=f"{NAME} {device_id[:8]}",
+        manufacturer="EVN",
+        model="Customer account",
+        entry_type=DeviceEntryType.SERVICE,
+    )
 
 
 def interval_minutes(value: object) -> int:

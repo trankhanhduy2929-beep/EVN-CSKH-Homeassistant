@@ -9,22 +9,32 @@ và không phát hành kèm.
 
 ## Trạng thái
 
-- **v0.2.0 thử nghiệm.** Đã **đăng nhập, refresh token, đọc dữ liệu và tải hóa
-  đơn PDF thật thành công** trên tài khoản EVNSPC (miền Nam).
-- Qua **1.412 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **17 kiểm thử giao diện Playwright** trên mock loopback.
+- **v0.3.0 thử nghiệm.** Đã **đăng nhập, refresh token, đọc dữ liệu và tải hóa
+  đơn PDF thật thành công** trên tài khoản EVNSPC (miền Nam). v0.3.0: **đơn nợ
+  dùng đúng endpoint `hoadon`** (v0.2.0 dùng `hoadon-thanhtoan` nên hiện 0 sai),
+  thêm **chỉ số công tơ, hợp đồng, thông tin KH, lịch sử thanh toán, ngân hàng**
+  và **button cập nhật**.
+- Qua **1.589 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
+  **47 kiểm thử giao diện Playwright** trên mock loopback.
 - **Chưa đối chiếu từng số liệu với app** và **chưa chạy trên HA production**.
 
 ## Tính năng
 
 - Đăng nhập tài khoản EVN CSKH thống nhất; tự chọn miền theo cấu hình server
   (`PB` = EVNSPC, `PC` = EVNCPC, `PA` = NPC, `HN`, `PE`), không đoán theo prefix.
-- Sensors mỗi điểm đo: điện năng kỳ tháng gần nhất, khoảng ghi nhận gần nhất (kWh).
-- Sensors mỗi khách hàng: tiền/số hóa đơn chưa thanh toán, lịch ngừng cấp điện
-  dự kiến gần nhất, lần cập nhật thành công.
-- **Panel EVN** (sidebar, chỉ admin): Tổng quan, Điện năng (biểu đồ + bảng số,
-  khoảng lọc), Hóa đơn (lọc/tìm, chi tiết, tải PDF/bảng kê/thông báo), Lịch
-  ngừng điện. Theo theme sáng/tối của HA, responsive tới 375px.
+- **Sensors mỗi điểm đo:** sản lượng tháng gần nhất, sản lượng tháng trước,
+  % thay đổi so với tháng trước, TB 12 tháng, khoảng ghi nhận gần nhất (kWh),
+  chỉ số công tơ mới, hệ số nhân, ngày ghi.
+- **Sensors mỗi khách hàng:** tiền & số hóa đơn chưa thanh toán (đúng `hoadon`),
+  hóa đơn gần nhất (số tiền + trạng thái), số hóa đơn đã trả, lịch ngừng cấp
+  điện kế tiếp, lần cập nhật gần nhất (kèm thông tin KH ở attributes).
+- **Button** `Cập nhật dữ liệu` cho mỗi khách hàng (force refresh).
+- **Panel EVN** (sidebar, chỉ admin): 6 tab — **Tổng quan** (metric + biểu đồ +
+  thẻ ngừng điện), **Điện năng** (lọc khoảng, biểu đồ/bảng tháng/ngày),
+  **Công tơ** (chỉ số mới/cũ, hệ số, bảng chỉ số), **Hóa đơn** (danh sách, tìm
+  + lọc trạng thái, chi tiết + tải **PDF/bảng kê/thông báo**, lịch sử thanh
+  toán), **Lịch ngừng điện**, **Thông tin** (KH, hợp đồng, điểm đo, ngân hàng).
+  Theo theme sáng/tối HA, responsive tới 375px, điều hướng bàn phím.
 - Không dùng `total_increasing` hay Energy Dashboard vì kỳ tháng không phải bộ
   đếm suốt đời và dữ liệu ngày có thể gộp nhiều ngày.
 
@@ -32,7 +42,9 @@ và không phát hành kèm.
 
 - `custom_components/evn_cskh/api.py`: aiohttp; login/refresh, cấu hình miền,
   danh sách khách hàng, chuyển ngữ cảnh token, các endpoint đọc (`diemdo`,
-  `diennangngay/thang`, `chisongay/thang`, hóa đơn, lịch ngừng điện), tải PDF.
+  `customers/info`, `diennangngay/thang`, `chisongay/thang`, `hoadon`,
+  `lichsu-hoadon`, `thanhtoan/danhsach-nganhang`, `ngungcapdien`), tải PDF.
+- `custom_components/evn_cskh/{sensor,button}.py`: sensors đầy đủ + button refresh.
 - `custom_components/evn_cskh/panel.py`: WebSocket (`evn_cskh/list_entries`,
   `overview`, `details`) và route tải PDF có xác thực (`requires_auth`), cache
   hóa đơn bằng key ngẫu nhiên, giới hạn kích thước/timeout.
@@ -52,7 +64,7 @@ và không phát hành kèm.
    khoản. Sau đó chọn khách hàng và chu kỳ cập nhật trong Options.
 5. Mở panel **EVN CSKH** ở sidebar (chỉ tài khoản admin).
 
-Cài thủ công: giải nén `dist/evn_cskh-0.2.0.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.3.0.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

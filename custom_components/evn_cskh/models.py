@@ -332,3 +332,267 @@ def next_outage(
                 _attribute(record.get("LY_DO")),
             )
     return nearest
+
+
+_INVOICE_STATUS_LABELS = {
+    "CHUATT": "Chưa thanh toán",
+    "TTOANMOTPHAN": "Thanh toán một phần",
+    "DATT": "Đã thanh toán",
+    "DAHT": "Đã hủy",
+    "CHUAHT": "Chưa hủy",
+    "CHOXULY": "Chờ xử lý",
+}
+_READING_PERIOD_FIELDS = ("NGAY_DKY", "NGAY_CKY", "NGAY", "THOI_DIEM")
+_READING_KIND_FIELDS = ("LOAI_CHISO", "BCS")
+_INVALID = object()
+
+
+def _period_totals(records: Any) -> dict[tuple[int, int], float] | None:
+    if not isinstance(records, list) or not records:
+        return None
+    groups: dict[tuple[int, int], list[float]] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            return None
+        year = _integer(record.get("NAM"))
+        month = _integer(record.get("THANG"))
+        if (
+            year is None
+            or month is None
+            or not (1 <= year <= 9999 and 1 <= month <= 12)
+        ):
+            return None
+        value = _number(record.get("DIEN_TTHU"))
+        if value is None:
+            return None
+        groups.setdefault((year, month), []).append(value)
+    totals: dict[tuple[int, int], float] = {}
+    for period, values in groups.items():
+        total = _total(values)
+        if total is None:
+            return None
+        totals[period] = total
+    return totals
+
+
+def month_over_month(records: Any) -> dict[str, Any] | None:
+    totals = _period_totals(records)
+    if not totals:
+        return None
+    periods = sorted(totals)
+    current = totals[periods[-1]]
+    previous = totals[periods[-2]] if len(periods) > 1 else 0.0
+    delta = current - previous
+    percent = None if previous == 0 else delta / previous * 100
+    return {
+        "current": current,
+        "previous": previous,
+        "delta": delta,
+        "percent": percent,
+    }
+
+
+def trailing_average(records: Any, months: int = 12) -> float | None:
+    if type(months) is not int or not 1 <= months <= 120:
+        return None
+    if not isinstance(records, list):
+        return None
+    groups: dict[tuple[int, int], list[float]] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        year = _integer(record.get("NAM"))
+        month = _integer(record.get("THANG"))
+        if (
+            year is None
+            or month is None
+            or not (1 <= year <= 9999 and 1 <= month <= 12)
+        ):
+            continue
+        value = _number(record.get("DIEN_TTHU"))
+        if value is None:
+            continue
+        groups.setdefault((year, month), []).append(value)
+    periods = sorted(groups)
+    if not periods:
+        return None
+    values = []
+    for period in periods[-months:]:
+        total = _total(groups[period])
+        if total is None:
+            return None
+        values.append(total)
+    average = _total(values)
+    if average is None or not values:
+        return None
+    return average / len(values)
+
+
+def _reading_period(record: dict[str, Any]) -> tuple[date, str] | None:
+    for field in _READING_PERIOD_FIELDS:
+        value = record.get(field)
+        if value is None or value == "":
+            continue
+        if not isinstance(value, str) or len(value) > 128:
+            return None
+        display = value.strip()
+        parsed = _date(display.split(" ")[0])
+        if parsed is None:
+            return None
+        return parsed, display
+    return None
+
+
+def latest_reading(records: Any) -> dict[str, Any] | None:
+    if not isinstance(records, list) or not records:
+        return None
+    selected = None
+    for record in records:
+        if not isinstance(record, dict):
+            return None
+        period = _reading_period(record)
+        if period is None:
+            return None
+        if selected is None or period[0] > selected[0]:
+            selected = (period[0], period[1], record)
+    if selected is None:
+        return None
+    record = selected[2]
+    numbers: dict[str, float | None] = {}
+    for field in ("CHISO_CU", "CHISO_MOI", "HSN", "DIEN_TTHU"):
+        value = record.get(field)
+        if value is None:
+            numbers[field] = None
+            continue
+        number = _number(value)
+        if number is None:
+            return None
+        numbers[field] = number
+    kind = None
+    for field in _READING_KIND_FIELDS:
+        value = record.get(field)
+        if value is None:
+            continue
+        if (
+            not isinstance(value, str)
+            or not value.strip()
+            or value != value.strip()
+            or len(value) > 32
+        ):
+            return None
+        kind = value
+        break
+    return {
+        "period": selected[1],
+        "old": numbers["CHISO_CU"],
+        "new": numbers["CHISO_MOI"],
+        "multiplier": numbers["HSN"],
+        "kwh": numbers["DIEN_TTHU"],
+        "kind": kind,
+    }
+
+
+def outstanding_summary(records: Any) -> InvoiceSummary:
+    return invoice_summary(records)
+
+
+def outstanding_from_active(records: Any) -> InvoiceSummary:
+    return invoice_summary(records)
+
+
+def _invoice_optional_number(record: dict[str, Any], *fields: str) -> Any:
+    for field in fields:
+        value = record.get(field)
+        if value is None or value == "":
+            continue
+        number = _number(value)
+        if number is None:
+            return _INVALID
+        return number
+    return None
+
+
+def _normalized_invoice(record: dict[str, Any]) -> dict[str, Any] | None:
+    raw_id = record.get("ID_HDON")
+    if raw_id is None:
+        id_key = None
+    elif _valid_id(raw_id):
+        id_key = str(raw_id)
+    else:
+        return None
+    year = _integer(record.get("NAM"))
+    month = _integer(record.get("THANG"))
+    if year is None or month is None or not (1 <= year <= 9999 and 1 <= month <= 12):
+        period = None
+    else:
+        period = f"{year:04d}-{month:02d}"
+    cycle = None
+    for field in ("KY", "SO_KY"):
+        value = record.get(field)
+        if value is None:
+            continue
+        if isinstance(value, str) and re.fullmatch(r"[0-9]{1,4}", value) is not None:
+            value = int(value)
+        if type(value) is not int or value < 0:
+            return None
+        cycle = value
+        break
+    amount = _invoice_optional_number(record, "TONG_TIEN")
+    if amount is _INVALID:
+        return None
+    tax = _invoice_optional_number(record, "TIEN_GTGT", "THUE_NO")
+    if tax is _INVALID:
+        return None
+    outstanding = _invoice_optional_number(record, "TONG_NO")
+    if outstanding is _INVALID:
+        return None
+    energy = _invoice_optional_number(record, "DIEN_TTHU")
+    if energy is _INVALID:
+        return None
+    status = record.get("TTRANG_TTOAN")
+    if status is not None and (
+        not isinstance(status, str) or status not in _INVOICE_STATUSES
+    ):
+        return None
+    paid_date = record.get("NGAY_TTOAN")
+    if paid_date is not None and not isinstance(paid_date, str):
+        return None
+    return {
+        "id_key": id_key,
+        "period": period,
+        "cycle": cycle,
+        "amount": amount,
+        "tax": tax,
+        "outstanding": outstanding,
+        "status": status,
+        "status_label": _INVOICE_STATUS_LABELS.get(status)
+        if isinstance(status, str)
+        else None,
+        "paid_date": paid_date if paid_date != "" else None,
+        "due_date": None,
+        "energy": energy,
+        "energy_unit": "kWh" if energy is not None else None,
+    }
+
+
+def latest_invoice(records: Any) -> dict[str, Any] | None:
+    if not isinstance(records, list) or not records:
+        return None
+    selected = None
+    for record in records:
+        if not isinstance(record, dict):
+            return None
+        year = _integer(record.get("NAM"))
+        month = _integer(record.get("THANG"))
+        if (
+            year is None
+            or month is None
+            or not (1 <= year <= 9999 and 1 <= month <= 12)
+        ):
+            continue
+        period = (year, month)
+        if selected is None or period > selected[0]:
+            selected = (period, record)
+    if selected is None:
+        return None
+    return _normalized_invoice(selected[1])

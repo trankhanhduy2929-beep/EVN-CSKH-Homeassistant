@@ -23,6 +23,7 @@ def build() -> None:
     required = {
         "__init__.py",
         "api.py",
+        "button.py",
         "config_flow.py",
         "const.py",
         "coordinator.py",

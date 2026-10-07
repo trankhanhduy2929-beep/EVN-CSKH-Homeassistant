@@ -1220,7 +1220,12 @@ async def test_details_and_snapshot_concurrency_keep_account_context_isolated() 
         Reply([owned(OTHER) | {"MA_DDO": POINT}]),
         Reply([owned(OTHER) | {"MA_DDO": POINT, "DIEN_TTHU": 12}]),
         Reply([owned(OTHER) | {"MA_DDO": POINT, "DIEN_TTHU": 1}]),
+        Reply([owned(OTHER) | {"MA_DDO": POINT, "CHISO_MOI": 13}]),
+        Reply([owned(OTHER) | {"MA_DDO": POINT, "CHISO_MOI": 2}]),
+        Reply([owned(OTHER) | {"DUONG_PHO": "Offline street"}]),
         Reply([owned(OTHER) | {"TONG_NO": 321}]),
+        Reply([owned(OTHER) | {"ID_HDON": "OFFLINE-HISTORY", "TONG_TIEN": 100}]),
+        Reply([{"MA_TCHUC": "OFFLINE-BANK", "TEN_TCHUC": "Offline bank"}]),
         Reply([]),
     )
     changes: list[api.TokenState] = []
@@ -1234,6 +1239,18 @@ async def test_details_and_snapshot_concurrency_keep_account_context_isolated() 
     assert snapshot.customer == OTHER
     assert people == [PERSON, OTHER]
     assert snapshot.invoices[0]["MA_KHANG"] == OTHER.code
+    assert snapshot.info["maKhang"] == OTHER.code
+    assert snapshot.contracts == [owned(OTHER) | {"DUONG_PHO": "Offline street"}]
+    assert snapshot.monthly_readings == {
+        POINT: [owned(OTHER) | {"MA_DDO": POINT, "CHISO_MOI": 13}]
+    }
+    assert snapshot.daily_readings == {
+        POINT: [owned(OTHER) | {"MA_DDO": POINT, "CHISO_MOI": 2}]
+    }
+    assert snapshot.paid_invoices == [
+        owned(OTHER) | {"ID_HDON": "OFFLINE-HISTORY", "TONG_TIEN": 100}
+    ]
+    assert snapshot.banks == [{"MA_TCHUC": "OFFLINE-BANK", "TEN_TCHUC": "Offline bank"}]
     assert detail.invoices[0]["MA_KHANG"] == PERSON.code
     assert all(
         call["headers"]["Authorization"] == "Bearer offline-first"
@@ -1723,3 +1740,236 @@ async def test_pdf_callback_failure_preserves_latest_tokens_and_stops(
         "offline-rotated" if stage == "refresh" else TOKENS.refresh_token
     )
     session.done()
+
+
+def snapshot_replies(
+    person: api.Customer = PERSON,
+    *,
+    region: str = "PB",
+    access: str = "offline-selected",
+) -> list[Reply]:
+    return [
+        selected(person, region, access),
+        Reply([owned(person) | {"MA_DDO": POINT, "DIA_CHI": "Offline address"}]),
+        Reply([owned(person) | {"MA_DDO": POINT, "DIEN_TTHU": 12}]),
+        Reply([owned(person) | {"MA_DDO": POINT, "DIEN_TTHU": 1}]),
+        Reply([owned(person) | {"MA_DDO": POINT, "CHISO_MOI": 13}]),
+        Reply([owned(person) | {"MA_DDO": POINT, "CHISO_MOI": 2}]),
+        Reply([owned(person) | {"DUONG_PHO": "Offline street"}]),
+        Reply([owned(person) | {"ID_HDON": "OFFLINE-CURRENT", "TONG_NO": 321}]),
+        Reply([owned(person) | {"ID_HDON": "OFFLINE-HISTORY", "TONG_TIEN": 100}]),
+        Reply([{"MA_TCHUC": "OFFLINE-BANK", "TEN_TCHUC": "Offline bank"}]),
+        Reply([owned(person) | {"TGIAN_BDAU": "01/01/2026 08:00"}]),
+    ]
+
+
+BANK_INDEX = 11
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        Reply(status=401),
+        Reply(status=403),
+        Reply(status=417),
+        Reply(status=503),
+        Reply(status=302),
+        Reply(raw=b"not json"),
+        Reply(payload={"success": False}),
+        Reply(payload={"success": True}),
+        Reply(None),
+        Reply({}),
+        Reply([None]),
+    ],
+)
+async def test_snapshot_bank_directory_is_optional_and_never_latches(
+    reply: Reply,
+) -> None:
+    session = Session(
+        contracts(PERSON),
+        config(),
+        *snapshot_replies(PERSON),
+        *snapshot_replies(PERSON, access="offline-second"),
+    )
+    session.replies[BANK_INDEX] = reply
+    changes: list[api.TokenState] = []
+    client = client_for(session, on_tokens=changes.append)
+    first = await client.fetch_snapshot(PERSON)
+    assert first.banks == []
+    assert first.invoices == [
+        owned(PERSON) | {"ID_HDON": "OFFLINE-CURRENT", "TONG_NO": 321}
+    ]
+    assert first.outages == [owned(PERSON) | {"TGIAN_BDAU": "01/01/2026 08:00"}]
+    second = await client.fetch_snapshot(PERSON)
+    assert second.banks == [{"MA_TCHUC": "OFFLINE-BANK", "TEN_TCHUC": "Offline bank"}]
+    assert [
+        call["url"] for call in session.calls if call["url"].endswith("/auth/refresh")
+    ] == []
+    assert changes == [
+        api.TokenState(
+            "offline-selected",
+            TOKENS.refresh_token,
+            PERSON.code,
+            PERSON.management_unit,
+        ),
+        api.TokenState(
+            "offline-second",
+            TOKENS.refresh_token,
+            PERSON.code,
+            PERSON.management_unit,
+        ),
+    ]
+    session.done()
+
+
+@pytest.mark.parametrize(
+    ("index", "path"),
+    [
+        (3, "/api/evn/customers/diemdo"),
+        (4, "/api/evn/tracuu/diennangthang"),
+        (5, "/api/evn/tracuu/diennangngay"),
+        (6, "/api/evn/tracuu/chisothang"),
+        (7, "/api/evn/tracuu/chisongay"),
+        (8, "/api/evn/customers/info"),
+        (9, "/api/evn/tracuu/hoadon"),
+        (10, "/api/evn/tracuu/lichsu-hoadon"),
+        (12, "/api/evn/tracuu/ngungcapdien"),
+    ],
+)
+@pytest.mark.parametrize(
+    "row",
+    [
+        {"MA_KHANG": OTHER.code, "MA_DVIQLY": OTHER.management_unit},
+        {"MA_KHANG": PERSON.code, "MA_DVIQLY": OTHER.management_unit},
+        {"MA_KHANG": None},
+        {"MA_DVIQLY": 1},
+    ],
+)
+async def test_snapshot_every_required_section_is_ownership_checked(
+    index: int, path: str, row: dict[str, Any]
+) -> None:
+    session = Session(
+        contracts(PERSON), config(), *snapshot_replies(PERSON)[: index - 2]
+    )
+    session.replies.append(Reply([row]))
+    client = client_for(session)
+    with pytest.raises(api.EvnResponseError):
+        await client.fetch_snapshot(PERSON)
+    assert session.calls[index]["url"].endswith(path)
+    session.done()
+
+
+@pytest.mark.parametrize(
+    "index",
+    [3, 4, 5, 6, 7, 8, 9, 10, 12],
+)
+@pytest.mark.parametrize("status", [403, 503, 302, 417])
+async def test_snapshot_required_section_failure_aborts(
+    index: int, status: int
+) -> None:
+    session = Session(
+        contracts(PERSON), config(), *snapshot_replies(PERSON)[: index - 2]
+    )
+    session.replies.append(Reply(status=status))
+    client = client_for(session)
+    with pytest.raises(api.EvnError):
+        await client.fetch_snapshot(PERSON)
+    session.done()
+
+
+async def test_snapshot_reads_current_invoices_not_the_empty_payment_list() -> None:
+    session = Session(contracts(PERSON), config(), *snapshot_replies(PERSON))
+    await client_for(session).fetch_snapshot(PERSON)
+    requested = [call["url"].rsplit("/api/evn/", 1)[-1] for call in session.calls[3:]]
+    assert requested[:9] == [
+        "customers/diemdo",
+        "tracuu/diennangthang",
+        "tracuu/diennangngay",
+        "tracuu/chisothang",
+        "tracuu/chisongay",
+        "customers/info",
+        "tracuu/hoadon",
+        "tracuu/lichsu-hoadon",
+        "thanhtoan/danhsach-nganhang",
+    ]
+    assert requested[-1] == "tracuu/ngungcapdien"
+    assert not any("hoadon-thanhtoan" in call["url"] for call in session.calls)
+    session.done()
+
+
+async def test_snapshot_reading_windows_are_one_point_back_and_last_days() -> None:
+    session = Session(contracts(PERSON), config(), *snapshot_replies(PERSON))
+    await client_for(session).fetch_snapshot(PERSON)
+    assert session.calls[6]["json"] == {
+        "MA_DVIQLY": PERSON.management_unit,
+        "MA_DDO": POINT,
+        "MA_KHANG": PERSON.code,
+        "TU_THANG_NAM": "12/2024",
+        "DEN_THANG_NAM": "01/2026",
+    }
+    assert session.calls[7]["json"] == {
+        "MA_DVIQLY": PERSON.management_unit,
+        "MA_DDO": POINT,
+        "TU_NGAY": "01/12/2025",
+        "DEN_NGAY": "31/12/2025",
+    }
+    assert session.calls[10]["json"] == {
+        "TU_THANG_NAM": "12/2024",
+        "DEN_THANG_NAM": "01/2026",
+    }
+    assert session.calls[12]["json"] == {
+        "TU_NGAY": "01/01/2026",
+        "DEN_NGAY": "15/01/2026",
+    }
+    for index in (3, 8, 9, 11):
+        assert "json" not in session.calls[index]
+    session.done()
+
+
+async def test_snapshot_info_keeps_only_bounded_string_fields() -> None:
+    row = {
+        "maKhang": PERSON.code,
+        "maDviqly": PERSON.management_unit,
+        "tenKhang": "Synthetic name A",
+        "maHdong": "OFFLINE-CONTRACT",
+        "diaChi": "Offline address",
+        "userId": "OFFLINE-USER",
+        "dthoai": None,
+        "loaiKhang": 3,
+        "powerAlert": True,
+        "thoigian": "x" * 400,
+        "maDviCaptct": "PB\r\nInjected",
+        "token": "offline-secret-token",
+        "secret": "offline-secret-value",
+    }
+    session = Session(Reply([row]), config(), *snapshot_replies(PERSON))
+    snapshot = await client_for(session).fetch_snapshot(PERSON)
+    assert snapshot.info == {
+        "maKhang": PERSON.code,
+        "maDviqly": PERSON.management_unit,
+        "tenKhang": "Synthetic name A",
+        "maHdong": "OFFLINE-CONTRACT",
+        "diaChi": "Offline address",
+        "userId": "OFFLINE-USER",
+    }
+    assert "offline-secret-token" not in str(snapshot.info)
+    session.done()
+
+
+async def test_snapshot_new_sections_default_when_constructed_directly() -> None:
+    snapshot = api.Snapshot(
+        PERSON,
+        "PB",
+        [],
+        {},
+        {},
+        [],
+        [],
+        NOW,
+    )
+    assert snapshot.info == {}
+    assert snapshot.contracts == []
+    assert snapshot.monthly_readings == {}
+    assert snapshot.daily_readings == {}
+    assert snapshot.paid_invoices == []
+    assert snapshot.banks == []

@@ -40,9 +40,12 @@ from .models import (
     _number,
     _outage_time,
     daily_summary,
-    invoice_summary,
+    latest_reading,
+    month_over_month,
     monthly_summary,
     next_outage,
+    outstanding_from_active,
+    trailing_average,
 )
 
 _DATA_KEY = "evn_cskh_panel"
@@ -56,8 +59,12 @@ _MAX_INVOICES = 200
 _MAX_READINGS = 1000
 _MAX_OUTAGES = 100
 _MAX_PDF_BYTES = 16 * 1024 * 1024
+_MAX_CONTRACTS = 20
+_MAX_BANKS = 40
+_MAX_PAID = 24
 _LOCAL_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 _DOCUMENTS = ("invoice", "statement", "notice")
+_REGIONS = ("PA", "PB", "PC", "HN", "PE")
 _ENERGY_UNITS = {"TD": "kWh", "TC": "kVArh"}
 _STATUSES = {
     "CHUATT": "Chưa thanh toán",
@@ -172,17 +179,17 @@ def _customer_dto(snapshot: Snapshot | DetailSnapshot) -> dict[str, Any]:
         "code": _identifier(customer.code),
         "name": _safe_text(customer.name),
         "unit": _identifier(customer.management_unit),
-        "region": snapshot.region
-        if snapshot.region in ("PA", "PB", "PC", "HN", "PE")
-        else "",
+        "region": snapshot.region if snapshot.region in _REGIONS else "",
     }
 
 
-def _points(snapshot: Snapshot) -> list[dict[str, str]]:
+def _points(snapshot: Snapshot) -> list[dict[str, Any]]:
     return [
         {
             "id": _identifier(row.get("MA_DDO")),
             "address": _safe_text(row.get("DIA_CHI")),
+            "contract": _safe_text(row.get("MA_HDONG"), 128),
+            "valid_from": _safe_text(row.get("NGAY_HLUC"), 128),
         }
         for row in snapshot.measurement_points
     ]
@@ -190,6 +197,128 @@ def _points(snapshot: Snapshot) -> list[dict[str, str]]:
 
 def _usage(value: PeriodUsage | None) -> dict[str, Any] | None:
     return {"period": value.period, "kwh": _number(value.value)} if value else None
+
+
+def _flag(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return isinstance(value, str) and value.strip().lower() in {"1", "true"}
+
+
+def _alert_count(value: Any) -> int | None:
+    if isinstance(value, list):
+        return len(value)
+    return None if value is None else 0
+
+
+def _info_dto(source: Any) -> dict[str, Any]:
+    info = source if isinstance(source, dict) else {}
+    return {
+        "name": _safe_text(info.get("tenKhang")),
+        "address": _safe_text(info.get("diaChi")),
+        "phone": _safe_text(info.get("dthoai")),
+        "customer_type": _safe_text(info.get("loaiKhang")),
+        "subject_type": _safe_text(info.get("loaiChuthe")),
+        "region_code": _safe_text(info.get("maDviCaptct"), 64),
+        "province": _safe_text(info.get("maTinh"), 64),
+        "commune": _safe_text(info.get("maXa"), 64),
+        "contract": _safe_text(info.get("maHdong"), 128),
+        "pay_reference": _safe_text(info.get("thanhtoanho"), 256),
+        "alert_count": _alert_count(info.get("powerAlert")),
+        "default_contract": _flag(info.get("hdMacdinh")),
+        "pay_on_behalf": _safe_text(info.get("maKhang"), 128),
+    }
+
+
+def _contracts(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        number = _safe_text(row.get("MA_HDONG"), 128)
+        if not number:
+            continue
+        result.append(
+            {
+                "number": number,
+                "address": _safe_text(row.get("DUONG_PHO"), 256),
+                "unit": _safe_text(row.get("MA_DVIQLY"), 64),
+            }
+        )
+        if len(result) == _MAX_CONTRACTS:
+            break
+    return result
+
+
+def _banks(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
+    result: list[dict[str, str]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        code = _safe_text(row.get("MA_TCHUC"), 64)
+        if not code:
+            continue
+        result.append({"code": code, "name": _safe_text(row.get("TEN_TCHUC"), 256)})
+        if len(result) == _MAX_BANKS:
+            break
+    return result
+
+
+def _change(value: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    return {key: _number(item) for key, item in value.items()}
+
+
+def _latest_reading_dto(value: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    return {
+        "period": _safe_text(value.get("period"), 128),
+        "old": _number(value.get("old")),
+        "new": _number(value.get("new")),
+        "multiplier": _number(value.get("multiplier")),
+        "kwh": _number(value.get("kwh")),
+        "kind": _safe_text(value.get("kind"), 64),
+    }
+
+
+def _usage_rows(snapshot: Snapshot) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for point in _points(snapshot):
+        point_id = point["id"]
+        monthly = snapshot.monthly.get(point_id, [])
+        reading = _latest_reading_dto(
+            latest_reading(snapshot.daily_readings.get(point_id, []))
+            or latest_reading(snapshot.monthly_readings.get(point_id, []))
+        )
+        result.append(
+            {
+                "point_id": point_id,
+                "monthly": _usage(monthly_summary(monthly)),
+                "daily": _usage(daily_summary(snapshot.daily.get(point_id, []))),
+                "mom": _change(month_over_month(monthly)),
+                "average_12m": _number(trailing_average(monthly, 12)),
+                "reading": reading,
+            }
+        )
+    return result
+
+
+def _invoice_rows(
+    rows: list[dict[str, Any]], banks: dict[str, str], limit: int
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if len(result) >= limit:
+            break
+        if not isinstance(row, dict):
+            continue
+        try:
+            result.append(_invoice_dto(row, banks))
+        except EvnResponseError:
+            continue
+    return result
 
 
 def _outage_dto(row: dict[str, Any]) -> dict[str, Any]:
@@ -210,24 +339,33 @@ def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
         "customer": _customer_dto(snapshot),
         "available": available,
         "fetched_at": _timestamp(snapshot.fetched_at),
+        "info": _info_dto(None),
+        "contracts": [],
+        "banks": [],
         "usage": [],
         "outstanding": {"amount": None, "count": None},
+        "invoices": [],
+        "paid_count": 0,
+        "paid_recent": [],
         "outages": [],
         "outage_count": len(snapshot.outages),
         "next_outage": None,
     }
     if not available:
         return result
-    result["usage"] = [
-        {
-            "point_id": point["id"],
-            "monthly": _usage(monthly_summary(snapshot.monthly.get(point["id"], []))),
-            "daily": _usage(daily_summary(snapshot.daily.get(point["id"], []))),
-        }
-        for point in _points(snapshot)
-    ]
-    outstanding = invoice_summary(snapshot.invoices)
-    result["outstanding"] = {"amount": outstanding.amount, "count": outstanding.count}
+    result["info"] = _info_dto(snapshot.info)
+    result["contracts"] = _contracts(snapshot.contracts)
+    result["banks"] = _banks(snapshot.banks)
+    result["usage"] = _usage_rows(snapshot)
+    outstanding = outstanding_from_active(snapshot.invoices)
+    result["outstanding"] = {
+        "amount": _number(outstanding.amount),
+        "count": outstanding.count,
+    }
+    names = {row["code"]: row["name"] for row in result["banks"]}
+    result["invoices"] = _invoice_rows(snapshot.invoices, names, _MAX_INVOICES)
+    result["paid_count"] = len(snapshot.paid_invoices)
+    result["paid_recent"] = _invoice_rows(snapshot.paid_invoices, names, _MAX_PAID)
     outages = snapshot.outages[:_MAX_OUTAGES]
     result["outages"] = [_outage_dto(row) for row in outages]
     if upcoming := next_outage(outages):
@@ -303,7 +441,16 @@ def _reading(row: dict[str, Any], kind: str) -> dict[str, Any]:
     }
 
 
-def _invoice_dto(row: dict[str, Any]) -> dict[str, Any]:
+def _due_date(row: dict[str, Any]) -> str | None:
+    value = row.get("HAN_TTOAN")
+    if value is None or value == "":
+        value = row.get("TT")
+    return _safe_text(value, 128) or None
+
+
+def _invoice_dto(
+    row: dict[str, Any], banks: dict[str, str] | None = None
+) -> dict[str, Any]:
     year, month = _month(row)
     status = _safe_text(row.get("TTRANG_TTOAN"), 32).upper()
     if status not in _STATUSES:
@@ -314,6 +461,9 @@ def _invoice_dto(row: dict[str, Any]) -> dict[str, Any]:
     cycle = _integer(row.get("KY"))
     kind = row.get("LOAI_HDON")
     energy_unit = _ENERGY_UNITS.get(kind, "") if isinstance(kind, str) else ""
+    directory = banks or {}
+    org_code = _safe_text(row.get("MA_TCHUC"), 64)
+    channel = _safe_text(row.get("KENH_THANH_TOAN"), 128)
     documents = list(_DOCUMENTS)
     try:
         _invoice_body(row)
@@ -329,7 +479,9 @@ def _invoice_dto(row: dict[str, Any]) -> dict[str, Any]:
         "status": status,
         "status_label": label,
         "paid_date": _safe_text(row.get("NGAY_TTOAN"), 128),
-        "due_date": _safe_text(row.get("HAN_TTOAN"), 128),
+        "due_date": _due_date(row),
+        "org_code": org_code,
+        "payment_channel_label": directory.get(org_code) or channel,
         "energy": _number(row.get("DIEN_TTHU")),
         "energy_unit": energy_unit,
         "documents": documents,

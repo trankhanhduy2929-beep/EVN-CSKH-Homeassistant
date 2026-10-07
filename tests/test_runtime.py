@@ -11,6 +11,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import MappingProxyType
 from typing import Any, cast
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -33,6 +34,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, State
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import async_get_platforms
@@ -44,8 +46,10 @@ from custom_components import evn_cskh as integration
 from custom_components.evn_cskh import config_flow
 from custom_components.evn_cskh.api import (
     Customer,
+    EvnAuthError,
     EvnError,
     EvnResponseError,
+    EvnUserActionRequired,
     Snapshot,
     TokenState,
 )
@@ -97,31 +101,82 @@ PROTECTED = (
 NAMES = {
     "en": {
         "monthly_energy": f"Latest monthly energy {POINT}",
+        "prev_month_energy": f"Previous month energy {POINT}",
+        "average_12m_energy": f"Average monthly energy over 12 months {POINT}",
+        "month_over_month": f"Month-over-month change {POINT}",
         "daily_energy": f"Latest interval energy {POINT}",
+        "meter_reading": f"Latest meter index {POINT}",
+        "meter_multiplier": f"Meter multiplier {POINT}",
+        "meter_read_date": f"Meter read date {POINT}",
         "outstanding_amount": "Outstanding amount",
         "outstanding_count": "Outstanding invoice count",
+        "latest_invoice_amount": "Latest invoice amount",
+        "latest_invoice_status": "Latest invoice status",
+        "paid_invoice_count": "Paid invoice count",
         "next_outage": "Next scheduled outage",
         "fetched_at": "Last successful update",
     },
     "vi": {
         "monthly_energy": f"Điện năng tháng gần nhất {POINT}",
+        "prev_month_energy": f"Điện năng tháng trước {POINT}",
+        "average_12m_energy": f"Điện năng trung bình 12 tháng {POINT}",
+        "month_over_month": f"Thay đổi so với tháng trước {POINT}",
         "daily_energy": f"Điện năng khoảng gần nhất {POINT}",
+        "meter_reading": f"Chỉ số công tơ gần nhất {POINT}",
+        "meter_multiplier": f"Hệ số nhân công tơ {POINT}",
+        "meter_read_date": f"Ngày đọc chỉ số công tơ {POINT}",
         "outstanding_amount": "Tiền còn nợ",
         "outstanding_count": "Số hóa đơn chưa thanh toán",
+        "latest_invoice_amount": "Số tiền hóa đơn gần nhất",
+        "latest_invoice_status": "Trạng thái hóa đơn gần nhất",
+        "paid_invoice_count": "Số hóa đơn đã thanh toán",
         "next_outage": "Lịch ngừng cấp điện tiếp theo",
         "fetched_at": "Lần cập nhật thành công gần nhất",
     },
 }
+BUTTON_NAMES = {"en": "Refresh data", "vi": "Cập nhật dữ liệu"}
+INFO = {
+    "tenKhang": "Synthetic Public Name",
+    "diaChi": "Synthetic Public Address",
+    "dthoai": "0900000000",
+    "maHdong": "SYNTHETIC-CONTRACT",
+    "maDviCaptct": "PB",
+}
+MEASUREMENT_KEYS = ("average_12m_energy", "month_over_month")
 PUBLIC_ATTRIBUTES = {
     "friendly_name",
     "device_class",
     "unit_of_measurement",
+    "state_class",
     "last_update",
     "period",
     "measurement_point",
     "schedule_end",
     "area",
     "reason",
+    "current",
+    "previous",
+    "delta",
+    "old",
+    "new",
+    "multiplier",
+    "kind",
+    "cycle",
+    "due_date",
+    "energy",
+    "energy_unit",
+    "paid_date",
+    "status_label",
+    "org_code",
+    "payment_channel_label",
+    "customer_name",
+    "address",
+    "phone",
+    "contract",
+    "region_code",
+    "contracts",
+    "banks",
+    "paid",
 }
 
 
@@ -156,6 +211,13 @@ def make_snapshot() -> Snapshot:
                 "ID_HDON": "DUMMY PRIVATE INVOICE",
                 "TTRANG_TTOAN": "CHUATT",
                 "TONG_NO": "-125000",
+                "TONG_TIEN": 125000,
+                "NAM": 2026,
+                "THANG": 10,
+                "KY": 10,
+                "DIEN_TTHU": "12.5",
+                "MA_TCHUC": "BANK-A",
+                "KENH_THANH_TOAN": "Synthetic channel",
                 "TEN_KHANG": CUSTOMER.name,
                 "DIA_CHI": "DUMMY PRIVATE ADDRESS",
                 "password": IDENTITY[CONF_PASSWORD],
@@ -174,6 +236,52 @@ def make_snapshot() -> Snapshot:
             }
         ],
         fetched_at=FETCHED_AT,
+        info=dict(INFO),
+        contracts=[{"MA_HD": "SYNTHETIC-CONTRACT"}],
+        monthly_readings={
+            POINT: [
+                {
+                    "NGAY_CKY": "31/10/2026",
+                    "LOAI_CHISO": "KT",
+                    "CHISO_CU": 1012.5,
+                    "CHISO_MOI": 1050,
+                    "HSN": 3,
+                    "DIEN_TTHU": "112.5",
+                }
+            ]
+        },
+        daily_readings={
+            POINT: [
+                {
+                    "NGAY": "05/10/2026",
+                    "LOAI_CHISO": "KT",
+                    "CHISO_CU": 900,
+                    "CHISO_MOI": 1000,
+                    "HSN": 2,
+                    "DIEN_TTHU": "200",
+                },
+                {
+                    "NGAY": "06/10/2026",
+                    "LOAI_CHISO": "KT",
+                    "CHISO_CU": 1000,
+                    "CHISO_MOI": 1012.5,
+                    "HSN": 2,
+                    "DIEN_TTHU": "25",
+                },
+            ]
+        },
+        paid_invoices=[
+            {
+                "ID_HDON": "DUMMY PAID INVOICE",
+                "TTRANG_TTOAN": "DATT",
+                "NAM": 2026,
+                "THANG": 9,
+                "TONG_TIEN": 500000,
+                "NGAY_TTOAN": "15/09/2026",
+                "MA_TCHUC": "BANK-A",
+            }
+        ],
+        banks=[{"MA_TCHUC": "BANK-A", "TEN_TCHUC": "Synthetic Bank"}],
     )
 
 
@@ -350,10 +458,28 @@ async def add_entry(hass: HomeAssistant) -> EvnConfigEntry:
 def registry_rows(
     hass: HomeAssistant, entry: EvnConfigEntry
 ) -> dict[str, er.RegistryEntry]:
-    rows = er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
-    assert len(rows) == 6
-    assert all(row.domain == "sensor" and row.platform == DOMAIN for row in rows)
+    rows = [
+        row
+        for row in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if row.domain == "sensor"
+    ]
+    assert len(rows) == len(NAMES["en"])
+    assert all(row.platform == DOMAIN for row in rows)
     assert {row.translation_key for row in rows} == set(NAMES["en"])
+    return {cast(str, row.translation_key): row for row in rows}
+
+
+def button_rows(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> dict[str, er.RegistryEntry]:
+    rows = [
+        row
+        for row in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if row.domain == "button"
+    ]
+    assert len(rows) == 1
+    assert all(row.platform == DOMAIN for row in rows)
+    assert {row.translation_key for row in rows} == {"refresh"}
     return {cast(str, row.translation_key): row for row in rows}
 
 
@@ -362,7 +488,23 @@ def sensor_states(hass: HomeAssistant, entry: EvnConfigEntry) -> dict[str, State
     for key, row in registry_rows(hass, entry).items():
         state = hass.states.get(row.entity_id)
         assert isinstance(state, State)
-        assert "state_class" not in state.attributes
+        if key in MEASUREMENT_KEYS:
+            assert state.attributes["state_class"] == "measurement"
+        else:
+            assert "state_class" not in state.attributes
+        assert all(
+            value not in str(state)
+            for value in (*PROTECTED, entry.data[CONF_DEVICE_ID])
+        )
+        result[key] = state
+    return result
+
+
+def button_states(hass: HomeAssistant, entry: EvnConfigEntry) -> dict[str, State]:
+    result = {}
+    for key, row in button_rows(hass, entry).items():
+        state = hass.states.get(row.entity_id)
+        assert isinstance(state, State)
         assert all(
             value not in str(state)
             for value in (*PROTECTED, entry.data[CONF_DEVICE_ID])
@@ -374,9 +516,9 @@ def sensor_states(hass: HomeAssistant, entry: EvnConfigEntry) -> dict[str, State
 def registry_identity(
     hass: HomeAssistant, entry: EvnConfigEntry
 ) -> dict[str, tuple[str, str, str | None]]:
+    rows = {**registry_rows(hass, entry), **button_rows(hass, entry)}
     return {
-        key: (row.entity_id, row.unique_id, row.device_id)
-        for key, row in registry_rows(hass, entry).items()
+        key: (row.entity_id, row.unique_id, row.device_id) for key, row in rows.items()
     }
 
 
@@ -404,15 +546,24 @@ async def test_installed_loader_setup_and_sensor_states(
     )
     assert DOMAIN in await loader.async_get_config_flows(hass)
     entry = await add_entry(hass)
-    assert {"homeassistant", DOMAIN, "sensor"} <= hass.config.components
+    assert {"homeassistant", DOMAIN, "sensor", "button"} <= hass.config.components
     platforms = [
         platform
         for platform in async_get_platforms(hass, DOMAIN)
         if platform.config_entry is entry
     ]
-    assert len(platforms) == 1 and platforms[0].domain == "sensor"
-    assert len(platforms[0].entities) == 6
-    assert tuple(entry.runtime_data.async_contexts()) == (customer_key(CUSTOMER),) * 6
+    assert {platform.domain for platform in platforms} == {"sensor", "button"}
+    sensor_platform = next(
+        platform for platform in platforms if platform.domain == "sensor"
+    )
+    button_platform = next(
+        platform for platform in platforms if platform.domain == "button"
+    )
+    assert len(sensor_platform.entities) == len(NAMES["en"])
+    assert len(button_platform.entities) == 1
+    assert tuple(entry.runtime_data.async_contexts()) == (customer_key(CUSTOMER),) * (
+        len(NAMES["en"]) + 1
+    )
     assert offline_evn.clients[0].login_calls == 0
     assert offline_evn.clients[0].fetch_calls == [CUSTOMER]
     translations = await async_get_translations(hass, language, "entity", {DOMAIN})
@@ -465,7 +616,121 @@ async def test_installed_loader_setup_and_sensor_states(
     assert states["next_outage"].attributes["reason"] == "Scheduled maintenance"
     assert states["fetched_at"].state == FETCHED_AT.isoformat(timespec="seconds")
     assert rows["fetched_at"].entity_category is EntityCategory.DIAGNOSTIC
+    assert states["prev_month_energy"].state == "900.0"
+    assert states["prev_month_energy"].attributes["period"] == "2026-09"
+    assert states["prev_month_energy"].attributes["device_class"] == "energy"
+    assert states["average_12m_energy"].state == "456.25"
+    assert states["average_12m_energy"].attributes["unit_of_measurement"] == "kWh"
+    assert "device_class" not in states["average_12m_energy"].attributes
+    assert float(states["month_over_month"].state) == pytest.approx(
+        (12.5 - 900.0) / 900.0 * 100
+    )
+    assert states["month_over_month"].attributes["unit_of_measurement"] == "%"
+    assert "device_class" not in states["month_over_month"].attributes
+    assert states["month_over_month"].attributes["current"] == 12.5
+    assert states["month_over_month"].attributes["previous"] == 900.0
+    assert states["month_over_month"].attributes["delta"] == -887.5
+    assert states["meter_reading"].state == "1012.5"
+    assert states["meter_reading"].attributes["old"] == 1000.0
+    assert states["meter_reading"].attributes["new"] == 1012.5
+    assert states["meter_reading"].attributes["multiplier"] == 2.0
+    assert states["meter_reading"].attributes["kind"] == "KT"
+    assert states["meter_reading"].attributes["period"] == "06/10/2026"
+    assert "unit_of_measurement" not in states["meter_reading"].attributes
+    assert states["meter_multiplier"].state == "2.0"
+    assert states["meter_read_date"].state == "06/10/2026"
+    assert rows["meter_read_date"].entity_category is EntityCategory.DIAGNOSTIC
+    assert rows["meter_multiplier"].entity_category is EntityCategory.DIAGNOSTIC
+    assert states["latest_invoice_amount"].state == "125000.0"
+    assert states["latest_invoice_amount"].attributes["device_class"] == "monetary"
+    assert states["latest_invoice_amount"].attributes["unit_of_measurement"] == "VND"
+    assert states["latest_invoice_amount"].attributes["status_label"] == (
+        "Chưa thanh toán"
+    )
+    assert states["latest_invoice_amount"].attributes["cycle"] == 10
+    assert states["latest_invoice_amount"].attributes["energy"] == 12.5
+    assert states["latest_invoice_amount"].attributes["energy_unit"] == "kWh"
+    assert states["latest_invoice_amount"].attributes["org_code"] == "BANK-A"
+    assert states["latest_invoice_amount"].attributes["payment_channel_label"] == (
+        "Synthetic Bank"
+    )
+    assert states["latest_invoice_status"].state == "Chưa thanh toán"
+    assert "unit_of_measurement" not in states["latest_invoice_status"].attributes
+    assert states["paid_invoice_count"].state == "1"
+    assert rows["paid_invoice_count"].entity_category is EntityCategory.DIAGNOSTIC
+    assert states["fetched_at"].attributes["customer_name"] == INFO["tenKhang"]
+    assert states["fetched_at"].attributes["address"] == INFO["diaChi"]
+    assert states["fetched_at"].attributes["phone"] == INFO["dthoai"]
+    assert states["fetched_at"].attributes["contract"] == INFO["maHdong"]
+    assert states["fetched_at"].attributes["region_code"] == "PB"
+    assert states["fetched_at"].attributes["contracts"] == 1
+    assert states["fetched_at"].attributes["banks"] == 1
+    assert states["fetched_at"].attributes["paid"] == 1
+    button = button_rows(hass, entry)
+    button_state = button_states(hass, entry)["refresh"]
+    assert (
+        translations[f"component.{DOMAIN}.entity.button.refresh.name"]
+        == BUTTON_NAMES[language]
+    )
+    assert button["refresh"].original_name == BUTTON_NAMES[language]
+    assert button["refresh"].has_entity_name
+    assert button["refresh"].entity_category is None
+    assert button["refresh"].device_id == device.id
+    assert re.fullmatch(r"[0-9a-f]{64}", cast(str, button["refresh"].unique_id))
+    assert button["refresh"].unique_id not in {row.unique_id for row in rows.values()}
+    assert button_state.state == STATE_UNKNOWN
+    assert button_state.attributes["friendly_name"] == (
+        f"{device.name} {BUTTON_NAMES[language]}"
+    )
     assert not [record for record in caplog.records if record.levelno >= 40]
+
+
+@pytest.mark.asyncio
+async def test_native_button_press_refreshes_data(
+    runtime_hass: HomeAssistant, offline_evn: OfflineEvn
+) -> None:
+    hass = runtime_hass
+    entry = await add_entry(hass)
+    entity_id = cast(str, button_rows(hass, entry)["refresh"].entity_id)
+    before = len(offline_evn.clients[0].fetch_calls)
+    await hass.services.async_call(
+        "button", "press", {"entity_id": entity_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert len(offline_evn.clients[0].fetch_calls) == before + 1
+    assert entry.runtime_data.last_update_success
+    state = hass.states.get(entity_id)
+    assert isinstance(state, State)
+    assert state.state != STATE_UNKNOWN
+    assert all(
+        value not in str(state) for value in (*PROTECTED, entry.data[CONF_DEVICE_ID])
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "failure", [EvnAuthError, EvnUserActionRequired], ids=["auth", "action"]
+)
+async def test_button_press_maps_auth_failure_to_reauth(
+    runtime_hass: HomeAssistant,
+    offline_evn: OfflineEvn,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: type[EvnError],
+) -> None:
+    hass = runtime_hass
+    entry = await add_entry(hass)
+    entity_id = cast(str, button_rows(hass, entry)["refresh"].entity_id)
+    start_reauth = Mock()
+    monkeypatch.setattr(entry, "async_start_reauth", start_reauth)
+    offline_evn.failure = failure()
+    await hass.services.async_call(
+        "button", "press", {"entity_id": entity_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert isinstance(entry.runtime_data.last_exception, ConfigEntryAuthFailed)
+    start_reauth.assert_called_once_with(hass)
+    assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
+    assert entry.state is ConfigEntryState.LOADED
 
 
 @pytest.mark.asyncio
@@ -481,17 +746,29 @@ async def test_runtime_unknown_unavailable_and_recovery(
         daily={POINT: [{"NGAY": "06/10/2026", "BCS": "KT", "DIEN_TTHU": "NaN"}]},
         invoices=[{"ID_HDON": "DUMMY PRIVATE INVOICE", "TTRANG_TTOAN": "CHUATT"}],
         outages=[],
+        monthly_readings={},
+        daily_readings={},
+        paid_invoices=[],
+        banks=[],
+        contracts=[],
+        info={},
     )
     await entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
     states = sensor_states(hass, entry)
     assert entry.runtime_data.last_update_success
     assert all(
-        states[key].state == STATE_UNKNOWN for key in NAMES["en"] if key != "fetched_at"
+        states[key].state == STATE_UNKNOWN
+        for key in NAMES["en"]
+        if key not in ("fetched_at", "paid_invoice_count")
     )
+    assert states["paid_invoice_count"].state == "0"
     assert all("period" not in state.attributes for state in states.values())
     assert "schedule_end" not in states["next_outage"].attributes
     assert "area" not in states["next_outage"].attributes
+    assert "customer_name" not in states["fetched_at"].attributes
+    assert states["fetched_at"].attributes["contracts"] == 0
+    assert states["fetched_at"].attributes["banks"] == 0
     offline_evn.failure = EvnResponseError()
     await entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
@@ -502,7 +779,10 @@ async def test_runtime_unknown_unavailable_and_recovery(
             "friendly_name",
             "device_class",
             "unit_of_measurement",
+            "state_class",
         }
+    for state in button_states(hass, entry).values():
+        assert state.state == STATE_UNAVAILABLE
     offline_evn.failure = None
     offline_evn.snapshot = replace(make_snapshot(), invoices=[], outages=[])
     await entry.runtime_data.async_refresh()
@@ -513,12 +793,19 @@ async def test_runtime_unknown_unavailable_and_recovery(
     assert float(states["outstanding_amount"].state) == 0.0
     assert states["outstanding_count"].state == "0"
     assert states["next_outage"].state == STATE_UNKNOWN
+    assert float(states["latest_invoice_amount"].state) == 500000.0
+    assert states["latest_invoice_status"].state == "Đã thanh toán"
+    assert states["latest_invoice_amount"].attributes["paid_date"] == "15/09/2026"
+    assert states["latest_invoice_amount"].attributes["payment_channel_label"] == (
+        "Synthetic Bank"
+    )
     offline_evn.snapshot = replace(make_snapshot(), measurement_points=[])
     await entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
     states = sensor_states(hass, entry)
     assert states["monthly_energy"].state == STATE_UNAVAILABLE
     assert states["daily_energy"].state == STATE_UNAVAILABLE
+    assert states["meter_reading"].state == STATE_UNAVAILABLE
     assert states["outstanding_count"].state == "1"
     assert registry_identity(hass, entry) == identity
     assert len(offline_evn.clients) == 1 and offline_evn.clients[0].login_calls == 0

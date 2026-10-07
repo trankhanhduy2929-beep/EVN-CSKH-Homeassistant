@@ -181,21 +181,19 @@ def switched(person: Any, access_token: str, region: str = "PB") -> Reply:
 
 
 def snapshot_replies(person: Any, access_token: str, region: str = "PB") -> list[Reply]:
+    owner = {"MA_KHANG": person.code, "MA_DVIQLY": person.management_unit}
     return [
         switched(person, access_token, region),
-        Reply(
-            [
-                {
-                    "MA_DDO": "POINT-1",
-                    "MA_KHANG": person.code,
-                    "MA_DVIQLY": person.management_unit,
-                }
-            ]
-        ),
-        Reply([{"DIEN_TTHU": 123, "MA_KHANG": person.code}]),
-        Reply([{"DIEN_TTHU": 4, "MA_DDO": "POINT-1"}]),
-        Reply([{"TONG_TIEN": 321, "MA_KHANG": person.code}]),
-        Reply([{"MA_KHANG": person.code, "NOI_DUNG": "Offline planned work"}]),
+        Reply([owner | {"MA_DDO": "POINT-1", "SO_CTO": "METER-A"}]),
+        Reply([owner | {"DIEN_TTHU": 123, "SO_CTO": "METER-A"}]),
+        Reply([owner | {"MA_DDO": "POINT-1", "DIEN_TTHU": 4, "BCS": "KT"}]),
+        Reply([owner | {"MA_DDO": "POINT-1", "CHISO_MOI": 10}]),
+        Reply([owner | {"MA_DDO": "POINT-1", "CHISO_MOI": 3}]),
+        Reply([owner | {"DUONG_PHO": "Offline street"}]),
+        Reply([owner | {"ID_HDON": "INVOICE-1", "TONG_TIEN": 321}]),
+        Reply([owner | {"ID_HDON": "INVOICE-0", "TONG_TIEN": 300}]),
+        Reply([{"MA_TCHUC": "BANK-1", "TEN_TCHUC": "Offline bank"}]),
+        Reply([owner | {"NOI_DUNG": "Offline planned work"}]),
     ]
 
 
@@ -808,16 +806,20 @@ async def test_regional_snapshot_and_local_dates(
     monkeypatch.setattr(api, "datetime", Clock)
     person = customer()
     access = secrets.token_urlsafe(24)
+    owner = {"MA_KHANG": person.code, "MA_DVIQLY": person.management_unit}
     points = [
-        {
-            "MA_DDO": "POINT-1",
-            "MA_KHANG": person.code,
-            "MA_DVIQLY": person.management_unit,
-        },
+        owner | {"MA_DDO": "POINT-1", "SO_CTO": "METER-A"},
         {"MA_DDO": "POINT-2"},
     ]
-    monthly = [[{"DIEN_TTHU": 123}], []]
-    daily = [[], [{"MA_DDO": "POINT-2", "DIEN_TTHU": 4}]]
+    monthly = [[owner | {"DIEN_TTHU": 123}], []]
+    daily = [[], [owner | {"MA_DDO": "POINT-2", "DIEN_TTHU": 4, "BCS": "KT"}]]
+    monthly_readings = [[owner | {"MA_DDO": "POINT-1", "CHISO_MOI": 10}], []]
+    daily_readings = [[], [owner | {"MA_DDO": "POINT-2", "CHISO_MOI": 3}]]
+    contracts = [owner | {"DUONG_PHO": "Offline street"}]
+    invoices = [owner | {"ID_HDON": "INVOICE-1", "TONG_TIEN": 321}]
+    paid = [owner | {"ID_HDON": "INVOICE-0", "TONG_TIEN": 300}]
+    banks = [{"MA_TCHUC": "BANK-1", "TEN_TCHUC": "Offline bank"}]
+    outages = [owner | {"NOI_DUNG": "Offline planned work"}]
     session = Session(
         Reply([contract()]),
         config(region, BASES[region] + "/"),
@@ -825,10 +827,17 @@ async def test_regional_snapshot_and_local_dates(
         Reply(points),
         Reply(monthly[0]),
         Reply(daily[0]),
+        Reply(monthly_readings[0]),
+        Reply(daily_readings[0]),
         Reply(monthly[1]),
         Reply(daily[1]),
-        Reply([]),
-        Reply([]),
+        Reply(monthly_readings[1]),
+        Reply(daily_readings[1]),
+        Reply(contracts),
+        Reply(invoices),
+        Reply(paid),
+        Reply(banks),
+        Reply(outages),
     )
     changes: list[Any] = []
     client = make_client(session, identity, tokens=tokens, on_tokens=changes.append)
@@ -841,7 +850,20 @@ async def test_regional_snapshot_and_local_dates(
     assert snapshot.measurement_points == points
     assert snapshot.monthly == {"POINT-1": monthly[0], "POINT-2": monthly[1]}
     assert snapshot.daily == {"POINT-1": daily[0], "POINT-2": daily[1]}
-    assert snapshot.invoices == snapshot.outages == []
+    assert snapshot.monthly_readings == {
+        "POINT-1": monthly_readings[0],
+        "POINT-2": monthly_readings[1],
+    }
+    assert snapshot.daily_readings == {
+        "POINT-1": daily_readings[0],
+        "POINT-2": daily_readings[1],
+    }
+    assert snapshot.contracts == contracts
+    assert snapshot.invoices == invoices
+    assert snapshot.paid_invoices == paid
+    assert snapshot.banks == banks
+    assert snapshot.outages == outages
+    assert snapshot.info == contract()
     assert snapshot.fetched_at == frozen
     assert snapshot.fetched_at.tzinfo is UTC
     assert changes == [
@@ -851,7 +873,7 @@ async def test_regional_snapshot_and_local_dates(
     ]
     assert session.calls[2]["url"] == api.CENTRAL_BASE + "/user/switch/" + person.code
     assert session.calls[2]["method"] == "GET"
-    for index, point in ((4, "POINT-1"), (6, "POINT-2")):
+    for index, point in ((4, "POINT-1"), (8, "POINT-2")):
         assert session.calls[index]["method"] == "POST"
         assert (
             session.calls[index]["url"]
@@ -864,24 +886,59 @@ async def test_regional_snapshot_and_local_dates(
             "TU_THANG_NAM": "12/2025",
             "DEN_THANG_NAM": "01/2026",
         }
-        assert session.calls[index + 1]["json"] == {
+    for index, point in ((5, "POINT-1"), (9, "POINT-2")):
+        assert session.calls[index]["json"] == {
             "MA_DVIQLY": person.management_unit,
             "MA_DDO": point,
             "TU_NGAY": "25/12/2025",
             "DEN_NGAY": "31/12/2025",
         }
         assert (
-            session.calls[index + 1]["url"]
+            session.calls[index]["url"]
             == BASES[region] + "/api/evn/tracuu/diennangngay"
         )
+    for index, point in ((6, "POINT-1"), (10, "POINT-2")):
+        assert session.calls[index]["method"] == "POST"
+        assert (
+            session.calls[index]["url"] == BASES[region] + "/api/evn/tracuu/chisothang"
+        )
+        assert session.calls[index]["json"] == {
+            "MA_DVIQLY": person.management_unit,
+            "MA_DDO": point,
+            "MA_KHANG": person.code,
+            "TU_THANG_NAM": "12/2024",
+            "DEN_THANG_NAM": "01/2026",
+        }
+    for index, point in ((7, "POINT-1"), (11, "POINT-2")):
+        assert (
+            session.calls[index]["url"] == BASES[region] + "/api/evn/tracuu/chisongay"
+        )
+        assert session.calls[index]["json"] == {
+            "MA_DVIQLY": person.management_unit,
+            "MA_DDO": point,
+            "TU_NGAY": "01/12/2025",
+            "DEN_NGAY": "31/12/2025",
+        }
     assert session.calls[3]["url"] == BASES[region] + "/api/evn/customers/diemdo"
     assert session.calls[3]["method"] == "GET"
     assert "json" not in session.calls[3]
-    assert session.calls[8]["method"] == "POST"
-    assert session.calls[8]["url"] == BASES[region] + "/api/evn/tracuu/hoadon-thanhtoan"
-    assert "json" not in session.calls[8]
-    assert session.calls[9]["url"] == BASES[region] + "/api/evn/tracuu/ngungcapdien"
-    assert session.calls[9]["json"] == {
+    assert session.calls[12]["url"] == BASES[region] + "/api/evn/customers/info"
+    assert session.calls[12]["method"] == "GET"
+    assert session.calls[13]["method"] == "POST"
+    assert session.calls[13]["url"] == BASES[region] + "/api/evn/tracuu/hoadon"
+    assert "json" not in session.calls[13]
+    assert session.calls[14]["url"] == BASES[region] + "/api/evn/tracuu/lichsu-hoadon"
+    assert session.calls[14]["json"] == {
+        "TU_THANG_NAM": "12/2024",
+        "DEN_THANG_NAM": "01/2026",
+    }
+    assert (
+        session.calls[15]["url"]
+        == BASES[region] + "/api/evn/thanhtoan/danhsach-nganhang"
+    )
+    assert session.calls[15]["method"] == "GET"
+    assert session.calls[16]["url"] == BASES[region] + "/api/evn/tracuu/ngungcapdien"
+    assert session.calls[16]["json"] == {
         "TU_NGAY": "01/01/2026",
         "DEN_NGAY": "15/01/2026",
     }
@@ -903,12 +960,18 @@ async def test_empty_measurement_points_are_valid(
         Reply([]),
         Reply([]),
         Reply([]),
+        Reply([]),
+        Reply([]),
+        Reply([]),
     )
     snapshot = await make_client(session, identity, tokens=tokens).fetch_snapshot(
         customer()
     )
     assert snapshot.measurement_points == snapshot.invoices == snapshot.outages == []
     assert snapshot.monthly == snapshot.daily == {}
+    assert snapshot.monthly_readings == snapshot.daily_readings == {}
+    assert snapshot.contracts == snapshot.paid_invoices == snapshot.banks == []
+    assert snapshot.info == contract()
     session.done()
 
 
@@ -936,6 +999,9 @@ async def test_switch_customer_code_is_urlencoded(
         Reply([row]),
         config(),
         switched(person, secrets.token_urlsafe(24)),
+        Reply([]),
+        Reply([]),
+        Reply([]),
         Reply([]),
         Reply([]),
         Reply([]),
@@ -1058,6 +1124,9 @@ async def test_switch_401_refresh_uses_previous_context_then_rotates(
         Reply([]),
         Reply([]),
         Reply([]),
+        Reply([]),
+        Reply([]),
+        Reply([]),
     )
     changes: list[Any] = []
     callback_positions: list[int] = []
@@ -1124,7 +1193,7 @@ async def test_multiple_snapshots_are_isolated_with_initial_login(
     assert result2.monthly["POINT-1"][0]["MA_KHANG"] == second.code
     assert result1.invoices[0]["MA_KHANG"] == first.code
     assert result2.invoices[0]["MA_KHANG"] == second.code
-    assert positions == [2, 5, 11]
+    assert positions == [2, 5, 16]
     assert changes == [
         tokens,
         api.TokenState(
@@ -1134,15 +1203,18 @@ async def test_multiple_snapshots_are_isolated_with_initial_login(
             second_access, tokens.refresh_token, second.code, second.management_unit
         ),
     ]
+    assert (
+        session.calls[4]["headers"]["Authorization"] == "Bearer " + tokens.access_token
+    )
     assert all(
         call["headers"]["Authorization"] == "Bearer " + first_access
-        for call in session.calls[5:10]
+        for call in session.calls[5:15]
     )
+    assert session.calls[15]["headers"]["Authorization"] == "Bearer " + first_access
     assert all(
         call["headers"]["Authorization"] == "Bearer " + second_access
-        for call in session.calls[11:]
+        for call in session.calls[16:]
     )
-    assert session.calls[10]["headers"]["Authorization"] == "Bearer " + first_access
     assert paths(session).count("/public/allconfig") == 1
     assert paths(session).count("/user/me") == 1
     session.done()
@@ -1359,6 +1431,9 @@ async def test_minimal_customer_and_switch_payloads(
         Reply([{"maKhang": person.code, "maDviqly": person.management_unit}]),
         config(),
         Reply({"accessToken": access, "data": {"maDviCaptct": "PB"}}),
+        Reply([]),
+        Reply([]),
+        Reply([]),
         Reply([]),
         Reply([]),
         Reply([]),
@@ -1593,7 +1668,7 @@ async def test_aiohttp_request_wire_headers_and_bodies(
             if call["method"] == "POST":
                 saw_bodyless_post = True
                 assert headers[b"content-length"] == b"0"
-                assert call["url"].endswith("/api/evn/tracuu/hoadon-thanhtoan")
+                assert call["url"].endswith("/api/evn/tracuu/hoadon")
                 baseline_headers, baseline_body = (await wire_bytes(call, False)).split(
                     b"\r\n\r\n", 1
                 )
@@ -1698,7 +1773,12 @@ async def test_valid_snapshot_consumption_model_roundtrip(
         Reply([ownership | {"MA_DDO": "POINT-1", "SO_CTO": "METER-A"}]),
         Reply(monthly),
         Reply(daily),
+        Reply([]),
+        Reply([]),
+        Reply([]),
         Reply(invoices),
+        Reply([]),
+        Reply([]),
         Reply([]),
     )
     snapshot = await make_client(session, identity, tokens=tokens).fetch_snapshot(
@@ -1729,8 +1809,8 @@ async def test_mixed_invoice_ownership_is_not_discarded(
         {"MA_KHANG": customer(2).code, "MA_DVIQLY": customer(2).management_unit},
     ]
     replies = snapshot_replies(person, secrets.token_urlsafe(24))
-    replies[4] = Reply(invoices)
-    session = Session(Reply([contract()]), config(), *replies[:5])
+    replies[7] = Reply(invoices)
+    session = Session(Reply([contract()]), config(), *replies[:8])
     with pytest.raises(api.EvnResponseError):
         await make_client(session, identity, tokens=tokens).fetch_snapshot(person)
     session.done()

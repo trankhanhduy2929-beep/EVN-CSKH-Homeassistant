@@ -1,22 +1,27 @@
 const STYLE = `
-:host{display:block;min-width:0;color:var(--primary-text-color,#212121);background:var(--primary-background-color,#f4f5f7);font-family:var(--primary-font-family,inherit);font-size:14px;line-height:1.5;color-scheme:light;--evn-surface:var(--card-background-color,#fff);--evn-line:var(--divider-color,#dce0e4);--evn-muted:var(--secondary-text-color,#61666d);--evn-accent:var(--primary-color,#0075a8);--evn-hover:color-mix(in srgb,var(--primary-text-color,#212121) 6%,var(--evn-surface))}
-:host([dark]){color-scheme:dark}*{box-sizing:border-box;min-width:0}h1,h2,h3,p,dl,dd,figure{margin:0}h1{font-size:20px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:16px;font-weight:600}p,dd,h2,h3{overflow-wrap:anywhere}button,input,select{font:inherit;color:inherit;max-width:100%}button,input,select{border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);min-height:40px;padding:8px 12px}button{cursor:pointer;font-weight:500;line-height:1.4}button:hover:not(:disabled):not([aria-disabled=true]){background:var(--evn-hover)}button:disabled,button[aria-disabled=true]{cursor:not-allowed;opacity:.6}button[aria-busy=true]{cursor:progress;opacity:1}button.primary{background:var(--evn-accent);border-color:transparent;color:var(--text-primary-color,#fff)}button.primary:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--evn-accent) 85%,var(--primary-text-color,#212121))}button.quiet{background:transparent;border-color:transparent}button.link{border-color:transparent;color:var(--evn-accent);background:transparent;text-align:left}button.link:hover{text-decoration:underline}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--evn-accent);outline-offset:3px}input,select{width:100%;height:40px}input[aria-invalid=true]{border-color:var(--error-color,#db4437)}label{display:block;width:fit-content;font-size:12px;font-weight:500;color:var(--evn-muted);margin-bottom:6px}svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}button.icon{display:inline-flex;align-items:center;justify-content:center;width:40px;padding:8px;flex:none}.topbar{background:var(--evn-surface);border-bottom:1px solid var(--evn-line)}.top-inner{max-width:1328px;margin:auto;padding:16px 24px;display:flex;align-items:center;gap:24px}.brand{display:flex;align-items:center;gap:12px;flex:1}.account-tools{display:flex;align-items:end;gap:12px}.account-field{width:320px}.account-tools>button{min-width:106px}#menu{display:none}:host([narrow]) #menu{display:inline-flex}.shell{max-width:1328px;margin:auto;padding:24px}.intro{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:24px}.intro h2{font-size:20px}.intro p{margin-top:4px}.muted,.meta{color:var(--evn-muted)}.meta{font-size:12px}.freshness{text-align:right;max-width:300px}.tabs{display:flex;gap:24px;border-bottom:1px solid var(--evn-line);margin-bottom:24px;padding:4px 4px 0}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;min-height:48px;padding:10px 4px;color:var(--evn-muted);white-space:nowrap}.tabs button[aria-selected=true]{border-bottom-color:var(--evn-accent);color:var(--evn-accent)}.stack{display:grid;gap:16px}.card{background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;padding:20px}.card-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:16px}.card-head p{margin-top:4px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{min-height:146px;display:flex;flex-direction:column;gap:8px}.metric-label{color:var(--evn-muted);font-size:13px}.metric-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric-value.compact{font-size:18px}.metric .meta{margin-top:auto}.overview-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px;align-items:start}.chart-card{min-height:366px}.chart{display:grid;gap:6px;margin-top:32px}.chart-column{text-align:center;min-width:0}.track{height:164px;position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-accent);border-radius:4px 4px 0 0}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.chart.daily .bar-number{display:none}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}.stat-list{display:grid;gap:16px}.stat-list>div{display:grid;gap:4px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums}.summary-number{font-size:24px;font-weight:600}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:32px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:242px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted)}.loading::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--evn-accent);margin-right:8px;animation:pulse 1.4s ease-in-out infinite}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;margin-bottom:16px}.banner.error{border-inline-start:3px solid var(--error-color,#db4437)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--error-color,#db4437);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface)}td.number,th.number{text-align:right}.reading-table{min-width:680px}.reading-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:140px}.invoice-table tbody tr{cursor:pointer}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted)}.badge.paid{color:var(--success-color,#168039);background:color-mix(in srgb,var(--success-color,#168039) 10%,var(--evn-surface))}.badge.unpaid{color:var(--warning-color,#9b6511);background:color-mix(in srgb,var(--warning-color,#9b6511) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.outages{list-style:none;margin:0;padding:0}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--error-color,#db4437)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.data-table{margin-top:16px}.data-table td:last-child{text-align:right}.data-table table{min-width:240px}[hidden]{display:none!important}@keyframes pulse{50%{opacity:.35}}
-@media(max-width:1000px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-grid{grid-template-columns:1fr}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.freshness{max-width:220px}}
-@media(max-width:767px){.top-inner{padding:12px 16px;gap:12px;flex-wrap:wrap}.brand{width:100%}#menu{display:inline-flex}.account-tools{width:100%;gap:8px}.account-field{flex:1;width:auto}.shell{padding:16px}.intro{display:block;margin-bottom:16px}.freshness{text-align:left;max-width:none;margin-top:12px}.tabs{gap:0;justify-content:space-between;margin-bottom:16px}.tabs button{font-size:12px;padding:10px 2px}.card{padding:16px}.metric{min-height:142px}.metric-value{font-size:22px}.metric-value.compact{font-size:16px}.metric-label{font-size:12px}.card-head{gap:12px}.filters{gap:12px}.filters>.point-field{grid-column:1/-1}.filters>button{grid-column:1/-1}input,select{font-size:16px;height:44px}button{min-height:44px}.segmented button{min-height:36px}.bar-number{display:none}.chart{gap:4px}.chart-label{font-size:12px}.track{height:148px}.chart-card{min-height:340px}.invoice-filters{grid-template-columns:1fr}.invoice-table-wrap{display:none}.invoice-cards{display:block}.banner{align-items:start;flex-direction:column}.pagination{align-items:start;flex-direction:column}.pagination nav{width:100%;justify-content:space-between}.outage-time{grid-template-columns:1fr;gap:12px}.dialog-head,.dialog-body{padding:16px}.pdf-actions{display:grid;grid-template-columns:1fr;width:100%}.dialog-info>div{grid-template-columns:1fr 1.2fr;gap:12px}.section-tools{gap:12px}.intro h2{font-size:18px}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+:host{display:block;min-width:0;color:var(--primary-text-color,#212121);background:var(--primary-background-color,#f4f5f7);font-family:var(--primary-font-family,inherit);font-size:14px;line-height:1.5;color-scheme:light;--evn-surface:var(--card-background-color,#fff);--evn-line:var(--divider-color,#dce0e4);--evn-muted:var(--secondary-text-color,#61666d);--evn-accent:var(--primary-color,#0075a8);--evn-error:var(--error-color,#db4437);--evn-success:var(--success-color,#168039);--evn-warning:var(--warning-color,#9b6511);--evn-hover:color-mix(in srgb,var(--primary-text-color,#212121) 6%,var(--evn-surface))}
+:host([dark]){color-scheme:dark}*{box-sizing:border-box;min-width:0}h1,h2,h3,p,dl,dd,figure,ul{margin:0}ul{padding:0;list-style:none}h1{font-size:20px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:16px;font-weight:600}p,dd,h2,h3{overflow-wrap:anywhere}button,input,select{font:inherit;color:inherit;max-width:100%}button,input,select{border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);min-height:40px;padding:8px 12px}button{cursor:pointer;font-weight:500;line-height:1.4}button:hover:not(:disabled):not([aria-disabled=true]){background:var(--evn-hover)}button:disabled,button[aria-disabled=true]{cursor:not-allowed;opacity:.6}button[aria-busy=true]{cursor:progress;opacity:1}button.primary{background:var(--evn-accent);border-color:transparent;color:var(--text-primary-color,#fff)}button.primary:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--evn-accent) 85%,var(--primary-text-color,#212121))}button.quiet{background:transparent;border-color:transparent}button.link{border-color:transparent;color:var(--evn-accent);background:transparent;text-align:left}button.link:hover{text-decoration:underline}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--evn-accent);outline-offset:3px}input,select{width:100%;height:40px}input[aria-invalid=true]{border-color:var(--evn-error)}label{display:block;width:fit-content;font-size:12px;font-weight:500;color:var(--evn-muted);margin-bottom:6px}svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}button.icon{display:inline-flex;align-items:center;justify-content:center;width:40px;padding:8px;flex:none;color:var(--evn-muted)}.topbar{background:var(--evn-surface);border-bottom:1px solid var(--evn-line)}.top-inner{max-width:1328px;margin:auto;padding:16px 24px;display:flex;align-items:center;gap:24px}.brand{display:flex;align-items:center;gap:12px;flex:1}.account-tools{display:flex;align-items:end;gap:12px}.account-field{width:320px}.account-tools>button{min-width:106px}#menu{display:none}:host([narrow]) #menu{display:inline-flex}.shell{max-width:1328px;margin:auto;padding:24px;display:grid;gap:20px}.intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.intro h2{font-size:20px}.intro p{margin-top:4px}.muted,.meta{color:var(--evn-muted)}.meta{font-size:12px}.freshness{text-align:right;max-width:300px}.tabs{display:flex;gap:24px;border-bottom:1px solid var(--evn-line);padding:4px 4px 0}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;min-height:48px;padding:10px 4px;color:var(--evn-muted);white-space:nowrap;flex:none}.tabs button[aria-selected=true]{border-bottom-color:var(--evn-accent);color:var(--evn-accent)}.stack{display:grid;gap:16px}.card{background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;padding:20px}.card-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:16px}.card-head p{margin-top:4px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{min-height:134px;display:flex;flex-direction:column;gap:8px}.metric-label{color:var(--evn-muted);font-size:13px}.metric-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric-value.compact{font-size:18px}.metric .meta{margin-top:auto}.overview-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px;align-items:start}.chart-card{min-height:340px}.chart{display:grid;gap:6px;margin-top:32px}.chart-column{text-align:center;min-width:0}.track{height:164px;position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-accent);border-radius:4px 4px 0 0}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted)}.loading::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--evn-accent);margin-right:8px;animation:pulse 1.4s ease-in-out infinite}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:620px}.invoice-table tbody tr{cursor:pointer}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes pulse{50%{opacity:.35}}
+@media(max-width:1100px){.overview-grid{grid-template-columns:1fr}}
+@media(max-width:1000px){.metrics{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.freshness{max-width:220px}}
+@media(max-width:767px){.top-inner{padding:12px 16px;gap:12px;flex-wrap:wrap}.brand{width:100%}#menu{display:inline-flex}.account-tools{width:100%;gap:8px}.account-field{flex:1;width:auto}.shell{padding:16px;gap:16px}.intro{display:block;margin-bottom:4px}.freshness{text-align:left;max-width:none;margin-top:12px}.tabs{gap:16px;justify-content:flex-start;overflow-x:auto;scrollbar-color:transparent transparent}.tabs button{font-size:13px}.card{padding:16px}.metric{min-height:126px}.metric-value{font-size:20px}.metric-value.compact{font-size:16px}.metric-label{font-size:12px}.metrics>.metric:last-child{grid-column:1/-1}.card-head{gap:12px}.filters{gap:12px}.filters>.point-field{grid-column:1/-1}.filters>button{grid-column:1/-1}input,select{font-size:16px;height:44px}.filters button,.account-tools>button{min-height:44px}.segmented button{min-height:36px}.bar-number{display:none}.chart-label{font-size:12px}.track{height:148px}.chart-card{min-height:320px}.invoice-filters{grid-template-columns:1fr}.invoice-table-wrap{display:none}.invoice-cards{display:block}.banner{align-items:start;flex-direction:column}.pagination{align-items:start;flex-direction:column}.pagination nav{width:100%;justify-content:space-between}.outage-time{grid-template-columns:1fr;gap:12px}.dialog-head,.dialog-body{padding:16px}.pdf-actions{display:grid;grid-template-columns:1fr;width:100%}.dialog-info>div,.stat-list>div{grid-template-columns:1fr 1.2fr;gap:12px}.point-grid{grid-template-columns:1fr}.intro h2{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 `;
 
-const TABS = ["Tổng quan", "Điện năng", "Hóa đơn", "Lịch ngừng điện"];
-const DOCUMENTS = { invoice: "Tải hóa đơn PDF", statement: "Bảng kê PDF", notice: "Thông báo PDF" };
+const TABS = ["Tổng quan", "Điện năng", "Công tơ", "Hóa đơn", "Lịch ngừng điện", "Thông tin"];
+const DETAIL_TABS = [1, 2, 3];
+const DOCUMENTS = { invoice: "Tải hóa đơn PDF", statement: "Tải bảng kê PDF", notice: "Tải thông báo PDF" };
+const KINDS = { monthly: "Tháng", daily: "Ngày" };
 const MAX_PDF = 16 * 1024 * 1024;
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 3 });
+const percentFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 });
 const moneyFormat = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 const timeFormat = new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" });
 const finite = value => typeof value === "number" && Number.isFinite(value);
 const numeric = value => finite(value) ? numberFormat.format(value) : "Chưa có dữ liệu";
-const money = value => finite(value) ? moneyFormat.format(value) : "Chưa có dữ liệu";
+const money = value => finite(value) ? moneyFormat.format(value) : "Chưa xác định";
 const text = value => value == null || value === "" ? "Chưa có thông tin" : String(value);
 const array = value => Array.isArray(value) ? value : [];
+const signed = value => finite(value) ? `${value > 0 ? "+" : value < 0 ? "−" : ""}${percentFormat.format(Math.abs(value))}%` : "";
 const node = (tag, content, className) => {
   const element = document.createElement(tag);
   if (content != null) element.textContent = String(content);
@@ -59,6 +64,7 @@ export class EvnCskhPanel extends HTMLElement {
     this._detailsRequest = 0;
     this._pdfRequest = 0;
     this._urls = new Map();
+    this._detailsCache = new Map();
     this._reset();
   }
 
@@ -106,15 +112,13 @@ export class EvnCskhPanel extends HTMLElement {
     this._range = defaultRange();
     this._overview = null;
     this._details = null;
+    this._detailsCache.clear();
     this._overviewBusy = this._detailsBusy = this._listBusy = false;
     this._overviewError = this._detailsError = this._listError = "";
     this._authError = "";
     this._rangeError = "";
     this._tab = 0;
     this._period = "monthly";
-    this._energyView = "chart";
-    this._tableOpen = false;
-    this._detailsWanted = false;
     this._query = "";
     this._paid = "all";
     this._invoicePage = this._readingPage = 0;
@@ -148,6 +152,7 @@ export class EvnCskhPanel extends HTMLElement {
       this._rateTimer = setTimeout(() => { if (this.isConnected) this._render(); }, wait * 1000 + 20);
       return `EVN đang giới hạn lượt truy cập. Vui lòng đợi ${Math.ceil(wait)} giây trước khi thử lại.`;
     }
+    if (["404", "410", "not_found", "stale"].includes(code)) return "Dữ liệu EVN đã hết hạn hoặc không còn tồn tại. Hãy tải lại dữ liệu và thử lại.";
     return "Chưa thể tải dữ liệu từ EVN. Kiểm tra kết nối hoặc trạng thái tích hợp rồi thử lại.";
   }
 
@@ -181,16 +186,16 @@ export class EvnCskhPanel extends HTMLElement {
     this._choice = selected;
     this._point = array(selected.customer.points)[0]?.id || "";
     this._range = defaultRange();
-    this._overview = this._details = null;
+    this._overview = null;
+    this._details = null;
     this._overviewBusy = this._detailsBusy = false;
     this._overviewError = this._detailsError = this._rangeError = "";
     this._query = "";
     this._paid = "all";
     this._invoicePage = this._readingPage = 0;
-    this._detailsWanted = this._tab === 1 || this._tab === 2;
     this._render();
     void this._loadOverview();
-    if (this._detailsWanted) void this._loadDetails();
+    if (DETAIL_TABS.includes(this._tab)) void this._loadDetails();
   }
 
   _args() {
@@ -227,6 +232,8 @@ export class EvnCskhPanel extends HTMLElement {
     return "";
   }
 
+  _detailKey() { return `${this._choice?.customer.key || ""}|${this._point}|${this._range.start}|${this._range.end}`; }
+
   _invalidateDetails() {
     const restartOverview = this._overviewBusy;
     this._generation++;
@@ -237,14 +244,20 @@ export class EvnCskhPanel extends HTMLElement {
     this._invoicePage = this._readingPage = 0;
     this._render();
     if (restartOverview) void this._loadOverview();
+    if (DETAIL_TABS.includes(this._tab)) void this._loadDetails();
   }
 
   async _loadDetails(force = false) {
     if (!this._admin() || !this._choice || !this._point || this._detailsBusy || this._cooling()) return;
-    this._detailsWanted = true;
     this._rangeError = this._validateRange();
     if (this._rangeError) { this._render(); return; }
-    if (this._details && !force) return;
+    const key = this._detailKey();
+    const cached = this._detailsCache.get(key);
+    if (cached && !force) {
+      this._details = cached;
+      this._render();
+      return;
+    }
     const generation = this._generation;
     const request = ++this._detailsRequest;
     this._detailsBusy = true;
@@ -255,6 +268,7 @@ export class EvnCskhPanel extends HTMLElement {
       if (!this._current(generation) || request !== this._detailsRequest) return;
       if (!response || ![response.monthly, response.daily, response.readings, response.invoices].every(Array.isArray)) throw new Error("schema");
       this._details = response;
+      this._detailsCache.set(key, response);
     } catch (error) {
       if (!this._current(generation) || request !== this._detailsRequest) return;
       this._detailsError = this._error(error);
@@ -268,7 +282,7 @@ export class EvnCskhPanel extends HTMLElement {
     if (!Number.isInteger(tab) || tab < 0 || tab >= TABS.length) return;
     this._tab = tab;
     this._render();
-    if (tab === 1 || tab === 2) void this._loadDetails();
+    if (DETAIL_TABS.includes(tab)) void this._loadDetails();
   }
 
   _event(event) {
@@ -276,7 +290,8 @@ export class EvnCskhPanel extends HTMLElement {
     if (!(target instanceof Element)) return;
     if (event.type === "keydown" && target.getAttribute("role") === "tab") {
       const index = Number(target.dataset.tab);
-      const next = { ArrowRight: (index + 1) % 4, ArrowLeft: (index + 3) % 4, Home: 0, End: 3 }[event.key];
+      const size = TABS.length;
+      const next = { ArrowRight: (index + 1) % size, ArrowLeft: (index + size - 1) % size, Home: 0, End: size - 1 }[event.key];
       if (next !== undefined) {
         event.preventDefault();
         this._setTab(next);
@@ -303,7 +318,7 @@ export class EvnCskhPanel extends HTMLElement {
     }
     if (event.type === "submit") {
       event.preventDefault();
-      if (target.id === "history-filter") void this._loadDetails();
+      if (target.id === "history-filter") void this._loadDetails(true);
       return;
     }
     if (event.type !== "click") return;
@@ -321,11 +336,9 @@ export class EvnCskhPanel extends HTMLElement {
     if (action === "details") void this._loadDetails();
     if (action === "refresh") {
       void this._loadOverview(true);
-      if (this._detailsWanted && this._tab !== 3) void this._loadDetails(true);
+      if (DETAIL_TABS.includes(this._tab)) void this._loadDetails(true);
     }
     if (action === "period") { this._period = control.dataset.value; this._readingPage = 0; this._render(); }
-    if (action === "energy-view") { this._energyView = control.dataset.value; this._render(); }
-    if (action === "chart-table") { this._tableOpen = !this._tableOpen; this._render(); }
     if (action === "invoice-page") { this._invoicePage += Number(control.dataset.step); this._render(); this.shadowRoot.getElementById("invoice-results")?.focus({ preventScroll: true }); }
     if (action === "reading-page") { this._readingPage += Number(control.dataset.step); this._render(); this.shadowRoot.getElementById("reading-results")?.focus({ preventScroll: true }); }
     if (action === "clear-search") { this._query = ""; this._paid = "all"; this._invoicePage = 0; this._render(); this.shadowRoot.getElementById("invoice-search")?.focus(); }
@@ -365,12 +378,18 @@ export class EvnCskhPanel extends HTMLElement {
     return field;
   }
 
-  _banner(message, action, id, error = true) {
-    const banner = node("div", null, `banner${error ? " error" : ""}`);
-    banner.setAttribute("role", error ? "alert" : "status");
+  _banner(message, action, id, tone = "error") {
+    const banner = node("div", null, `banner${tone === "error" ? " error" : ""}`);
+    banner.setAttribute("role", tone === "error" ? "alert" : "status");
     banner.append(node("p", message));
     if (action) banner.append(this._button("Thử lại", action, id, "", this._cooling()));
     return banner;
+  }
+
+  _status(message) {
+    const status = node("p", message, "loading");
+    status.setAttribute("role", "status");
+    return status;
   }
 
   _render() {
@@ -391,7 +410,7 @@ export class EvnCskhPanel extends HTMLElement {
       lock.append(node("h2", this._hass?.user ? "Chỉ dành cho quản trị viên" : "Đang chờ phiên Home Assistant"), node("p", "Thông tin điện và hóa đơn chỉ hiển thị trong phiên Home Assistant có quyền quản trị.", "muted"));
       main.append(lock);
     } else if (this._authError) main.append(this._banner(this._authError, "entries", "auth-retry"));
-    else if (this._listBusy) main.append(node("p", "Đang tải tài khoản EVN CSKH…", "loading lock"));
+    else if (this._listBusy) main.append(this._status("Đang tải tài khoản EVN CSKH…"));
     else if (this._listError) main.append(this._banner(this._listError, "entries", "list-retry"));
     else if (!this._choice) {
       main.append(node("h2", "Chưa có khách hàng được liên kết"), node("p", "Thêm hoặc kiểm tra tích hợp EVN CSKH trong Cài đặt Home Assistant, sau đó tải lại danh sách.", "empty"), this._button("Tải lại danh sách", "entries", "entries-reload"));
@@ -400,13 +419,14 @@ export class EvnCskhPanel extends HTMLElement {
       const select = node("select");
       select.id = "customer-select";
       this._choices.forEach((choice, index) => {
-        const option = node("option", `${text(choice.entry.title)} · ${text(choice.customer.code)}`);
+        const option = node("option", `${text(choice.customer.code)} · ${text(choice.customer.unit)}`);
         option.value = String(index);
         option.selected = choice === this._choice;
         select.append(option);
       });
-      const refresh = this._button("Cập nhật", "refresh", "refresh", "", this._overviewBusy || this._detailsBusy || this._cooling());
+      const refresh = this._iconButton("Cập nhật dữ liệu", "refresh", "refresh", "M21 12a9 9 0 1 1-3-6.7M21 3v6h-6");
       refresh.setAttribute("aria-busy", String(this._overviewBusy || this._detailsBusy));
+      if (this._overviewBusy || this._detailsBusy || this._cooling()) refresh.setAttribute("aria-disabled", "true");
       tools.append(this._field("Tài khoản / khách hàng", select, "account-field"), refresh);
       inner.append(tools);
       const customer = this._choice.customer;
@@ -414,7 +434,7 @@ export class EvnCskhPanel extends HTMLElement {
       const identity = node("div");
       identity.append(node("h2", text(customer.name)), node("p", `${text(customer.code)} · ${text(customer.unit)}`, "muted"));
       intro.append(identity);
-      const freshness = node("p", this._overviewBusy ? "Đang cập nhật tổng quan…" : this._overview?.fetched_at ? `Cập nhật: ${time(this._overview.fetched_at)}` : "Chưa có lần cập nhật thành công", "freshness meta");
+      const freshness = node("p", this._overviewBusy ? "Đang cập nhật tổng quan…" : this._overview?.fetched_at ? `Cập nhật lúc ${time(this._overview.fetched_at)}` : "Chưa có lần cập nhật thành công", "freshness meta");
       freshness.setAttribute("role", "status");
       intro.append(freshness);
       main.append(intro);
@@ -432,27 +452,17 @@ export class EvnCskhPanel extends HTMLElement {
       });
       main.append(tabs);
       if (this._overviewError) main.append(this._banner(this._overviewError, "overview", "overview-retry"));
-      if (this._overview?.available === false || customer.available === false) main.append(this._banner("Kết nối EVN hiện chưa sẵn sàng. Số liệu còn hiển thị là dữ liệu đã lưu, không phải cập nhật mới.", null, null, false));
+      if (this._overview?.available === false || customer.available === false) main.append(this._banner("Kết nối EVN hiện chưa sẵn sàng. Số liệu còn hiển thị là dữ liệu đã lưu, không phải cập nhật mới.", null, null, "warn"));
       const content = node("section", null, "stack");
       content.id = "tab-content";
       content.setAttribute("role", "tabpanel");
       content.setAttribute("aria-labelledby", `tab-${this._tab}`);
       if (this._tab === 0) this._renderOverview(content);
-      if (this._tab === 1 || this._tab === 2) {
-        content.append(this._filters());
-        if (this._detailsError) content.append(this._banner(this._detailsError, "details", "details-retry"));
-        if (this._detailsBusy) {
-          const status = node("p", "Đang tải lịch sử điện và hóa đơn…", "loading");
-          status.setAttribute("role", "status");
-          content.append(status);
-        }
-        if (this._details) {
-          content.append(node("p", `Lịch sử cập nhật: ${time(this._details.fetched_at)} · Giờ Việt Nam`, "meta"));
-          if (this._tab === 1) this._renderEnergy(content);
-          else this._renderInvoices(content);
-        } else if (!this._detailsBusy && !this._detailsError) content.append(node("p", this._point ? "Chọn khoảng ngày và tải dữ liệu của điểm đo này." : "Khách hàng này chưa có điểm đo để tra cứu lịch sử.", "empty"));
-      }
-      if (this._tab === 3) this._renderOutages(content);
+      if (this._tab === 1) this._renderEnergy(content);
+      if (this._tab === 2) this._renderMeter(content);
+      if (this._tab === 3) this._renderInvoices(content);
+      if (this._tab === 4) this._renderOutages(content);
+      if (this._tab === 5) this._renderInfo(content);
       main.append(content);
     }
     this._view.replaceChildren(top, main);
@@ -469,16 +479,29 @@ export class EvnCskhPanel extends HTMLElement {
     return card;
   }
 
+  _metricState(label, value, detail, compact = false) {
+    if (this._overviewBusy && !this._overview) return this._metric(label, "Đang tải…", "Vui lòng chờ trong giây lát", compact);
+    return this._metric(label, value, detail, compact);
+  }
+
+  _usageFor(pointId) {
+    return array(this._overview?.usage).find(item => item.point_id === pointId) || null;
+  }
+
   _renderOverview(parent) {
     const overview = this._overview;
-    const usage = array(overview?.usage).find(item => item.point_id === this._point);
+    const usage = this._usageFor(this._point);
     const metrics = node("div", null, "metrics");
-    const energy = sample => finite(sample?.kwh) ? `${numeric(sample.kwh)} kWh` : "Chưa có dữ liệu";
+    const monthly = usage?.monthly;
+    const mom = usage?.mom;
+    const reading = usage?.reading;
+    const deltaDetail = mom && finite(mom.percent) ? `${signed(mom.percent)} so với kỳ trước` : monthly?.period ? `Kỳ ${monthly.period} · Chưa có kỳ trước` : "Chưa có kỳ ghi nhận";
     metrics.append(
-      this._metric("Điện năng tháng gần nhất", energy(usage?.monthly), usage?.monthly?.period ? `Kỳ ${usage.monthly.period}` : "Chưa có kỳ ghi nhận", !finite(usage?.monthly?.kwh)),
-      this._metric("Khoảng ghi nhận gần nhất", energy(usage?.daily), usage?.daily?.period ? text(usage.daily.period) : "Có thể gộp nhiều ngày", !finite(usage?.daily?.kwh)),
-      this._metric("Tiền chưa thanh toán", money(overview?.outstanding?.amount), finite(overview?.outstanding?.count) ? `${numeric(overview.outstanding.count)} hóa đơn chưa thanh toán` : "Chưa xác định số hóa đơn", !finite(overview?.outstanding?.amount)),
-      this._metric("Lần ngừng điện tiếp theo", overview?.next_outage?.start ? time(overview.next_outage.start) : overview ? "Chưa có lịch" : "Chưa có dữ liệu", "Theo kế hoạch của điện lực", true)
+      this._metricState("Sản lượng tháng này", finite(monthly?.kwh) ? `${numeric(monthly.kwh)} kWh` : "Chưa có dữ liệu", deltaDetail, !finite(monthly?.kwh)),
+      this._metricState("TB 12 tháng", finite(usage?.average_12m) ? `${numeric(usage.average_12m)} kWh` : "Chưa có dữ liệu", "Trung bình mỗi tháng của điểm đo", !finite(usage?.average_12m)),
+      this._metricState("Chỉ số mới nhất", finite(reading?.new) ? numeric(reading.new) : "Chưa có dữ liệu", reading?.period ? `Kỳ ${reading.period} · ${KINDS[reading.kind] || text(reading.kind)}` : "Chưa có chỉ số", true),
+      this._metricState("Tiền còn nợ", money(overview?.outstanding?.amount), finite(overview?.outstanding?.count) ? `${numeric(overview.outstanding.count)} hóa đơn chưa trả` : "Chưa xác định số hóa đơn", !finite(overview?.outstanding?.amount)),
+      this._metricState("Ngừng điện kế tiếp", overview?.next_outage?.start ? time(overview.next_outage.start) : overview ? "Chưa có lịch" : "Chưa có dữ liệu", overview?.next_outage?.area ? text(overview.next_outage.area) : "Theo kế hoạch của điện lực", true)
     );
     parent.append(metrics);
     const layout = node("div", null, "overview-grid");
@@ -488,37 +511,55 @@ export class EvnCskhPanel extends HTMLElement {
     title.append(node("h2", "Điện năng theo tháng"), node("p", `Điểm đo ${text(this._point)} · kWh`, "meta"));
     head.append(title);
     chart.append(head);
-    if (this._details) this._renderChart(chart, "monthly");
+    if (this._details) this._renderChart(chart, "monthly", this._monthly());
     else {
+      const fallback = monthly ? [{ period: monthly.period, kwh: monthly.kwh }] : [];
+      if (fallback.length) this._renderChart(chart, "monthly", fallback);
+      else chart.append(node("p", this._overviewBusy ? "Đang tải tổng quan…" : "Chưa có sản lượng tháng gần nhất cho điểm đo này.", this._overviewBusy ? "loading" : "empty"));
       const placeholder = node("div", null, "placeholder");
-      placeholder.append(node("p", this._detailsBusy ? "Đang tải lịch sử điện…" : "Xem các kỳ điện năng của điểm đo trong 12 tháng gần đây.", this._detailsBusy ? "loading" : "muted"));
-      if (this._point) placeholder.append(this._button("Xem lịch sử", "details", "history-load", "primary", this._detailsBusy || this._cooling()));
+      placeholder.append(node("p", "Tải lịch sử 12 tháng gần nhất để vẽ biểu đồ đầy đủ.", "muted"));
+      if (this._point) placeholder.append(this._button("Tải 12 tháng gần nhất", "details", "history-load", "primary", this._detailsBusy || this._cooling()));
       else placeholder.append(node("p", "Khách hàng này chưa có điểm đo.", "meta"));
       chart.append(placeholder);
+      if (this._detailsError) chart.append(this._banner(this._detailsError, "details", "chart-retry"));
     }
-    if (this._detailsError) chart.append(this._banner(this._detailsError, "details", "chart-retry"));
     layout.append(chart);
-    const summary = node("section", null, "card");
-    summary.append(node("h2", "Trong khoảng đã chọn"));
-    const list = node("dl", null, "stat-list notice");
-    const records = this._monthly();
-    const known = records.filter(record => finite(record.kwh));
-    const pairs = [
-      ["Tổng điện năng đã ghi nhận", known.length ? `${numeric(known.reduce((sum, record) => sum + record.kwh, 0))} kWh` : "Chưa có dữ liệu"],
-      ["Phạm vi lịch sử", `${this._range.start} → ${this._range.end}`],
-      ["Kỳ có số liệu", this._details ? `${known.length} / ${records.length} tháng` : "Lịch sử chưa được tải"]
-    ];
-    for (const [label, value] of pairs) { const row = node("div"); row.append(node("dt", label), node("dd", value)); list.append(row); }
-    summary.append(list);
+    const side = node("section", null, "card");
+    side.append(node("h2", "Ngừng điện kế tiếp"));
+    const next = overview?.next_outage;
+    if (next) {
+      const list = node("dl", null, "stat-list");
+      for (const [label, value] of [["Bắt đầu", time(next.start)], ["Kết thúc dự kiến", next.end ? time(next.end) : "Chưa xác định"], ["Khu vực", text(next.area)]]) {
+        const row = node("div");
+        row.append(node("dt", label), node("dd", value));
+        list.append(row);
+      }
+      side.append(list);
+      if (next.reason) side.append(node("p", text(next.reason), "muted"));
+    } else {
+      side.append(node("p", overview ? "Chưa có kế hoạch ngừng điện cho khách hàng này." : "Chưa có dữ liệu ngừng điện.", "empty"));
+    }
+    const link = this._button("Xem lịch ngừng điện", "tab", "open-outages", "link");
+    link.dataset.tab = "4";
     const notice = node("div", null, "notice");
-    notice.append(node("h3", "Lưu ý từ điện lực"), node("p", overview?.next_outage ? text(overview.next_outage.reason) : "Lịch ngừng điện là kế hoạch, không phản ánh tình trạng điện lưới theo thời gian thực.", "muted"));
-    if (overview?.next_outage?.area) notice.append(node("p", text(overview.next_outage.area), "meta"));
-    const outages = this._button("Xem lịch ngừng điện", "tab", "open-outages", "link");
-    outages.dataset.tab = "3";
-    notice.append(outages);
-    summary.append(notice);
-    layout.append(summary);
+    notice.append(link);
+    side.append(notice);
+    layout.append(side);
     parent.append(layout);
+    if (array(overview?.usage).length > 1) parent.append(this._pointSummary());
+  }
+
+  _pointSummary() {
+    const card = node("section", null, "card");
+    card.append(node("h2", "Tóm tắt theo điểm đo"), node("p", "Mỗi điểm đo một kỳ ghi nhận gần nhất.", "meta"));
+    const rows = array(this._overview.usage).map(item => [
+      text(item.point_id),
+      finite(item.monthly?.kwh) ? `${numeric(item.monthly.kwh)} kWh` : "—",
+      finite(item.average_12m) ? `${numeric(item.average_12m)} kWh` : "—",
+      finite(item.reading?.new) ? numeric(item.reading.new) : "—"
+    ]);
+    card.append(this._table(["Điểm đo", "Tháng này", "TB 12 tháng", "Chỉ số mới"], rows, "Tóm tắt điện năng theo từng điểm đo", "", "scroll-table"));
+    return card;
   }
 
   _filters() {
@@ -550,7 +591,7 @@ export class EvnCskhPanel extends HTMLElement {
     load.disabled = !this._point;
     load.setAttribute("aria-busy", String(this._detailsBusy));
     form.append(load);
-    const help = node("p", "Tối đa 366 ngày. Dữ liệu ngày chỉ có trong 31 ngày gần nhất; một bản ghi có thể gộp nhiều ngày.", "meta filter-help");
+    const help = node("p", "Tối đa 366 ngày. Dữ liệu ngày chỉ có trong 31 ngày gần nhất; một bản ghi ngày có thể gộp nhiều ngày.", "meta filter-help");
     help.id = "range-help";
     const error = node("p", this._rangeError, "filter-error");
     error.id = "range-error";
@@ -570,13 +611,12 @@ export class EvnCskhPanel extends HTMLElement {
       result.push({ period, kwh: values.get(period) ?? null });
       date.setUTCMonth(date.getUTCMonth() + 1);
     }
-    return result;
+    return result.slice(-12);
   }
 
-  _renderChart(parent, period) {
-    const records = period === "monthly" ? this._monthly() : [...array(this._details?.daily)].sort((a, b) => String(a.period).localeCompare(String(b.period), "vi", { numeric: true }));
-    if (!records.some(item => finite(item.kwh))) {
-      parent.append(node("p", "Chưa có số liệu điện năng của điểm đo trong khoảng này.", "empty"));
+  _renderChart(parent, period, records) {
+    if (!records.length || !records.some(item => finite(item.kwh))) {
+      parent.append(node("p", "Chưa có số liệu điện năng trong khoảng này.", "empty"));
       return;
     }
     const known = records.filter(item => finite(item.kwh)).map(item => item.kwh);
@@ -585,7 +625,7 @@ export class EvnCskhPanel extends HTMLElement {
     const span = high - low || 1;
     const chart = node("div", null, `chart ${period === "daily" ? "daily" : "monthly"}`);
     chart.setAttribute("role", "img");
-    chart.setAttribute("aria-label", `Điện năng ${period === "monthly" ? "tháng" : "ngày"}, đơn vị kWh. Có bảng số liệu bên dưới; khoảng trống là chưa có dữ liệu.`);
+    chart.setAttribute("aria-label", `Điện năng ${period === "monthly" ? "theo tháng" : "theo ngày"}, đơn vị kWh. Khoảng trống là chưa có dữ liệu.`);
     chart.style.gridTemplateColumns = `repeat(${records.length},minmax(0,1fr))`;
     records.forEach((item, index) => {
       const column = node("div", null, "chart-column");
@@ -608,17 +648,8 @@ export class EvnCskhPanel extends HTMLElement {
       chart.append(column);
     });
     parent.append(chart);
-    const footer = node("div", null, "chart-footer");
-    footer.append(node("p", `${records[0].period} → ${records.at(-1).period} · kWh`, "meta"));
-    const toggle = this._button(this._tableOpen ? "Ẩn bảng số liệu" : "Xem bảng số liệu", "chart-table", "chart-table-toggle", "link");
-    toggle.setAttribute("aria-expanded", String(this._tableOpen));
-    toggle.setAttribute("aria-controls", "chart-data");
-    footer.append(toggle);
-    parent.append(footer, node("p", "Khoảng trống không phải là 0. Tháng hiện tại có thể chưa chốt số.", "meta"));
-    const table = this._table(["Kỳ ghi nhận", "Điện năng (kWh)"], records.map(item => [text(item.period), numeric(item.kwh)]), "Số liệu điện năng, giữ nguyên khoảng thiếu dữ liệu", "data-table");
-    table.id = "chart-data";
-    table.hidden = !this._tableOpen;
-    parent.append(table);
+    parent.append(node("div", null, "chart-footer"));
+    parent.append(node("p", `${records[0].period} → ${records.at(-1).period} · Khoảng trống là chưa có dữ liệu, không phải 0.`, "meta"));
   }
 
   _segments(items, current, action, label) {
@@ -634,51 +665,99 @@ export class EvnCskhPanel extends HTMLElement {
     return group;
   }
 
+  _detailState(parent) {
+    if (this._detailsError) parent.append(this._banner(this._detailsError, "details", "details-retry"));
+    if (this._detailsBusy) parent.append(this._status("Đang tải dữ liệu lịch sử…"));
+    if (this._details) parent.append(node("p", `Lịch sử cập nhật: ${time(this._details.fetched_at)} · Giờ Việt Nam`, "meta"));
+  }
+
   _renderEnergy(parent) {
-    const tools = node("div", null, "section-tools");
-    tools.append(this._segments([["monthly", "Theo tháng"], ["daily", "Theo ngày"]], this._period, "period", "Kỳ điện năng"), this._segments([["chart", "Biểu đồ"], ["readings", "Chỉ số công tơ"]], this._energyView, "energy-view", "Cách xem điện năng"));
-    parent.append(tools);
-    if (this._energyView === "chart") {
+    parent.append(this._filters());
+    const content = node("section", null, "stack");
+    this._detailState(content);
+    if (this._details) {
+      const tools = node("div", null, "section-tools");
+      tools.append(node("h2", this._period === "monthly" ? "Điện năng theo tháng" : "Điện năng theo ngày"), this._segments([["monthly", "Tháng"], ["daily", "Ngày"]], this._period, "period", "Kỳ điện năng"));
+      content.append(tools);
       const card = node("section", null, "card chart-card");
-      card.append(node("h2", this._period === "monthly" ? "Điện năng theo tháng" : "Điện năng trong 31 ngày gần nhất"));
-      this._renderChart(card, this._period);
-      parent.append(card);
-      return;
+      const records = this._period === "monthly" ? this._monthly() : [...array(this._details.daily)].sort((a, b) => String(a.period).localeCompare(String(b.period), "vi", { numeric: true }));
+      this._renderChart(card, this._period, records);
+      content.append(card);
+      const tableCard = node("section", null, "card");
+      tableCard.append(node("h2", "Bảng số liệu"));
+      if (this._period === "daily") tableCard.append(node("p", "Dữ liệu ngày có thể do điện lực gộp nhiều ngày trong một bản ghi.", "meta"));
+      tableCard.append(this._table(["Kỳ ghi nhận", "Điện năng (kWh)"], records.map(item => [text(item.period), finite(item.kwh) ? `${numeric(item.kwh)} kWh` : "Chưa có dữ liệu"]), `Bảng ${this._period === "monthly" ? "tháng" : "ngày"}, đơn vị kWh`, "", "data-table"));
+      content.append(tableCard);
+    } else if (!this._detailsBusy && !this._detailsError) {
+      content.append(node("p", this._point ? "Chọn khoảng ngày rồi bấm Tải dữ liệu để xem điện năng." : "Khách hàng này chưa có điểm đo để tra cứu.", "empty"));
     }
-    const records = array(this._details.readings).filter(item => item.kind === this._period);
-    if (!records.length) { parent.append(node("p", "Chưa có chỉ số công tơ của điểm đo trong khoảng này.", "empty")); return; }
-    this._readingPage = Math.max(0, Math.min(this._readingPage, Math.ceil(records.length / 20) - 1));
-    const rows = records.slice(this._readingPage * 20, this._readingPage * 20 + 20).map(item => [text(item.period), `${text(item.meter)} / ${text(item.register)}`, numeric(item.old), numeric(item.new), numeric(item.multiplier), numeric(item.kwh)]);
-    const table = this._table(["Kỳ ghi nhận", "Công tơ / bộ chỉ số", "Chỉ số cũ", "Chỉ số mới", "Hệ số", "kWh"], rows, "Chỉ số do điện lực cung cấp", "", "reading-table");
-    table.id = "reading-results";
-    parent.append(table, this._pagination(records.length, this._readingPage, 20, "reading-page"));
+    parent.append(content);
   }
 
-  _table(headers, rows, caption, className = "", tableClass = "") {
-    const wrap = node("div", null, `table-wrap ${className}`);
-    wrap.tabIndex = 0;
-    wrap.setAttribute("role", "region");
-    wrap.setAttribute("aria-label", caption);
-    const table = node("table", null, tableClass);
-    table.append(node("caption", caption));
-    const head = node("thead");
-    const heading = node("tr");
-    headers.forEach(label => { const cell = node("th", label); cell.scope = "col"; heading.append(cell); });
-    head.append(heading);
-    const body = node("tbody");
-    rows.forEach(row => {
-      const line = node("tr");
-      row.forEach((value, index) => { const cell = node(index ? "td" : "th", value); if (!index) cell.scope = "row"; line.append(cell); });
-      body.append(line);
-    });
-    table.append(head, body);
-    wrap.append(table);
-    return wrap;
+  _renderMeter(parent) {
+    const content = node("section", null, "stack");
+    content.append(node("p", "Chỉ số mới nhất do điện lực ghi nhận cho từng điểm đo.", "muted"));
+    if (!this._overview) content.append(this._overviewBusy ? this._status("Đang tải chỉ số…") : node("p", "Chưa có dữ liệu chỉ số.", "empty"));
+    else {
+      const blocks = node("div", null, "point-grid");
+      const points = array(this._choice.customer.points);
+      if (!points.length) blocks.append(node("p", "Khách hàng này chưa có điểm đo.", "empty"));
+      for (const point of points) {
+        const usage = this._usageFor(point.id);
+        const reading = usage?.reading;
+        const card = node("article", null, "point-card");
+        card.append(node("h3", text(point.id)), node("p", text(point.address), "meta"));
+        if (reading) {
+          const list = node("dl", null, "stat-list");
+          for (const [label, value] of [
+            ["Chỉ số cũ", numeric(reading.old)],
+            ["Chỉ số mới", numeric(reading.new)],
+            ["Hệ số", numeric(reading.multiplier)],
+            ["Ngày ghi", text(reading.period)],
+            ["Loại chỉ số", KINDS[reading.kind] || text(reading.kind)],
+            ["Điện năng ghi nhận", finite(reading.kwh) ? `${numeric(reading.kwh)} kWh` : "Chưa có dữ liệu"]
+          ]) {
+            const row = node("div");
+            row.append(node("dt", label), node("dd", value));
+            list.append(row);
+          }
+          card.append(list);
+        } else card.append(node("p", "Chưa có chỉ số cho điểm đo này.", "empty"));
+        blocks.append(card);
+      }
+      content.append(blocks);
+    }
+    this._detailState(content);
+    if (this._details) {
+      const readings = array(this._details.readings);
+      const card = node("section", null, "card");
+      card.append(node("h2", "Lịch sử chỉ số công tơ"), node("p", `Điểm đo ${text(this._details.point_id)} · ${text(this._details.start)} → ${text(this._details.end)}`, "meta"));
+      if (!readings.length) card.append(node("p", "Chưa có bản ghi chỉ số trong khoảng đã chọn.", "empty"));
+      else {
+        this._readingPage = Math.max(0, Math.min(this._readingPage, Math.ceil(readings.length / 20) - 1));
+        const rows = readings.slice(this._readingPage * 20, this._readingPage * 20 + 20).map(item => [text(item.period), text(item.meter), text(item.register), numeric(item.old), numeric(item.new), numeric(item.multiplier), finite(item.kwh) ? `${numeric(item.kwh)} kWh` : "—", KINDS[item.kind] || text(item.kind)]);
+        const table = this._table(["Kỳ ghi nhận", "Công tơ", "Bộ chỉ số", "Chỉ số cũ", "Chỉ số mới", "Hệ số", "kWh", "Loại"], rows, "Chỉ số công tơ do điện lực cung cấp", "", "scroll-table");
+        table.id = "reading-results";
+        card.append(table, this._pagination(readings.length, this._readingPage, 20, "reading-page"));
+      }
+      content.append(card);
+    } else if (!this._detailsBusy && !this._detailsError) {
+      content.append(node("p", this._point ? "Bấm Tải dữ liệu ở tab Điện năng hoặc chờ bảng chỉ số bên dưới." : "Khách hàng này chưa có điểm đo.", "empty"));
+    }
+    parent.append(content);
   }
-
-  _badge(invoice) { return node("span", text(invoice.status_label), `badge ${paymentState(invoice)}`); }
 
   _renderInvoices(parent) {
+    const overview = this._overview;
+    if (overview) {
+      const amount = overview.outstanding?.amount;
+      const count = overview.outstanding?.count;
+      const detail = finite(count) ? ` · ${numeric(count)} hóa đơn chưa trả` : "";
+      const banner = node("div", null, `banner${finite(amount) && amount > 0 ? " warn" : finite(amount) && amount === 0 ? " ok" : ""}`);
+      banner.setAttribute("role", "status");
+      banner.append(node("p", finite(amount) ? `Tổng tiền còn phải trả: ${money(amount)}${detail}` : `Chưa xác định được số tiền còn nợ${detail}`));
+      parent.append(banner);
+    }
     const filters = node("div", null, "invoice-filters");
     const search = node("input");
     search.id = "invoice-search";
@@ -688,24 +767,39 @@ export class EvnCskhPanel extends HTMLElement {
     search.autocomplete = "off";
     const paid = node("select");
     paid.id = "paid-select";
-    for (const [value, label] of [["all", "Tất cả"], ["paid", "Đã thanh toán"], ["unpaid", "Chưa thanh toán"]]) {
-      const option = node("option", label); option.value = value; option.selected = this._paid === value; paid.append(option);
+    for (const [value, label] of [["all", "Tất cả trạng thái"], ["paid", "Đã thanh toán"], ["unpaid", "Chưa thanh toán"]]) {
+      const option = node("option", label);
+      option.value = value;
+      option.selected = this._paid === value;
+      paid.append(option);
     }
     filters.append(this._field("Tìm kỳ hóa đơn", search), this._field("Trạng thái thanh toán", paid));
+    if (this._query || this._paid !== "all") filters.append(this._button("Xóa lọc", "clear-search", "clear-search", "link"));
     parent.append(filters);
-    const invoices = this._details.invoices.map((invoice, index) => ({ invoice, index })).filter(({ invoice }) => {
-      const haystack = `${invoice.period} ${invoice.status_label}`.toLocaleLowerCase("vi");
-      return haystack.includes(this._query.trim().toLocaleLowerCase("vi")) && (this._paid === "all" || paymentState(invoice) === this._paid);
-    });
+    this._detailState(parent);
+    if (this._details) parent.append(this._invoiceTable());
+    else if (!this._detailsBusy && !this._detailsError) parent.append(node("p", this._point ? "Đang chuẩn bị dữ liệu hóa đơn…" : "Khách hàng này chưa có điểm đo để tra cứu hóa đơn.", "empty"));
+    const paidRecent = array(overview?.paid_recent);
+    if (paidRecent.length) {
+      const card = node("section", null, "card");
+      card.append(node("h2", "Lịch sử thanh toán"), node("p", `${numeric(overview.paid_count)} hóa đơn đã thanh toán · hiển thị ${numeric(paidRecent.length)} bản ghi gần nhất (chỉ để xem, không tải được PDF từ đây)`, "meta"));
+      card.append(this._table(["Kỳ hóa đơn", "Tổng tiền", "Ngày đã trả", "Kênh thanh toán"], paidRecent.map(invoice => [text(invoice.period), money(invoice.amount), text(invoice.paid_date), text(invoice.payment_channel_label)]), "Các hóa đơn vừa thanh toán gần đây", "", "scroll-table"));
+      parent.append(card);
+    }
+  }
+
+  _invoiceTable() {
     const results = node("section");
     results.id = "invoice-results";
     results.tabIndex = -1;
     results.setAttribute("aria-label", "Kết quả hóa đơn");
+    const invoices = this._details.invoices.map((invoice, index) => ({ invoice, index })).filter(({ invoice }) => {
+      const haystack = `${invoice.period} ${invoice.status_label}`.toLocaleLowerCase("vi");
+      return haystack.includes(this._query.trim().toLocaleLowerCase("vi")) && (this._paid === "all" || paymentState(invoice) === this._paid);
+    });
     if (!invoices.length) {
       results.append(node("p", this._query || this._paid !== "all" ? "Không có hóa đơn khớp bộ lọc. Thử kỳ khác hoặc bỏ bộ lọc." : "Chưa có hóa đơn của khách hàng này trong khoảng đã chọn.", "empty"));
-      if (this._query || this._paid !== "all") results.append(this._button("Xóa lọc", "clear-search", "clear-search", "link"));
-      parent.append(results);
-      return;
+      return results;
     }
     this._invoicePage = Math.max(0, Math.min(this._invoicePage, Math.ceil(invoices.length / 12) - 1));
     const visible = invoices.slice(this._invoicePage * 12, this._invoicePage * 12 + 12);
@@ -714,21 +808,25 @@ export class EvnCskhPanel extends HTMLElement {
     table.append(node("caption", "Hóa đơn trong khoảng đã chọn · Chọn kỳ để xem chi tiết và tải PDF"));
     const head = node("thead");
     const line = node("tr");
-    for (const label of ["Kỳ hóa đơn", "Tổng tiền", "Còn phải trả", "Trạng thái", "Hạn thanh toán"]) { const cell = node("th", label); cell.scope = "col"; line.append(cell); }
+    for (const label of ["Kỳ hóa đơn", "Tổng tiền", "Còn phải trả", "Trạng thái", "Hạn thanh toán"]) {
+      const cell = node("th", label);
+      cell.scope = "col";
+      if (label.includes("tiền") || label.includes("trả")) cell.classList.add("number");
+      if (label === "Hạn thanh toán") cell.classList.add("nowrap");
+      line.append(cell);
+    }
     head.append(line);
     const body = node("tbody");
-    const cards = node("div", null, "card invoice-cards");
+    const cards = node("div", null, "invoice-cards");
     for (const { invoice, index } of visible) {
       const row = node("tr");
-      row.dataset.action = "invoice";
-      row.dataset.index = String(index);
       const first = node("th");
       first.scope = "row";
       first.append(this._invoiceButton(invoice, index, false));
       if (invoice.cycle != null) first.append(node("p", `Kỳ thu ${text(invoice.cycle)}`, "meta"));
       const status = node("td");
       status.append(this._badge(invoice));
-      row.append(first, node("td", money(invoice.amount), "number"), node("td", money(invoice.outstanding), "number"), status, node("td", text(invoice.due_date)));
+      row.append(first, node("td", money(invoice.amount), "number"), node("td", money(invoice.outstanding), "number"), status, node("td", text(invoice.due_date), "nowrap"));
       body.append(row);
       const card = node("article", null, "invoice-card");
       const top = node("div", null, "row");
@@ -739,7 +837,7 @@ export class EvnCskhPanel extends HTMLElement {
     table.append(head, body);
     wrap.append(table);
     results.append(wrap, cards, this._pagination(invoices.length, this._invoicePage, 12, "invoice-page"));
-    parent.append(results);
+    return results;
   }
 
   _invoiceButton(invoice, index, mobile) {
@@ -749,6 +847,8 @@ export class EvnCskhPanel extends HTMLElement {
     button.setAttribute("aria-haspopup", "dialog");
     return button;
   }
+
+  _badge(invoice) { return node("span", text(invoice.status_label), `badge ${paymentState(invoice)}`); }
 
   _pagination(total, page, size, action) {
     const footer = node("div", null, "pagination");
@@ -769,18 +869,21 @@ export class EvnCskhPanel extends HTMLElement {
   }
 
   _renderOutages(parent) {
-    parent.append(node("p", "Lịch ngừng điện dự kiến, không phải trạng thái điện lưới theo thời gian thực. Thời gian hiển thị theo giờ Việt Nam (UTC+7).", "muted"));
-    if (!this._overview) { parent.append(node("p", this._overviewBusy ? "Đang tải lịch ngừng điện…" : "Chưa có dữ liệu lịch ngừng điện.", this._overviewBusy ? "loading" : "empty")); return; }
+    parent.append(node("p", "Lịch ngừng điện là kế hoạch của điện lực, không phải trạng thái mất điện thực tế. Thời gian hiển thị theo giờ Việt Nam (UTC+7).", "muted"));
+    if (!this._overview) { parent.append(this._overviewBusy ? this._status("Đang tải lịch ngừng điện…") : node("p", "Chưa có dữ liệu lịch ngừng điện.", "empty")); return; }
     const outages = array(this._overview.outages);
+    const count = node("h2", `${numeric(this._overview.outage_count ?? outages.length)} kế hoạch ngừng điện`);
+    parent.append(count);
     if (!outages.length) { parent.append(node("p", "Chưa có lịch ngừng điện dự kiến cho khách hàng này.", "empty")); return; }
     const card = node("section", null, "card");
-    card.append(node("h2", "Kế hoạch ngừng cấp điện"));
-    const list = node("ul", null, "outages notice");
+    const list = node("ul", null, "outages");
     for (const outage of outages) {
       const item = node("li");
       const dates = node("dl", null, "outage-time stat-list");
       for (const [label, value] of [["Bắt đầu", outage.start], ["Kết thúc dự kiến", outage.end]]) {
-        const row = node("div"); row.append(node("dt", label), node("dd", time(value))); dates.append(row);
+        const row = node("div");
+        row.append(node("dt", label), node("dd", value ? time(value) : "Chưa xác định"));
+        dates.append(row);
       }
       item.append(dates, node("h3", text(outage.area)), node("p", text(outage.reason), "muted"));
       list.append(item);
@@ -789,13 +892,125 @@ export class EvnCskhPanel extends HTMLElement {
     parent.append(card);
   }
 
+  _renderInfo(parent) {
+    const overview = this._overview;
+    if (!overview) { parent.append(this._overviewBusy ? this._status("Đang tải thông tin khách hàng…") : node("p", "Chưa có thông tin khách hàng.", "empty")); return; }
+    const info = overview.info || {};
+    const customerCard = node("section", null, "card");
+    customerCard.append(node("h2", "Thông tin khách hàng"));
+    const list = node("dl", null, "stat-list");
+    for (const [label, value] of [
+      ["Tên khách hàng", text(info.name)],
+      ["Địa chỉ", text(info.address)],
+      ["Điện thoại", text(info.phone)],
+      ["Loại khách hàng", text(info.customer_type)],
+      ["Loại chủ thể", text(info.subject_type)],
+      ["Mã vùng", text(info.region_code)],
+      ["Tỉnh / thành", text(info.province)],
+      ["Xã / phường", text(info.commune)],
+      ["Hợp đồng", text(info.contract)],
+      ["Tham chiếu thanh toán", text(info.pay_reference)],
+      ["Thanh toán hộ", text(info.pay_on_behalf)],
+      ["Cảnh báo tiêu thụ", finite(info.alert_count) ? `${numeric(info.alert_count)} cảnh báo` : "Chưa có thông tin"]
+    ]) {
+      const row = node("div");
+      row.append(node("dt", label), node("dd", value));
+      list.append(row);
+    }
+    customerCard.append(list);
+    if (info.default_contract === true) {
+      const flag = node("div", null, "notice");
+      flag.append(node("p", "Hợp đồng áp dụng cho khách hàng này.", "meta"), this._badge({ status_label: "Hợp đồng mặc định", status: "DATT" }));
+      customerCard.append(flag);
+    }
+    parent.append(customerCard);
+    const contracts = array(overview.contracts);
+    const contractsCard = node("section", null, "card");
+    contractsCard.append(node("h2", "Hợp đồng"));
+    if (contracts.length) contractsCard.append(this._table(["Số hợp đồng", "Địa chỉ", "Đơn vị quản lý"], contracts.map(row => [text(row.number), text(row.address), text(row.unit)]), "Danh sách hợp đồng của khách hàng", "", "scroll-table"));
+    else contractsCard.append(node("p", "Chưa có hợp đồng nào được ghi nhận.", "empty"));
+    parent.append(contractsCard);
+    const used = new Set([...array(overview.invoices), ...array(overview.paid_recent), ...array(this._details?.invoices)].map(invoice => invoice.org_code).filter(Boolean));
+    const banks = array(overview.banks);
+    const banksCard = node("section", null, "card");
+    banksCard.append(node("h2", "Tổ chức thanh toán"));
+    if (banks.length) {
+      const wrap = node("div", null, "table-wrap");
+      wrap.tabIndex = 0;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", "Danh sách tổ chức thanh toán");
+      const table = node("table", null, "scroll-table");
+      table.append(node("caption", "Tổ chức thanh toán · đánh dấu Đã dùng nếu hóa đơn tham chiếu mã này"));
+      const thead = node("thead");
+      const head = node("tr");
+      for (const label of ["Mã tổ chức", "Tên tổ chức", "Sử dụng"]) {
+        const cell = node("th", label);
+        cell.scope = "col";
+        head.append(cell);
+      }
+      thead.append(head);
+      const body = node("tbody");
+      for (const bank of banks) {
+        const row = node("tr");
+        const code = node("th", text(bank.code));
+        code.scope = "row";
+        row.append(code, node("td", text(bank.name)));
+        const cell = node("td");
+        cell.append(used.has(bank.code) ? node("span", "Đã dùng", "badge paid") : node("span", "Chưa dùng", "badge"));
+        row.append(cell);
+        body.append(row);
+      }
+      table.append(thead, body);
+      wrap.append(table);
+      banksCard.append(wrap);
+    } else banksCard.append(node("p", "Chưa có tổ chức thanh toán nào.", "empty"));
+    parent.append(banksCard);
+    const points = array(this._choice.customer.points);
+    const pointsCard = node("section", null, "card");
+    pointsCard.append(node("h2", "Điểm đo"));
+    if (points.length) pointsCard.append(this._table(["Điểm đo", "Địa chỉ", "Hợp đồng", "Hiệu lực từ"], points.map(point => [text(point.id), text(point.address), text(point.contract), text(point.valid_from)]), "Danh sách điểm đo của khách hàng", "", "scroll-table"));
+    else pointsCard.append(node("p", "Khách hàng này chưa có điểm đo.", "empty"));
+    parent.append(pointsCard);
+  }
+
+  _table(headers, rows, caption, className = "", tableClass = "") {
+    const wrap = node("div", null, `table-wrap ${className}`);
+    wrap.tabIndex = 0;
+    wrap.setAttribute("role", "region");
+    wrap.setAttribute("aria-label", caption);
+    const table = node("table", null, tableClass);
+    table.append(node("caption", caption));
+    const head = node("thead");
+    const heading = node("tr");
+    headers.forEach(label => {
+      const cell = node("th", label);
+      cell.scope = "col";
+      if (/^(Tổng tiền|T|Chỉ số|Hệ|Điện|kWh|Ngày|Hạn|Kỳ)/.test(label) && label !== "Kỳ hóa đơn") cell.classList.add("nowrap");
+      heading.append(cell);
+    });
+    head.append(heading);
+    const body = node("tbody");
+    rows.forEach(row => {
+      const line = node("tr");
+      row.forEach((value, index) => {
+        const cell = node(index ? "td" : "th", value);
+        if (!index) cell.scope = "row";
+        line.append(cell);
+      });
+      body.append(line);
+    });
+    table.append(head, body);
+    wrap.append(table);
+    return wrap;
+  }
+
   _openInvoice(index) {
     const invoice = this._details?.invoices[index];
     if (!invoice || !this._admin()) return;
     this._cancelPdf();
     this._invoice = invoice;
     this._invoiceFocus = this.shadowRoot.activeElement?.id || `invoice-${index}`;
-    this._pdfMessage = "";
+    this._stalePdf = false;
     const header = node("header", null, "dialog-head");
     const title = node("h2", `Hóa đơn ${text(invoice.period)}`);
     title.id = "invoice-title";
@@ -805,10 +1020,20 @@ export class EvnCskhPanel extends HTMLElement {
     const details = node("dl", null, "dialog-info");
     const unit = ["kWh", "kVArh"].includes(invoice.energy_unit) ? invoice.energy_unit : "";
     for (const [label, value] of [
-      ["Kỳ hóa đơn", text(invoice.period)], ["Kỳ thu", text(invoice.cycle)], ["Thuế", money(invoice.tax)],
+      ["Kỳ hóa đơn", text(invoice.period)],
+      ["Kỳ thu", text(invoice.cycle)],
+      ["Thuế", money(invoice.tax)],
+      ["Còn phải trả", money(invoice.outstanding)],
+      ["Hạn thanh toán", text(invoice.due_date)],
+      ["Đã thanh toán ngày", text(invoice.paid_date)],
       ["Điện năng", finite(invoice.energy) ? `${numeric(invoice.energy)} ${unit}`.trim() : "Chưa có dữ liệu"],
-      ["Còn phải trả", money(invoice.outstanding)], ["Hạn thanh toán", text(invoice.due_date)], ["Đã thanh toán ngày", text(invoice.paid_date)]
-    ]) { const row = node("div"); row.append(node("dt", label), node("dd", value)); details.append(row); }
+      ["Kênh thanh toán", text(invoice.payment_channel_label)],
+      ["Tổ chức thu", text(invoice.org_code)]
+    ]) {
+      const row = node("div");
+      row.append(node("dt", label), node("dd", value));
+      details.append(row);
+    }
     body.append(details);
     const actions = node("div", null, "pdf-actions");
     for (const [kind, label] of Object.entries(DOCUMENTS)) {
@@ -817,7 +1042,7 @@ export class EvnCskhPanel extends HTMLElement {
       button.dataset.kind = kind;
       actions.append(button);
     }
-    if (!actions.childElementCount) body.append(node("p", "Chưa có tài liệu PDF cho hóa đơn này.", "muted"));
+    if (!actions.childElementCount) body.append(node("p", "Hóa đơn này không có tài liệu PDF để tải.", "muted"));
     const status = node("p", "", "pdf-status");
     status.id = "pdf-status";
     status.setAttribute("role", "status");
@@ -831,7 +1056,9 @@ export class EvnCskhPanel extends HTMLElement {
 
   _closeInvoice() {
     const focus = this._invoiceFocus;
+    const stale = this._stalePdf;
     this._cancelPdf();
+    if (stale) void this._loadDetails(true);
     this.shadowRoot.getElementById(focus)?.focus({ preventScroll: true });
   }
 
@@ -843,7 +1070,10 @@ export class EvnCskhPanel extends HTMLElement {
     this._invoiceFocus = null;
     if (this._dialog?.open) this._dialog.close();
     this._dialog?.replaceChildren();
-    for (const [url, timer] of this._urls || []) { clearTimeout(timer); URL.revokeObjectURL(url); }
+    for (const [url, timer] of this._urls || []) {
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+    }
     this._urls?.clear();
   }
 
@@ -878,7 +1108,14 @@ export class EvnCskhPanel extends HTMLElement {
       const path = `/api/evn_cskh/invoice/${encodeURIComponent(this._choice.entry.entry_id)}/${encodeURIComponent(invoice.key)}/${kind}`;
       const response = await this._hass.fetchWithAuth(path, { method: "GET", signal: this._pdfAbort.signal });
       if (!current()) return;
-      if (!response.ok) throw { code: response.status };
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 410) {
+          this._stalePdf = true;
+          this._detailsCache.delete(this._detailKey());
+          throw { pdf: "Liên kết tải đã hết hạn. Hãy đóng hộp thoại, dữ liệu hóa đơn sẽ được tải lại rồi mở lại để lấy liên kết mới." };
+        }
+        throw { code: response.status };
+      }
       if ((response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase() !== "application/pdf") throw { pdf: "Máy chủ không trả về tệp PDF hợp lệ." };
       if (Number(response.headers.get("content-length")) > MAX_PDF) throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
       const reader = response.body?.getReader();
@@ -889,14 +1126,22 @@ export class EvnCskhPanel extends HTMLElement {
         try {
           while (true) {
             const { done, value } = await reader.read();
-            if (!current()) { await reader.cancel(); return; }
+            if (!current()) {
+              await reader.cancel();
+              return;
+            }
             if (done) break;
             size += value.byteLength;
-            if (size > MAX_PDF) { await reader.cancel(); throw { pdf: "Tệp PDF vượt giới hạn 16 MB." }; }
+            if (size > MAX_PDF) {
+              await reader.cancel();
+              throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
+            }
             chunks.push(value);
           }
           blob = new Blob(chunks, { type: "application/pdf" });
-        } finally { reader.releaseLock(); }
+        } finally {
+          reader.releaseLock();
+        }
       } else blob = await response.blob();
       if (!current()) return;
       if (blob.size > MAX_PDF) throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
@@ -911,7 +1156,10 @@ export class EvnCskhPanel extends HTMLElement {
       this.shadowRoot.append(anchor);
       anchor.click();
       anchor.remove();
-      this._urls.set(url, setTimeout(() => { URL.revokeObjectURL(url); this._urls.delete(url); }, 1500));
+      this._urls.set(url, setTimeout(() => {
+        URL.revokeObjectURL(url);
+        this._urls.delete(url);
+      }, 1500));
       this._pdfBusy = false;
       this._pdfStatus("Đã gửi tệp PDF đến trình tải xuống của trình duyệt.", false, kind);
     } catch (error) {

@@ -63,6 +63,8 @@ END = "2026-10-06"
 START_DATE = date.fromisoformat(START)
 END_DATE = date.fromisoformat(END)
 PDF = b"%PDF-1.7\nsynthetic offline document\n%%EOF\n"
+XSS = "<script>alert(1)</script>"
+DIRTY = f"{XSS}\n\x00"
 PRIVATE = {
     "username": "PRIVATE-USERNAME",
     "password": "PRIVATE-PASSWORD",
@@ -71,7 +73,26 @@ PRIVATE = {
     "ID_HDON": "PRIVATE-INVOICE-ID",
     "ID_HDON_DC": "PRIVATE-ADJUSTMENT-ID",
     "phone": "PRIVATE-PHONE",
+    "TEN_KHANG": "PRIVATE-INVOICE-NAME",
     "DCHI_KHANG": "PRIVATE-INVOICE-ADDRESS",
+    "userId": "PRIVATE-USERID",
+    "unknownField": "PRIVATE-UNKNOWN",
+}
+INFO = PRIVATE | {
+    "tenKhang": "Synthetic name",
+    "diaChi": "D" * 600 + "\n\x00",
+    "dthoai": "0900000000",
+    "loaiKhang": "SD",
+    "loaiChuthe": "CN",
+    "maDviCaptct": "PB",
+    "maTinh": "DN",
+    "maXa": "01",
+    "maHdong": "OFFLINE-CONTRACT",
+    "thanhtoanho": "PAY-REFERENCE",
+    "powerAlert": ["alert-a", "alert-b"],
+    "hdMacdinh": "true",
+    "maKhang": "OFFLINE-PAY-ON-BEHALF",
+    "thoigian": "PRIVATE-TIME",
 }
 
 
@@ -88,7 +109,115 @@ def invoice_row(**updates: Any) -> dict[str, Any]:
         "DIEN_TTHU": "12.5",
         "NGAY_TTOAN": None,
         "HAN_TTOAN": "20/10/2026",
+        "MA_TCHUC": "BANK-1",
+        "KENH_THANH_TOAN": "Offline channel",
         **updates,
+    }
+
+
+def paid_row(number: int, **updates: Any) -> dict[str, Any]:
+    row = invoice_row() | {
+        "ID_HDON": f"PAID-{number}",
+        "THANG": (number % 12) + 1,
+        "TTRANG_TTOAN": "DATT",
+        "TONG_NO": 0,
+        "HAN_TTOAN": None,
+        "NGAY_TTOAN": "05/10/2026",
+        "TT": f"{number % 28 + 1:02d}/10/2026",
+    }
+    return row | updates
+
+
+CLEAN_ADDRESS = (XSS + "B" * 300)[:256]
+
+
+def contract_row(number: str, **updates: Any) -> dict[str, Any]:
+    return PRIVATE | {
+        "MA_HDONG": number,
+        "DUONG_PHO": DIRTY + "B" * 300,
+        "MA_DVIQLY": "OFFLINE-UNIT",
+        **updates,
+    }
+
+
+def bank_row(index: int, **updates: Any) -> dict[str, Any]:
+    return PRIVATE | {
+        "MA_TCHUC": f"BANK-{index}",
+        "TEN_TCHUC": f"Offline bank {index}{DIRTY}",
+        **updates,
+    }
+
+
+def monthly_reading_row(month: int, **updates: Any) -> dict[str, Any]:
+    return PRIVATE | {
+        "NAM": 2026,
+        "THANG": month,
+        "NGAY_CKY": f"0{month}/09/2026",
+        "BCS": "KT",
+        "CHISO_CU": f"{100 * month}",
+        "CHISO_MOI": f"{100 * month + 20}",
+        "HSN": "1",
+        "DIEN_TTHU": "20",
+        **updates,
+    }
+
+
+def daily_reading_row(day: int, **updates: Any) -> dict[str, Any]:
+    return PRIVATE | {
+        "NGAY": f"{day:02d}/10/2026",
+        "BCS": "KT",
+        "CHISO_CU": f"{day}",
+        "CHISO_MOI": f"{day + 3}",
+        "HSN": "1",
+        "DIEN_TTHU": "3",
+        **updates,
+    }
+
+
+def expected_info() -> dict[str, Any]:
+    return {
+        "name": "Synthetic name",
+        "address": "D" * 512,
+        "phone": "0900000000",
+        "customer_type": "SD",
+        "subject_type": "CN",
+        "region_code": "PB",
+        "province": "DN",
+        "commune": "01",
+        "contract": "OFFLINE-CONTRACT",
+        "pay_reference": "PAY-REFERENCE",
+        "alert_count": 2,
+        "default_contract": True,
+        "pay_on_behalf": "OFFLINE-PAY-ON-BEHALF",
+    }
+
+
+def expected_points() -> list[dict[str, str]]:
+    return [
+        {
+            "id": POINT,
+            "address": "A" * 512,
+            "contract": "OFFLINE-CONTRACT",
+            "valid_from": "01/01/2026" + XSS,
+        }
+    ]
+
+
+def expected_usage(point: str = POINT) -> dict[str, Any]:
+    return {
+        "point_id": point,
+        "monthly": {"period": "2026-09", "kwh": 12.5},
+        "daily": {"period": "06/10/2026", "kwh": 2.5},
+        "mom": {"current": 12.5, "previous": 10.0, "delta": 2.5, "percent": 25.0},
+        "average_12m": 11.25,
+        "reading": {
+            "period": "06/10/2026",
+            "old": 6.0,
+            "new": 9.0,
+            "multiplier": 1.0,
+            "kwh": 3.0,
+            "kind": "KT",
+        },
     }
 
 
@@ -97,9 +226,20 @@ def make_snapshot(person: Customer = PERSON) -> Snapshot:
         customer=person,
         region="PB",
         measurement_points=[
-            PRIVATE | {"MA_DDO": POINT, "DIA_CHI": "A" * 600 + "\n\x00"}
+            PRIVATE
+            | {
+                "MA_DDO": POINT,
+                "DIA_CHI": "A" * 600 + "\n\x00",
+                "MA_HDONG": "OFFLINE-CONTRACT",
+                "NGAY_HLUC": "01/01/2026" + DIRTY,
+            }
         ],
-        monthly={POINT: [{"NAM": 2026, "THANG": 9, "DIEN_TTHU": "12.5"}]},
+        monthly={
+            POINT: [
+                {"NAM": 2026, "THANG": 8, "DIEN_TTHU": "10"},
+                {"NAM": 2026, "THANG": 9, "DIEN_TTHU": "12.5"},
+            ]
+        },
         daily={POINT: [{"NGAY": "06/10/2026", "BCS": "KT", "DIEN_TTHU": "2.5"}]},
         invoices=[invoice_row()],
         outages=[
@@ -113,6 +253,12 @@ def make_snapshot(person: Customer = PERSON) -> Snapshot:
             {"TGIAN_BDAU": "unknown", "LY_DO": "Unknown schedule"},
         ],
         fetched_at=NOW,
+        info=INFO,
+        contracts=[contract_row(f"OFFLINE-CONTRACT-{index}") for index in range(25)],
+        monthly_readings={POINT: [monthly_reading_row(8), monthly_reading_row(9)]},
+        daily_readings={POINT: [daily_reading_row(5), daily_reading_row(6)]},
+        paid_invoices=[paid_row(number) for number in range(30)],
+        banks=[bank_row(index) for index in range(45)],
     )
 
 
@@ -490,7 +636,7 @@ async def test_list_selected_customers_and_redaction(
                         "name": PERSON.name,
                         "unit": PERSON.management_unit,
                         "region": "PB",
-                        "points": [{"id": POINT, "address": "A" * 512}],
+                        "points": expected_points(),
                         "available": True,
                     }
                 ],
@@ -577,13 +723,7 @@ async def test_overview_cached_refresh_and_unavailable(
 ) -> None:
     args = {"entry_id": entry.entry_id, "customer_key": customer_key(PERSON)}
     result = (await ws(hass, "overview", **args))["result"]
-    assert result["usage"] == [
-        {
-            "point_id": POINT,
-            "monthly": {"period": "2026-09", "kwh": 12.5},
-            "daily": {"period": "06/10/2026", "kwh": 2.5},
-        }
-    ]
+    assert result["usage"] == [expected_usage()]
     assert result["outstanding"] == {"amount": 110, "count": 1}
     assert result["next_outage"]["start"] == "2099-10-08T08:00:00+07:00"
     assert result["outages"][1] == {
@@ -610,8 +750,28 @@ async def test_overview_cached_refresh_and_unavailable(
         "customer": panel._customer_dto(make_snapshot()),
         "available": False,
         "fetched_at": NOW.isoformat(),
+        "info": {
+            "name": "",
+            "address": "",
+            "phone": "",
+            "customer_type": "",
+            "subject_type": "",
+            "region_code": "",
+            "province": "",
+            "commune": "",
+            "contract": "",
+            "pay_reference": "",
+            "alert_count": None,
+            "default_contract": False,
+            "pay_on_behalf": "",
+        },
+        "contracts": [],
+        "banks": [],
         "usage": [],
         "outstanding": {"amount": None, "count": None},
+        "invoices": [],
+        "paid_count": 0,
+        "paid_recent": [],
         "outages": [],
         "outage_count": 2,
         "next_outage": None,
@@ -674,6 +834,8 @@ async def test_details_contract_aggregation_and_redaction(
         "status_label": "Chưa thanh toán",
         "paid_date": "",
         "due_date": "20/10/2026",
+        "org_code": "BANK-1",
+        "payment_channel_label": "Offline channel",
         "energy": 12.5,
         "energy_unit": "kWh",
         "documents": ["invoice", "statement", "notice"],
@@ -682,6 +844,7 @@ async def test_details_contract_aggregation_and_redaction(
     assert not any(
         value in serialized for value in (*PRIVATE.values(), PERSON.contract)
     )
+    assert "TEN_KHANG" not in serialized and "DCHI_KHANG" not in serialized
     cast(AsyncMock, entry.runtime_data.client.details).assert_awaited_once_with(
         PERSON, POINT, date.fromisoformat(START), date.fromisoformat(END)
     )
@@ -1064,3 +1227,311 @@ async def test_selection_and_admin_rechecked_after_await(
     entry.runtime_data.selected_customers = ()
     release.set()
     assert (await pending).status == 404
+
+
+async def test_overview_directory_info_and_caps(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    result = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert set(result) == {
+        "customer",
+        "available",
+        "fetched_at",
+        "info",
+        "contracts",
+        "banks",
+        "usage",
+        "outstanding",
+        "invoices",
+        "paid_count",
+        "paid_recent",
+        "outages",
+        "outage_count",
+        "next_outage",
+    }
+    assert result["customer"] == panel._customer_dto(make_snapshot())
+    assert result["info"] == expected_info()
+    assert result["contracts"] == [
+        {
+            "number": f"OFFLINE-CONTRACT-{index}",
+            "address": CLEAN_ADDRESS,
+            "unit": "OFFLINE-UNIT",
+        }
+        for index in range(20)
+    ]
+    assert result["banks"] == [
+        {"code": f"BANK-{index}", "name": f"Offline bank {index}{XSS}"}
+        for index in range(40)
+    ]
+    assert result["paid_count"] == 30
+    assert len(result["paid_recent"]) == 24
+    serialized = json.dumps(result, allow_nan=False)
+    assert not any(
+        value in serialized for value in (*PRIVATE.values(), PERSON.contract)
+    )
+    assert "\x00" not in serialized and "\\u0000" not in serialized
+    assert "unknownField" not in serialized and "thoigian" not in serialized
+
+
+async def test_overview_usage_metrics_and_latest_reading(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    args = {"entry_id": entry.entry_id, "customer_key": customer_key(PERSON)}
+    result = (await ws(hass, "overview", **args))["result"]
+    assert result["usage"] == [expected_usage()]
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.daily_readings[POINT] = [daily_reading_row(7, CHISO_CU="NaN")]
+    snapshot.monthly_readings[POINT] = []
+    result = (await ws(hass, "overview", **args))["result"]
+    assert result["usage"][0]["reading"] is None
+
+
+async def test_overview_reading_falls_back_to_monthly(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.daily_readings[POINT] = []
+    result = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert result["usage"][0]["reading"] == {
+        "period": "09/09/2026",
+        "old": 900.0,
+        "new": 920.0,
+        "multiplier": 1.0,
+        "kwh": 20.0,
+        "kind": "KT",
+    }
+
+
+async def test_overview_outstanding_uses_active_invoices(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.invoices[:] = [
+        invoice_row(ID_HDON="ACTIVE-1", TONG_NO="250.5"),
+        invoice_row(ID_HDON="ACTIVE-2", TONG_NO="-100", THANG=8),
+    ]
+    snapshot.paid_invoices[:] = [paid_row(1, TONG_NO="999999", TTRANG_TTOAN="DATT")]
+    result = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert result["outstanding"] == {"amount": 350.5, "count": 2}
+    assert [row["outstanding"] for row in result["invoices"]] == [250.5, -100.0]
+    assert result["invoices"][0]["org_code"] == "BANK-1"
+    assert result["invoices"][0]["payment_channel_label"] == f"Offline bank 1{XSS}"
+    assert result["invoices"][0]["due_date"] == "20/10/2026"
+
+
+async def test_overview_paid_invoices_are_tolerant_and_bounded(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.invoices.clear()
+    snapshot.paid_invoices[:] = [
+        paid_row(1, TTRANG_TTOAN=None, ID_HDON=None),
+        paid_row(2, NAM=None),
+    ]
+    result = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert result["paid_count"] == 2
+    assert len(result["paid_recent"]) == 1
+    invoice = result["paid_recent"][0]
+    assert invoice["status"] == "UNKNOWN"
+    assert invoice["status_label"] == "Không xác định"
+    assert invoice["documents"] == []
+    assert invoice["due_date"] == "02/10/2026"
+    assert result["invoices"] == []
+
+
+async def test_overview_org_code_without_directory_falls_back_to_channel(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.invoices[:] = [
+        invoice_row(ID_HDON="ACTIVE-1", MA_TCHUC="BANK-UNKNOWN", KENH_THANH_TOAN="Mo")
+    ]
+    result = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert result["invoices"][0]["org_code"] == "BANK-UNKNOWN"
+    assert result["invoices"][0]["payment_channel_label"] == "Mo"
+
+
+def test_info_dto_is_a_closed_shape() -> None:
+    dto = panel._info_dto(
+        {"tenKhang": "Synthetic", "evil": "PRIVATE-UNKNOWN", "hdMacdinh": True}
+    )
+    assert set(dto) == set(expected_info())
+    assert dto["name"] == "Synthetic"
+    assert dto["alert_count"] is None
+    assert dto["default_contract"] is True
+    assert "PRIVATE-UNKNOWN" not in json.dumps(dto)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (True, True),
+        (False, False),
+        ("true", True),
+        ("TRUE ", True),
+        ("1", True),
+        ("0", False),
+        ("", False),
+        (None, False),
+        (1, False),
+        (["true"], False),
+    ],
+)
+def test_default_contract_uses_the_actual_upstream_type(
+    value: Any, expected: bool
+) -> None:
+    assert panel._flag(value) is expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [(["a", "b", "c"], 3), ([], 0), (None, None), ("true", 0), (True, 0), (5, 0)],
+)
+def test_alert_count_accepts_lists_and_scalars(
+    value: Any, expected: int | None
+) -> None:
+    assert panel._alert_count(value) == expected
+
+
+def test_change_and_reading_never_emit_non_finite_numbers() -> None:
+    assert panel._change(
+        {
+            "current": float("inf"),
+            "previous": 0.0,
+            "delta": float("nan"),
+            "percent": None,
+        }
+    ) == {"current": None, "previous": 0.0, "delta": None, "percent": None}
+    assert panel._latest_reading_dto(
+        {"period": "06/10/2026\r\n", "old": float("inf"), "kind": "KT\x00"}
+    ) == {
+        "period": "06/10/2026",
+        "old": None,
+        "new": None,
+        "multiplier": None,
+        "kwh": None,
+        "kind": "KT",
+    }
+    assert panel._change(None) is None
+    assert panel._latest_reading_dto(None) is None
+
+
+def test_due_date_prefers_the_payment_deadline() -> None:
+    assert panel._due_date(invoice_row()) == "20/10/2026"
+    assert panel._due_date(invoice_row(HAN_TTOAN=None, TT="05/11/2026")) == "05/11/2026"
+    assert panel._due_date(invoice_row(HAN_TTOAN="", TT="\n\x00")) is None
+    assert panel._due_date(invoice_row(HAN_TTOAN=None)) is None
+
+
+def test_invoice_dto_never_carries_customer_identity() -> None:
+    dto = panel._invoice_dto(
+        invoice_row(TEN_KHANG="PRIVATE-INVOICE-NAME", DCHI_KHANG="PRIVATE-ADDRESS")
+    )
+    assert set(dto) == {
+        "key",
+        "period",
+        "cycle",
+        "amount",
+        "tax",
+        "outstanding",
+        "status",
+        "status_label",
+        "paid_date",
+        "due_date",
+        "org_code",
+        "payment_channel_label",
+        "energy",
+        "energy_unit",
+        "documents",
+    }
+    serialized = json.dumps(dto, allow_nan=False)
+    assert "TEN_KHANG" not in serialized and "DCHI_KHANG" not in serialized
+    assert "PRIVATE-INVOICE-NAME" not in serialized
+    assert "PRIVATE-ADDRESS" not in serialized
+
+
+def test_invoice_payment_channel_label_resolves_the_bank_directory() -> None:
+    row = invoice_row(MA_TCHUC="BANK-9", KENH_THANH_TOAN="Ken ke A")
+    assert panel._invoice_dto(row, {"BANK-9": "Ngan hang 9"})[
+        "payment_channel_label"
+    ] == ("Ngan hang 9")
+    assert panel._invoice_dto(row, {})["payment_channel_label"] == "Ken ke A"
+    blank = panel._invoice_dto(invoice_row(MA_TCHUC=None, KENH_THANH_TOAN=None))
+    assert blank["org_code"] == "" and blank["payment_channel_label"] == ""
+
+
+def test_contract_and_bank_directories_drop_unusable_rows() -> None:
+    assert panel._contracts(
+        [contract_row("OFFLINE-CONTRACT-A"), contract_row(""), {"MA_HDONG": None}]
+    ) == [
+        {
+            "number": "OFFLINE-CONTRACT-A",
+            "address": CLEAN_ADDRESS,
+            "unit": "OFFLINE-UNIT",
+        }
+    ]
+    assert panel._banks([bank_row(1), {"MA_TCHUC": ""}, bank_row(2)]) == [
+        {"code": "BANK-1", "name": f"Offline bank 1{XSS}"},
+        {"code": "BANK-2", "name": f"Offline bank 2{XSS}"},
+    ]
+
+
+async def test_overview_dto_lists_stay_bounded(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.invoices.extend(
+        invoice_row(ID_HDON=f"ACTIVE-{index}") for index in range(250)
+    )
+    snapshot.paid_invoices.extend(paid_row(index) for index in range(30, 60))
+    result = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert len(result["invoices"]) == 200
+    assert len(result["paid_recent"]) == 24
+    assert result["paid_count"] == 60
+    keys = [row["key"] for row in result["invoices"]] + [
+        row["key"] for row in result["paid_recent"]
+    ]
+    assert len(set(keys)) == len(keys)
+    assert all(len(key) == 32 and "/" not in key and "+" not in key for key in keys)

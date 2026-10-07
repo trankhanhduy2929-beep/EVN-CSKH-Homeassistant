@@ -16,7 +16,12 @@ import pytest
 import pytest_asyncio
 import voluptuous as vol
 from aiohttp import ClientSession
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.button import ButtonEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import (
     SOURCE_REAUTH,
     SOURCE_USER,
@@ -39,7 +44,7 @@ from homeassistant.helpers.selector import SelectSelector, TextSelector
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from custom_components import evn_cskh as integration
-from custom_components.evn_cskh import config_flow, sensor
+from custom_components.evn_cskh import button, config_flow, sensor
 from custom_components.evn_cskh.api import (
     Customer,
     EvnAuthError,
@@ -51,6 +56,7 @@ from custom_components.evn_cskh.api import (
     Snapshot,
     TokenState,
 )
+from custom_components.evn_cskh.button import EvnButton
 from custom_components.evn_cskh.config_flow import EvnConfigFlow, EvnOptionsFlow
 from custom_components.evn_cskh.const import (
     CONF_CUSTOMERS,
@@ -83,6 +89,70 @@ IDENTITY = {
     CONF_PASSWORD: "offline-password +&%/ mật khẩu",
 }
 FETCHED_AT = datetime(2026, 10, 7, 5, tzinfo=UTC)
+INFO = {
+    "tenKhang": "Synthetic Public Name",
+    "diaChi": "Synthetic Public Address",
+    "dthoai": "0900000000",
+    "maHdong": "SYNTHETIC-CONTRACT",
+    "maDviCaptct": "PB",
+}
+POINT_A_READINGS = [
+    {
+        "NGAY": "05/10/2026",
+        "LOAI_CHISO": "KT",
+        "CHISO_CU": 900,
+        "CHISO_MOI": 1000,
+        "HSN": 2,
+        "DIEN_TTHU": "200",
+    },
+    {
+        "NGAY": "06/10/2026",
+        "LOAI_CHISO": "KT",
+        "CHISO_CU": 1000,
+        "CHISO_MOI": 1012.5,
+        "HSN": 2,
+        "DIEN_TTHU": "25",
+    },
+]
+MONTHLY_READINGS = [
+    {
+        "NGAY_CKY": "31/10/2026",
+        "LOAI_CHISO": "KT",
+        "CHISO_CU": 1012.5,
+        "CHISO_MOI": 1050,
+        "HSN": 3,
+        "DIEN_TTHU": "112.5",
+    }
+]
+INVOICES = [
+    {
+        "ID_HDON": "PRIVATE INVOICE A",
+        "TTRANG_TTOAN": "CHUATT",
+        "TONG_NO": "-125000",
+        "TONG_TIEN": 9999999,
+        "NAM": 2026,
+        "THANG": 10,
+        "KY": 10,
+        "DIEN_TTHU": "12.5",
+        "MA_TCHUC": "BANK-A",
+        "KENH_THANH_TOAN": "Synthetic channel",
+    },
+    {"ID_HDON": "PRIVATE INVOICE B", "TTRANG_TTOAN": "DATT"},
+]
+PAID_INVOICES = [
+    {
+        "ID_HDON": "PRIVATE INVOICE C",
+        "TTRANG_TTOAN": "DATT",
+        "NAM": 2026,
+        "THANG": 9,
+        "TONG_TIEN": 500000,
+        "NGAY_TTOAN": "15/09/2026",
+        "MA_TCHUC": "BANK-A",
+        "KENH_THANH_TOAN": "Synthetic channel",
+    }
+]
+BANKS = [{"MA_TCHUC": "BANK-A", "TEN_TCHUC": "Synthetic Bank"}]
+CONTRACTS = [{"MA_HD": "SYNTHETIC-CONTRACT"}]
 
 
 @pytest.fixture(autouse=True)
@@ -136,6 +206,7 @@ def tokens() -> TokenState:
 
 
 def snapshot_for(customer: Customer) -> Snapshot:
+    points = ("POINT-A", "POINT-B")
     return Snapshot(
         customer=customer,
         region="PB",
@@ -166,16 +237,13 @@ def snapshot_for(customer: Customer) -> Snapshot:
         },
         invoices=[
             {
-                "ID_HDON": "PRIVATE INVOICE A",
-                "TTRANG_TTOAN": "CHUATT",
-                "TONG_NO": "-125000",
-                "TONG_TIEN": 9999999,
+                **INVOICES[0],
                 "TEN_KHANG": customer.name,
                 "DIA_CHI": "PRIVATE ADDRESS",
                 "password": IDENTITY[CONF_PASSWORD],
                 "access_token": "offline-access",
             },
-            {"ID_HDON": "PRIVATE INVOICE B", "TTRANG_TTOAN": "DATT"},
+            INVOICES[1],
         ],
         outages=[
             {
@@ -189,6 +257,17 @@ def snapshot_for(customer: Customer) -> Snapshot:
             }
         ],
         fetched_at=FETCHED_AT,
+        info=dict(INFO),
+        contracts=[dict(row) for row in CONTRACTS],
+        monthly_readings={
+            point: [dict(row) for row in MONTHLY_READINGS] for point in points
+        },
+        daily_readings={
+            "POINT-A": [dict(row) for row in POINT_A_READINGS],
+            "POINT-B": [],
+        },
+        paid_invoices=[dict(row) for row in PAID_INVOICES],
+        banks=[dict(row) for row in BANKS],
     )
 
 
@@ -291,11 +370,22 @@ def collect_sensor(
     return result
 
 
+def collect_button(
+    coordinator: EvnCoordinator, entry: EvnConfigEntry
+) -> list[EvnButton]:
+    return [
+        EvnButton(coordinator, entry, snapshot.customer)
+        for snapshot in coordinator.data.values()
+    ]
+
+
 def test_real_homeassistant_types_and_identity() -> None:
     assert issubclass(EvnConfigFlow, ConfigFlow)
     assert issubclass(EvnOptionsFlow, OptionsFlowWithReload)
     assert issubclass(EvnCoordinator, DataUpdateCoordinator)
     assert issubclass(EvnSensor, SensorEntity)
+    assert issubclass(EvnButton, ButtonEntity)
+    assert issubclass(EvnButton, ButtonEntity)
     ha_path = __import__("homeassistant.core", fromlist=["core"]).__file__
     assert ha_path is not None
     assert "site-packages/homeassistant" in str(Path(ha_path))
@@ -305,9 +395,9 @@ def test_real_homeassistant_types_and_identity() -> None:
     )
     assert DOMAIN == "evn_cskh"
     assert NAME == "EVN CSKH"
-    assert VERSION == "0.2.0"
+    assert VERSION == "0.3.0"
     assert MIN_HA_VERSION == "2025.12"
-    assert PLATFORMS == (Platform.SENSOR,)
+    assert PLATFORMS == (Platform.SENSOR, Platform.BUTTON)
 
 
 def test_manifest_and_complete_translations() -> None:
@@ -340,18 +430,21 @@ def test_manifest_and_complete_translations() -> None:
         return result
 
     assert leaves(english) == leaves(vietnamese)
+    point_keys = {description.key for description in POINT_SENSORS}
+    sensor_keys = point_keys | {description.key for description in CUSTOMER_SENSORS}
+    assert set(english["entity"]["sensor"]) == sensor_keys
+    assert set(vietnamese["entity"]["sensor"]) == sensor_keys
+    assert set(english["entity"]["button"]) == {"refresh"}
+    assert set(vietnamese["entity"]["button"]) == {"refresh"}
+    assert vietnamese["entity"]["button"]["refresh"]["name"]
+    for names in (english["entity"]["button"], vietnamese["entity"]["button"]):
+        assert "{" not in names["refresh"]["name"]
     for description in (*POINT_SENSORS, *CUSTOMER_SENSORS):
         assert description.translation_key == description.key
-        assert description.key in english["entity"]["sensor"]
-    for description in POINT_SENSORS:
-        assert (
-            "{measurement_point}"
-            in english["entity"]["sensor"][description.key]["name"]
-        )
-        assert (
-            "{measurement_point}"
-            in vietnamese["entity"]["sensor"][description.key]["name"]
-        )
+        for names in (english["entity"]["sensor"], vietnamese["entity"]["sensor"]):
+            name = names[description.key]["name"]
+            assert name
+            assert ("{measurement_point}" in name) == (description.key in point_keys)
 
 
 @pytest.mark.parametrize(
@@ -1028,8 +1121,8 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
     await sensor.async_setup_entry(hass, entry, add)
     add.assert_called_once()
     entities: list[EvnSensor] = add.call_args.args[0]
-    assert len(entities) == 16
-    assert len({entity.unique_id for entity in entities}) == 16
+    assert len(entities) == 46
+    assert len({entity.unique_id for entity in entities}) == 46
     assert (
         len(
             {
@@ -1040,15 +1133,33 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         )
         == 2
     )
-    expected = {
+    expected: dict[tuple[str, str | None], Any] = {
         ("monthly_energy", "POINT-A"): 12.5,
         ("monthly_energy", "POINT-B"): 27.5,
+        ("prev_month_energy", "POINT-A"): 900.0,
+        ("prev_month_energy", "POINT-B"): 900.0,
+        ("average_12m_energy", "POINT-A"): (900.0 + 12.5) / 2,
+        ("average_12m_energy", "POINT-B"): (900.0 + 27.5) / 2,
+        ("month_over_month", "POINT-A"): (12.5 - 900.0) / 900.0 * 100,
+        ("month_over_month", "POINT-B"): (27.5 - 900.0) / 900.0 * 100,
         ("daily_energy", "POINT-A"): 1.25,
         ("daily_energy", "POINT-B"): 2.25,
+        ("meter_reading", "POINT-A"): 1012.5,
+        ("meter_reading", "POINT-B"): 1050.0,
+        ("meter_multiplier", "POINT-A"): 2.0,
+        ("meter_multiplier", "POINT-B"): 3.0,
+        ("meter_read_date", "POINT-A"): "06/10/2026",
+        ("meter_read_date", "POINT-B"): "31/10/2026",
         ("outstanding_amount", None): 125000.0,
         ("outstanding_count", None): 1,
+        ("latest_invoice_amount", None): 9999999.0,
+        ("latest_invoice_status", None): "Chưa thanh toán",
+        ("paid_invoice_count", None): 1,
         ("next_outage", None): datetime(2099, 10, 8, 8, tzinfo=LOCAL),
         ("fetched_at", None): FETCHED_AT,
+    }
+    assert {key for key, _ in expected} == {
+        description.key for description in (*CUSTOMER_SENSORS, *POINT_SENSORS)
     }
     for entity in entities:
         assert isinstance(entity, SensorEntity)
@@ -1056,12 +1167,13 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         assert not entity.should_poll
         assert entity.available
         attributes = entity.extra_state_attributes
-        assert (
-            entity.native_value
-            == expected[
-                (entity.entity_description.key, attributes.get("measurement_point"))
-            ]
-        )
+        key = entity.entity_description.key
+        point = attributes.get("measurement_point")
+        expected_value = expected[(key, point)]
+        if isinstance(expected_value, float):
+            assert entity.native_value == pytest.approx(expected_value)
+        else:
+            assert entity.native_value == expected_value
         assert set(attributes) <= {
             "period",
             "measurement_point",
@@ -1069,6 +1181,29 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "schedule_end",
             "area",
             "reason",
+            "current",
+            "previous",
+            "delta",
+            "old",
+            "new",
+            "multiplier",
+            "kind",
+            "cycle",
+            "due_date",
+            "energy",
+            "energy_unit",
+            "paid_date",
+            "status_label",
+            "org_code",
+            "payment_channel_label",
+            "customer_name",
+            "address",
+            "phone",
+            "contract",
+            "region_code",
+            "contracts",
+            "banks",
+            "paid",
         }
         public = str(attributes) + str(entity.device_info) + str(entity.unique_id)
         for private in (
@@ -1088,35 +1223,94 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         assert entity.device_info is not None
         assert entity.device_info["manufacturer"] == "EVN"
         assert entity.device_info["model"] == "Customer account"
-        if entity.entity_description.key in ("monthly_energy", "daily_energy"):
+        if key in ("monthly_energy", "prev_month_energy", "daily_energy"):
             assert entity.device_class is SensorDeviceClass.ENERGY
             assert entity.native_unit_of_measurement == "kWh"
             assert entity.state_class is None
-            assert attributes["period"] == (
-                "2026-10"
-                if entity.entity_description.key == "monthly_energy"
-                else "05/10/2026 - 06/10/2026"
+            assert (
+                attributes["period"]
+                == {
+                    "monthly_energy": "2026-10",
+                    "prev_month_energy": "2026-09",
+                    "daily_energy": "05/10/2026 - 06/10/2026",
+                }[key]
             )
             assert entity.translation_placeholders == {
                 "measurement_point": attributes["measurement_point"]
             }
-        elif entity.entity_description.key == "outstanding_amount":
+        elif key == "average_12m_energy":
+            assert entity.device_class is None
+            assert entity.native_unit_of_measurement == "kWh"
+            assert entity.state_class is SensorStateClass.MEASUREMENT
+        elif key == "month_over_month":
+            assert entity.device_class is None
+            assert entity.native_unit_of_measurement == "%"
+            assert entity.state_class is SensorStateClass.MEASUREMENT
+            assert point is not None
+            current = 12.5 if point == "POINT-A" else 27.5
+            assert attributes["current"] == pytest.approx(current)
+            assert attributes["previous"] == pytest.approx(900.0)
+            assert attributes["delta"] == pytest.approx(current - 900.0)
+        elif key in ("meter_reading", "meter_multiplier", "meter_read_date"):
+            assert entity.device_class is None
+            assert entity.native_unit_of_measurement is None
+            assert entity.state_class is None
+            if key == "meter_reading":
+                assert attributes["old"] is not None
+                assert attributes["new"] == pytest.approx(entity.native_value)
+                assert attributes["multiplier"] == pytest.approx(
+                    2.0 if point == "POINT-A" else 3.0
+                )
+                assert attributes["kind"] == "KT"
+                assert attributes["period"] == expected[("meter_read_date", point)]
+        elif key in ("outstanding_amount", "latest_invoice_amount"):
             assert entity.device_class is SensorDeviceClass.MONETARY
             assert entity.native_unit_of_measurement == "VND"
-        elif entity.entity_description.key in ("next_outage", "fetched_at"):
+            assert entity.state_class is None
+            if key == "latest_invoice_amount":
+                assert attributes["status_label"] == "Chưa thanh toán"
+                assert attributes["cycle"] == 10
+                assert attributes["energy"] == pytest.approx(12.5)
+                assert attributes["energy_unit"] == "kWh"
+                assert attributes["org_code"] == "BANK-A"
+                assert attributes["payment_channel_label"] == "Synthetic Bank"
+                assert attributes["paid_date"] is None
+                assert attributes["due_date"] is None
+        elif key in ("next_outage", "fetched_at"):
             assert entity.device_class is SensorDeviceClass.TIMESTAMP
             assert entity.native_unit_of_measurement is None
             assert isinstance(entity.native_value, datetime)
             assert entity.native_value.tzinfo is not None
-        if entity.entity_description.key == "fetched_at":
+        if key in ("paid_invoice_count", "outstanding_count", "latest_invoice_status"):
+            assert entity.device_class is None
+            assert entity.native_unit_of_measurement is None
+        if key in (
+            "fetched_at",
+            "meter_multiplier",
+            "meter_read_date",
+            "paid_invoice_count",
+        ):
             assert entity.entity_category is EntityCategory.DIAGNOSTIC
-        if entity.entity_description.key == "next_outage":
+        else:
+            assert entity.entity_category is None
+        if key == "next_outage":
             assert (
                 attributes["schedule_end"]
                 == datetime(2099, 10, 8, 10, tzinfo=LOCAL).isoformat()
             )
             assert attributes["area"] == "Synthetic public area"
             assert attributes["reason"] == "Scheduled maintenance"
+        if key == "fetched_at":
+            assert attributes["customer_name"] == INFO["tenKhang"]
+            assert attributes["address"] == INFO["diaChi"]
+            assert attributes["phone"] == INFO["dthoai"]
+            assert attributes["contract"] == INFO["maHdong"]
+            assert attributes["region_code"] == "PB"
+            assert attributes["contracts"] == 1
+            assert attributes["banks"] == 1
+            assert attributes["paid"] == 1
+        if key in ("outstanding_amount", "outstanding_count", "latest_invoice_amount"):
+            assert "customer_name" not in attributes
 
 
 @pytest.mark.asyncio
@@ -1134,6 +1328,12 @@ async def test_empty_and_uncertain_data_not_fabricated(
     snapshot.daily["POINT-A"] = []
     snapshot.invoices = []
     snapshot.outages = []
+    snapshot.monthly_readings = {}
+    snapshot.daily_readings = {}
+    snapshot.paid_invoices = []
+    snapshot.banks = []
+    snapshot.contracts = []
+    snapshot.info = {}
     entities = collect_sensor(coordinator, entry)
     states = {
         (
@@ -1143,9 +1343,18 @@ async def test_empty_and_uncertain_data_not_fabricated(
         for entity in entities
     }
     assert states[("monthly_energy", "POINT-A")] is None
+    assert states[("prev_month_energy", "POINT-A")] is None
+    assert states[("average_12m_energy", "POINT-A")] is None
+    assert states[("month_over_month", "POINT-A")] is None
     assert states[("daily_energy", "POINT-A")] is None
+    assert states[("meter_reading", "POINT-A")] is None
+    assert states[("meter_multiplier", "POINT-A")] is None
+    assert states[("meter_read_date", "POINT-A")] is None
     assert states[("outstanding_amount", None)] == 0.0
     assert states[("outstanding_count", None)] == 0
+    assert states[("latest_invoice_amount", None)] is None
+    assert states[("latest_invoice_status", None)] is None
+    assert states[("paid_invoice_count", None)] == 0
     assert states[("next_outage", None)] is None
     assert all(entity.available for entity in entities)
     snapshot.monthly["POINT-A"] = [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": "1,234"}]
@@ -1155,10 +1364,14 @@ async def test_empty_and_uncertain_data_not_fabricated(
     snapshot.invoices = [
         {"ID_HDON": "PRIVATE INVOICE", "TTRANG_TTOAN": "CHUATT", "TONG_TIEN": 999}
     ]
+    snapshot.monthly_readings["POINT-A"] = [{"NGAY_CKY": "bad", "CHISO_MOI": 1}]
+    snapshot.daily_readings["POINT-A"] = [{"NGAY": "bad", "CHISO_MOI": 1}]
     for entity in entities:
         if entity.extra_state_attributes.get(
             "measurement_point"
-        ) == "POINT-A" or entity.entity_description.key.startswith("outstanding"):
+        ) == "POINT-A" or entity.entity_description.key.startswith(
+            ("outstanding", "latest_invoice")
+        ):
             assert entity.native_value is None
             assert entity.available
     snapshot.outages = [{"TGIAN_BDAU": "01/01/2000 08:00"}]
@@ -1167,6 +1380,53 @@ async def test_empty_and_uncertain_data_not_fabricated(
     )
     assert outage_entity.native_value is None and outage_entity.available
     assert set(outage_entity.extra_state_attributes) == {"last_update"}
+    snapshot.invoices = []
+    snapshot.paid_invoices = [dict(row) for row in PAID_INVOICES]
+    invoice_amount = next(
+        entity
+        for entity in entities
+        if entity.entity_description.key == "latest_invoice_amount"
+    )
+    invoice_status = next(
+        entity
+        for entity in entities
+        if entity.entity_description.key == "latest_invoice_status"
+    )
+    assert invoice_amount.native_value == 500000.0
+    assert invoice_status.native_value == "Đã thanh toán"
+    assert invoice_amount.extra_state_attributes["paid_date"] == "15/09/2026"
+    assert invoice_amount.extra_state_attributes["org_code"] == "BANK-A"
+    average = next(
+        entity
+        for entity in entities
+        if entity.entity_description.key == "average_12m_energy"
+        and entity.extra_state_attributes.get("measurement_point") == "POINT-A"
+    )
+    assert invoice_amount.extra_state_attributes["payment_channel_label"] == (
+        "Synthetic channel"
+    )
+    snapshot.monthly["POINT-A"] = [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": "5"}]
+    change = next(
+        entity
+        for entity in entities
+        if entity.entity_description.key == "month_over_month"
+        and entity.extra_state_attributes.get("measurement_point") == "POINT-A"
+    )
+    previous = next(
+        entity
+        for entity in entities
+        if entity.entity_description.key == "prev_month_energy"
+        and entity.extra_state_attributes.get("measurement_point") == "POINT-A"
+    )
+    assert change.native_value is None
+    assert change.available
+    assert change.extra_state_attributes["current"] == 5.0
+    assert change.extra_state_attributes["previous"] == 0.0
+    assert change.extra_state_attributes["delta"] == 5.0
+    assert previous.native_value is None
+    assert previous.available
+    assert "period" not in previous.extra_state_attributes
+    assert average.native_value == 5.0
 
 
 @pytest.mark.asyncio
@@ -1188,7 +1448,7 @@ async def test_measurement_removal_and_absent_snapshot_unavailable(
         if entity._customer_key == customer_key(customers[0])
         and entity._point == "POINT-A"
     ]
-    assert len(affected) == 2
+    assert len(affected) == len(POINT_SENSORS)
     assert all(
         not entity.available and entity.native_value is None for entity in affected
     )
@@ -1226,7 +1486,7 @@ async def test_no_points_still_creates_customer_sensors_and_outage_text_bounded(
     add = Mock()
     await sensor.async_setup_entry(hass, entry, add)
     entities = add.call_args.args[0]
-    assert len(entities) == 4
+    assert len(entities) == len(CUSTOMER_SENSORS)
     outage = next(
         entity for entity in entities if entity.entity_description.key == "next_outage"
     )
@@ -1338,18 +1598,42 @@ async def test_native_ha_state_serialization_translation_and_unavailability(
         attributes = calculated.attributes
         assert attributes["friendly_name"]
         assert "{" not in attributes["friendly_name"]
-        assert "state_class" not in attributes
+        if key in ("average_12m_energy", "month_over_month"):
+            assert attributes["state_class"] == "measurement"
+        else:
+            assert "state_class" not in attributes
         assert "PRIVATE" not in str(attributes)
         assert IDENTITY[CONF_PASSWORD] not in str(attributes)
         assert tokens.access_token not in str(attributes)
-        if key in ("monthly_energy", "daily_energy"):
+        if key in ("monthly_energy", "prev_month_energy", "daily_energy"):
             assert attributes["unit_of_measurement"] == "kWh"
             assert attributes["device_class"] == "energy"
             assert attributes["measurement_point"] in attributes["friendly_name"]
-        elif key == "next_outage":
-            assert calculated.state == "2099-10-08T01:00:00+00:00"
-        elif key == "fetched_at":
-            assert calculated.state == FETCHED_AT.isoformat(timespec="seconds")
+        elif key == "average_12m_energy":
+            assert attributes["unit_of_measurement"] == "kWh"
+            assert "device_class" not in attributes
+            assert attributes["measurement_point"] in attributes["friendly_name"]
+        elif key == "month_over_month":
+            assert attributes["unit_of_measurement"] == "%"
+            assert "device_class" not in attributes
+            assert attributes["measurement_point"] in attributes["friendly_name"]
+        elif key in ("meter_reading", "meter_multiplier", "meter_read_date"):
+            assert "unit_of_measurement" not in attributes
+            assert "device_class" not in attributes
+            assert attributes["measurement_point"] in attributes["friendly_name"]
+        elif key in ("next_outage", "fetched_at"):
+            if key == "next_outage":
+                assert calculated.state == "2099-10-08T01:00:00+00:00"
+            else:
+                assert calculated.state == FETCHED_AT.isoformat(timespec="seconds")
+        elif key == "meter_read_date":
+            assert calculated.state in {"06/10/2026", "31/10/2026"}
+        elif key == "latest_invoice_status":
+            assert calculated.state == "Chưa thanh toán"
+        elif key == "latest_invoice_amount":
+            assert calculated.state == "9999999.0"
+            assert attributes["unit_of_measurement"] == "VND"
+            assert attributes["device_class"] == "monetary"
     coordinator.data[customer_key(customers[0])].outages = []
     outage = next(
         entity for entity in entities if entity.entity_description.key == "next_outage"
@@ -1362,3 +1646,121 @@ async def test_native_ha_state_serialization_translation_and_unavailability(
         assert calculated.state == "unavailable"
         assert "last_update" not in calculated.attributes
         assert "period" not in calculated.attributes
+
+
+@pytest.mark.asyncio
+async def test_button_platform_one_per_customer_and_shared_device(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entry = make_entry(hass, customers, tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    add = Mock()
+    await button.async_setup_entry(hass, entry, add)
+    add.assert_called_once()
+    entities: list[EvnButton] = add.call_args.args[0]
+    assert len(entities) == 2
+    assert len({entity.unique_id for entity in entities}) == 2
+    coordinator = entry.runtime_data
+    sensor_entities = collect_sensor(coordinator, entry)
+    sensor_devices = {
+        tuple(entity.device_info["identifiers"])
+        for entity in sensor_entities
+        if entity.device_info
+    }
+    button_devices = {
+        tuple(entity.device_info["identifiers"])
+        for entity in entities
+        if entity.device_info
+    }
+    assert len(sensor_devices) == 2
+    assert button_devices == sensor_devices
+    for entity, customer in zip(entities, customers, strict=True):
+        assert entity.translation_key == "refresh"
+        assert entity.has_entity_name
+        assert entity.entity_category is None
+        assert entity.available
+        assert entity.unique_id is not None
+        assert re.fullmatch(r"[0-9a-f]{64}", entity.unique_id)
+        assert entity.device_info is not None
+        assert entity.device_info["manufacturer"] == "EVN"
+        assert entity.device_info["model"] == "Customer account"
+        assert customer_key(customer) in coordinator.data
+        public = str(entity.device_info) + str(entity.unique_id)
+        for private in (
+            "PRIVATE NAME",
+            "PRIVATE CONTRACT",
+            IDENTITY[CONF_USERNAME],
+            IDENTITY[CONF_PASSWORD],
+        ):
+            assert private not in public
+    assert not {entity.unique_id for entity in entities} & {
+        entity.unique_id for entity in sensor_entities
+    }
+    refresh = AsyncMock()
+    monkeypatch.setattr(coordinator, "async_request_refresh", refresh)
+    for entity in entities:
+        await entity.async_press()
+    assert refresh.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_button_press_refreshes_and_maps_auth_failure_to_reauth(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _ = mocked_client
+    entry = make_entry(hass, customers, tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    coordinator = entry.runtime_data
+    entities = collect_button(coordinator, entry)
+    start_reauth = Mock()
+    monkeypatch.setattr(entry, "async_start_reauth", start_reauth)
+    client.fetch_snapshot.side_effect = EvnAuthError()
+    await entities[0].async_press()
+    assert not coordinator.last_update_success
+    assert isinstance(coordinator.last_exception, ConfigEntryAuthFailed)
+    start_reauth.assert_called_once_with(hass)
+    assert all(not entity.available for entity in entities)
+
+
+@pytest.mark.asyncio
+async def test_button_unique_ids_stable_scopes_and_reload_safe(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers, tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    coordinator = entry.runtime_data
+    original = EvnButton(coordinator, entry, customers[0])
+    assert original.unique_id == EvnButton(coordinator, entry, customers[0]).unique_id
+    assert (
+        original.device_info == EvnButton(coordinator, entry, customers[0]).device_info
+    )
+    other_account = make_entry(
+        hass, customers, tokens, username="other-offline-account"
+    )
+    restored = make_entry(hass, customers, tokens)
+    variants = [
+        original,
+        EvnButton(coordinator, entry, customers[1]),
+        EvnButton(
+            coordinator,
+            entry,
+            Customer("OTHER-CUSTOMER", customers[0].management_unit),
+        ),
+        EvnButton(coordinator, other_account, customers[0]),
+        EvnButton(coordinator, restored, customers[0]),
+    ]
+    assert variants[-1].unique_id == original.unique_id
+    assert variants[-1].device_info == original.device_info
+    assert len({entity.unique_id for entity in variants[:4]}) == 4
+    assert original.device_info != variants[3].device_info

@@ -30,6 +30,12 @@ monthly_summary = models.monthly_summary
 daily_summary = models.daily_summary
 invoice_summary = models.invoice_summary
 next_outage = models.next_outage
+month_over_month = models.month_over_month
+trailing_average = models.trailing_average
+latest_reading = models.latest_reading
+outstanding_summary = models.outstanding_summary
+outstanding_from_active = models.outstanding_from_active
+latest_invoice = models.latest_invoice
 LOCAL = ZoneInfo("Asia/Ho_Chi_Minh")
 NOW = datetime(2026, 10, 7, 12, tzinfo=LOCAL)
 INVALID_NUMBERS = (
@@ -770,3 +776,259 @@ def test_helpers_do_not_mutate_raw_records() -> None:
     original = deepcopy(records)
     next_outage(records, NOW)
     assert records == original
+
+
+def _monthly_usage(
+    value: Any, year: Any = 2026, month: Any = 10, **fields: Any
+) -> dict[str, Any]:
+    return {"NAM": year, "THANG": month, "DIEN_TTHU": value, **fields}
+
+
+def _reading(**fields: Any) -> dict[str, Any]:
+    return {
+        "CHISO_CU": 100.0,
+        "CHISO_MOI": 150.0,
+        "HSN": 1.0,
+        "DIEN_TTHU": 50.0,
+        "LOAI_CHISO": "DIEN",
+        "BCS": "KT",
+        "NGAY_CKY": "06/10/2026",
+        **fields,
+    }
+
+
+def _invoice_record(**fields: Any) -> dict[str, Any]:
+    return {
+        "ID_HDON": "INVOICE-A",
+        "NAM": 2026,
+        "THANG": 10,
+        "KY": 1,
+        "SO_KY": 1,
+        "TONG_TIEN": 150000,
+        "TIEN_GTGT": 10000,
+        "TONG_NO": 0,
+        "TTRANG_TTOAN": "DATT",
+        "NGAY_TTOAN": "07/10/2026",
+        "DIEN_TTHU": 50,
+        **fields,
+    }
+
+
+def test_month_over_month_totals_and_percent() -> None:
+    records = [
+        _monthly_usage(100, month=9),
+        _monthly_usage(120, month=10),
+    ]
+    assert month_over_month(records) == {
+        "current": 120.0,
+        "previous": 100.0,
+        "delta": 20.0,
+        "percent": 20.0,
+    }
+
+
+def test_month_over_month_sums_same_period_and_ignores_string_whitespace() -> None:
+    records = [
+        _monthly_usage(10, month=10),
+        _monthly_usage(" 2.5 ", month=10),
+        _monthly_usage(5, month=9),
+    ]
+    assert month_over_month(records) == {
+        "current": 12.5,
+        "previous": 5.0,
+        "delta": 7.5,
+        "percent": 150.0,
+    }
+
+
+def test_month_over_month_previous_zero_has_no_percent() -> None:
+    records = [
+        _monthly_usage(0, month=9),
+        _monthly_usage(50, month=10),
+    ]
+    assert month_over_month(records) == {
+        "current": 50.0,
+        "previous": 0.0,
+        "delta": 50.0,
+        "percent": None,
+    }
+
+
+def test_month_over_month_single_period_uses_zero_previous() -> None:
+    assert month_over_month([_monthly_usage(10)]) == {
+        "current": 10.0,
+        "previous": 0.0,
+        "delta": 10.0,
+        "percent": None,
+    }
+
+
+@pytest.mark.parametrize(
+    "records",
+    [
+        None,
+        {},
+        [],
+        [None],
+        [_monthly_usage(1, month=13)],
+        [_monthly_usage(1, year=0)],
+        [_monthly_usage("NaN")],
+        [_monthly_usage(1, THANG=None)],
+    ],
+)
+def test_month_over_month_rejects_bad_or_missing(records: Any) -> None:
+    assert month_over_month(records) is None
+
+
+def test_trailing_average_last_n_and_skips_invalid() -> None:
+    records = [
+        _monthly_usage(6, month=7),
+        _monthly_usage(12, month=8),
+        _monthly_usage(24, month=9),
+        _monthly_usage("bad", month=10),
+        _monthly_usage("NaN", month=11),
+        _monthly_usage(99, year=2025, month=13),
+    ]
+    assert trailing_average(records, 2) == 18.0
+    assert trailing_average(records, 12) == 14.0
+
+
+@pytest.mark.parametrize("months", [0, -1, 121, 1.5, True, "12", None])
+def test_trailing_average_invalid_months(months: Any) -> None:
+    assert trailing_average([_monthly_usage(10)], months) is None
+
+
+@pytest.mark.parametrize("records", [None, {}, [], [None], [_monthly_usage("bad")]])
+def test_trailing_average_no_usable_records(records: Any) -> None:
+    assert trailing_average(records) is None
+
+
+def test_latest_reading_month_picks_newest() -> None:
+    records = [
+        _reading(NGAY_CKY="06/09/2026", CHISO_MOI=120.0),
+        _reading(
+            NGAY_CKY="06/10/2026", CHISO_CU=120.0, CHISO_MOI=150.0, DIEN_TTHU=30.0
+        ),
+    ]
+    assert latest_reading(records) == {
+        "period": "06/10/2026",
+        "old": 120.0,
+        "new": 150.0,
+        "multiplier": 1.0,
+        "kwh": 30.0,
+        "kind": "DIEN",
+    }
+
+
+def test_latest_reading_daily_uses_ngay_and_kind_bcs() -> None:
+    record = {
+        "CHISO_CU": None,
+        "CHISO_MOI": None,
+        "HSN": None,
+        "DIEN_TTHU": 4.0,
+        "BCS": "KT",
+        "NGAY": "06/10/2026",
+        "THOI_DIEM": "06/10/2026 08:30",
+    }
+    assert latest_reading([record]) == {
+        "period": "06/10/2026",
+        "old": None,
+        "new": None,
+        "multiplier": None,
+        "kwh": 4.0,
+        "kind": "KT",
+    }
+
+
+@pytest.mark.parametrize("field", ["CHISO_CU", "CHISO_MOI", "HSN", "DIEN_TTHU"])
+def test_latest_reading_rejects_bad_numbers(field: str) -> None:
+    assert latest_reading([_reading(**{field: "NaN"})]) is None
+
+
+@pytest.mark.parametrize(
+    "records",
+    [None, {}, [], [None], [{"CHISO_MOI": 1}], [_reading(NGAY_CKY="bad")]],
+)
+def test_latest_reading_unknown(records: Any) -> None:
+    assert latest_reading(records) is None
+
+
+def test_outstanding_helpers_match_invoice_summary() -> None:
+    records = [
+        _invoice(125000),
+        _invoice(50000, ID_HDON="INVOICE-B", TTRANG_TTOAN="DATT"),
+        _invoice(
+            30000, ID_HDON="INVOICE-C", TTRANG_TTOAN="TTOANMOTPHAN", LOAI_PSINH="TH"
+        ),
+    ]
+    assert outstanding_summary(records) == InvoiceSummary(125000.0, 1)
+    assert outstanding_from_active(records) == invoice_summary(records)
+
+
+@pytest.mark.parametrize("records", [None, {}, [None], [{}], "x"])
+def test_outstanding_helpers_unknown(records: Any) -> None:
+    assert outstanding_summary(records) == InvoiceSummary(None, None)
+    assert outstanding_from_active(records) == InvoiceSummary(None, None)
+
+
+def test_latest_invoice_normalized_and_latest() -> None:
+    older = _invoice_record(NAM=2026, THANG=9, ID_HDON="INVOICE-0")
+    newer = _invoice_record(
+        NAM=2026, THANG=10, ID_HDON=12345, TTRANG_TTOAN="CHUATT", NGAY_TTOAN=None
+    )
+    assert latest_invoice([older, newer]) == {
+        "id_key": "12345",
+        "period": "2026-10",
+        "cycle": 1,
+        "amount": 150000.0,
+        "tax": 10000.0,
+        "outstanding": 0.0,
+        "status": "CHUATT",
+        "status_label": "Chưa thanh toán",
+        "paid_date": None,
+        "due_date": None,
+        "energy": 50.0,
+        "energy_unit": "kWh",
+    }
+
+
+def test_latest_invoice_missing_fields_stay_none() -> None:
+    record = {"ID_HDON": "INVOICE-A", "NAM": 2026, "THANG": 10}
+    assert latest_invoice([record]) == {
+        "id_key": "INVOICE-A",
+        "period": "2026-10",
+        "cycle": None,
+        "amount": None,
+        "tax": None,
+        "outstanding": None,
+        "status": None,
+        "status_label": None,
+        "paid_date": None,
+        "due_date": None,
+        "energy": None,
+        "energy_unit": None,
+    }
+
+
+@pytest.mark.parametrize(
+    "records",
+    [
+        None,
+        {},
+        [],
+        [None],
+        [{"ID_HDON": "A"}],
+        [{"ID_HDON": 1.5, "NAM": 2026, "THANG": 10}],
+    ],
+)
+def test_latest_invoice_unknown(records: Any) -> None:
+    assert latest_invoice(records) is None
+
+
+@pytest.mark.parametrize("field", ["TONG_TIEN", "TONG_NO", "DIEN_TTHU"])
+def test_latest_invoice_rejects_bad_numbers(field: str) -> None:
+    assert latest_invoice([_invoice_record(**{field: "NaN"})]) is None
+
+
+def test_latest_invoice_unknown_status_rejected() -> None:
+    assert latest_invoice([_invoice_record(TTRANG_TTOAN="WEIRD")]) is None

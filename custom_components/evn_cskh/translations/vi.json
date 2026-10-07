@@ -55,18 +55,50 @@
     }
   },
   "entity": {
+    "button": {
+      "refresh": {
+        "name": "Cập nhật dữ liệu"
+      }
+    },
     "sensor": {
       "monthly_energy": {
         "name": "Điện năng tháng gần nhất {measurement_point}"
       },
+      "prev_month_energy": {
+        "name": "Điện năng tháng trước {measurement_point}"
+      },
+      "average_12m_energy": {
+        "name": "Điện năng trung bình 12 tháng {measurement_point}"
+      },
+      "month_over_month": {
+        "name": "Thay đổi so với tháng trước {measurement_point}"
+      },
       "daily_energy": {
         "name": "Điện năng khoảng gần nhất {measurement_point}"
+      },
+      "meter_reading": {
+        "name": "Chỉ số công tơ gần nhất {measurement_point}"
+      },
+      "meter_multiplier": {
+        "name": "Hệ số nhân công tơ {measurement_point}"
+      },
+      "meter_read_date": {
+        "name": "Ngày đọc chỉ số công tơ {measurement_point}"
       },
       "outstanding_amount": {
         "name": "Tiền còn nợ"
       },
       "outstanding_count": {
         "name": "Số hóa đơn chưa thanh toán"
+      },
+      "latest_invoice_amount": {
+        "name": "Số tiền hóa đơn gần nhất"
+      },
+      "latest_invoice_status": {
+        "name": "Trạng thái hóa đơn gần nhất"
+      },
+      "paid_invoice_count": {
+        "name": "Số hóa đơn đã thanh toán"
       },
       "next_outage": {
         "name": "Lịch ngừng cấp điện tiếp theo"
