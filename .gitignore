@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.storage/
+poc/*.json
+analysis/
+dist/
+*.apk
+*.xapk
+*.apks
+*.aab
+node_modules/
+playwright-report/
+test-results/

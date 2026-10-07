@@ -1,0 +1,99 @@
+{
+  "title": "EVN CSKH",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tài khoản EVN CSKH",
+        "description": "Đăng nhập bằng tài khoản của ứng dụng EVN CSKH hợp nhất chính thức. Ban đầu tất cả khách hàng đã liên kết được chọn; bạn có thể thay đổi trong tùy chọn tích hợp. Yêu cầu Home Assistant 2025.12 trở lên.",
+        "data": {
+          "username": "Tên đăng nhập hoặc số điện thoại",
+          "password": "Mật khẩu"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Xác thực lại EVN CSKH",
+        "description": "Nhập thông tin đăng nhập của cùng tài khoản đã cấu hình. Hoàn tất xác minh tài khoản hoặc đổi mật khẩu theo yêu cầu trong ứng dụng EVN chính thức trước.",
+        "data": {
+          "username": "Tên đăng nhập hoặc số điện thoại",
+          "password": "Mật khẩu"
+        }
+      }
+    },
+    "error": {
+      "invalid_username": "Nhập tên đăng nhập hoặc số điện thoại.",
+      "invalid_password": "Nhập mật khẩu.",
+      "invalid_auth": "Xác thực thất bại. Kiểm tra thông tin đăng nhập.",
+      "cannot_connect": "Dịch vụ EVN tạm thời không khả dụng. Vui lòng thử lại sau.",
+      "invalid_response": "EVN trả về dữ liệu không hợp lệ hoặc chưa được hỗ trợ. Vui lòng thử lại sau.",
+      "user_action_required": "Hoàn tất xác minh tài khoản hoặc đổi mật khẩu mặc định trong ứng dụng EVN chính thức trước khi đăng nhập tại đây.",
+      "wrong_account": "Dùng đúng tên đăng nhập của tài khoản đã cấu hình trong tích hợp.",
+      "unknown": "Thao tác EVN thất bại. Vui lòng thử lại sau."
+    },
+    "abort": {
+      "already_configured": "Tài khoản EVN này đã được cấu hình.",
+      "already_in_progress": "Tài khoản EVN này đang được cấu hình trong một phiên khác.",
+      "no_customers": "Không có khách hàng đã liên kết. Hãy liên kết khách hàng trong ứng dụng EVN chính thức trước.",
+      "reauth_successful": "Xác thực lại thành công.",
+      "wrong_account": "Tài khoản không khớp với tích hợp đã cấu hình."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Chu kỳ cập nhật và khách hàng EVN CSKH",
+        "description": "Chọn ít nhất một khách hàng được phép truy cập, theo dạng mã đơn vị quản lý:mã khách hàng. Chỉ khách hàng được chọn mới được cập nhật. Điện năng được báo cáo riêng cho từng điểm đo. Tiền còn nợ theo tổng hợp hóa đơn chưa thanh toán của ứng dụng; thiếu bản ghi không chứng minh đã thanh toán. Lịch ngừng cấp điện không phản ánh trạng thái điện lưới thực tế.",
+        "data": {
+          "update_interval": "Chu kỳ cập nhật (phút)",
+          "selected_customers": "Khách hàng"
+        }
+      }
+    },
+    "error": {
+      "invalid_interval": "Nhập số phút nguyên từ 60 đến 1440.",
+      "no_selection": "Chọn ít nhất một khách hàng.",
+      "invalid_customer": "Chỉ chọn khách hàng đã liên kết với tài khoản này."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "monthly_energy": {
+        "name": "Điện năng tháng gần nhất {measurement_point}"
+      },
+      "daily_energy": {
+        "name": "Điện năng khoảng gần nhất {measurement_point}"
+      },
+      "outstanding_amount": {
+        "name": "Tiền còn nợ"
+      },
+      "outstanding_count": {
+        "name": "Số hóa đơn chưa thanh toán"
+      },
+      "next_outage": {
+        "name": "Lịch ngừng cấp điện tiếp theo"
+      },
+      "fetched_at": {
+        "name": "Lần cập nhật thành công gần nhất"
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "Xác thực EVN thất bại. Hãy xác thực lại tích hợp."
+    },
+    "user_action_required": {
+      "message": "Hoàn tất thao tác tài khoản trong ứng dụng EVN chính thức, sau đó xác thực lại."
+    },
+    "no_customers": {
+      "message": "Không còn khách hàng đã liên kết. Hãy liên kết khách hàng trong ứng dụng EVN chính thức, sau đó xác thực lại."
+    },
+    "customer_removed": {
+      "message": "Một khách hàng được chọn không còn liên kết với tài khoản. Kiểm tra khách hàng trong tùy chọn hoặc xác thực lại."
+    },
+    "invalid_selection": {
+      "message": "Chọn ít nhất một khách hàng được phép truy cập trong tùy chọn tích hợp."
+    },
+    "invalid_interval": {
+      "message": "Đặt chu kỳ cập nhật từ 60 đến 1440 phút nguyên trong tùy chọn."
+    }
+  }
+}

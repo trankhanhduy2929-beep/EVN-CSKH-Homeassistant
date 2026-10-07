@@ -1,0 +1,11 @@
+{
+  "domain": "evn_cskh",
+  "name": "EVN CSKH",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://cskh.evn.com.vn",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.2.0"
+}

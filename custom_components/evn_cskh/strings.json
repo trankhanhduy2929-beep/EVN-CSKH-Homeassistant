@@ -1,0 +1,99 @@
+{
+  "title": "EVN CSKH",
+  "config": {
+    "step": {
+      "user": {
+        "title": "EVN CSKH account",
+        "description": "Sign in with your account from the official unified EVN CSKH application. All linked customers are initially selected; change this in the integration options. Requires Home Assistant 2025.12 or newer.",
+        "data": {
+          "username": "Username or phone number",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate EVN CSKH",
+        "description": "Enter the credentials for the same account. Complete any required account verification or password change in the official EVN application first.",
+        "data": {
+          "username": "Username or phone number",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_username": "Enter a username or phone number.",
+      "invalid_password": "Enter a password.",
+      "invalid_auth": "Authentication failed. Check your account credentials.",
+      "cannot_connect": "The EVN service is temporarily unavailable. Try again later.",
+      "invalid_response": "EVN returned an unsupported or invalid response. Try again later.",
+      "user_action_required": "Complete account verification or change the default password in the official EVN application before signing in here.",
+      "wrong_account": "Use the same username as the existing integration account.",
+      "unknown": "The EVN operation failed. Try again later."
+    },
+    "abort": {
+      "already_configured": "This EVN account is already configured.",
+      "already_in_progress": "Configuration for this EVN account is already in progress.",
+      "no_customers": "No linked customers were returned. Link a customer in the official EVN application first.",
+      "reauth_successful": "Reauthentication was successful.",
+      "wrong_account": "The account does not match the existing integration."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EVN CSKH polling and customers",
+        "description": "Select at least one authorized customer, identified as management unit:customer code. Only selected customers are polled. Usage is reported for each measurement point. Outstanding amounts follow the app's unpaid-invoice summary; missing records are not proof of payment. Scheduled outages do not indicate the physical grid state.",
+        "data": {
+          "update_interval": "Update interval (minutes)",
+          "selected_customers": "Customers"
+        }
+      }
+    },
+    "error": {
+      "invalid_interval": "Use a whole number between 60 and 1440 minutes.",
+      "no_selection": "Select at least one customer.",
+      "invalid_customer": "Select only customers linked to this account."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "monthly_energy": {
+        "name": "Latest monthly energy {measurement_point}"
+      },
+      "daily_energy": {
+        "name": "Latest interval energy {measurement_point}"
+      },
+      "outstanding_amount": {
+        "name": "Outstanding amount"
+      },
+      "outstanding_count": {
+        "name": "Outstanding invoice count"
+      },
+      "next_outage": {
+        "name": "Next scheduled outage"
+      },
+      "fetched_at": {
+        "name": "Last successful update"
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "EVN authentication failed. Reauthenticate this integration."
+    },
+    "user_action_required": {
+      "message": "Complete the account action in the official EVN application, then reauthenticate."
+    },
+    "no_customers": {
+      "message": "No linked customers remain. Link a customer in the official EVN application, then reauthenticate."
+    },
+    "customer_removed": {
+      "message": "A selected customer is no longer linked to this account. Review the selected customers in the options or reauthenticate."
+    },
+    "invalid_selection": {
+      "message": "Select at least one authorized customer in the integration options."
+    },
+    "invalid_interval": {
+      "message": "Set an update interval of 60 to 1440 whole minutes in the options."
+    }
+  }
+}
