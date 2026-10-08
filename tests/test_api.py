@@ -8,7 +8,7 @@ import sys
 import traceback
 from collections.abc import AsyncIterator, Callable
 from dataclasses import FrozenInstanceError
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Self, cast
@@ -800,8 +800,8 @@ async def test_regional_snapshot_and_local_dates(
 
     class Clock(datetime):
         @classmethod
-        def now(cls, tz: Any = None) -> datetime:
-            return frozen.astimezone(tz)
+        def now(cls, tz: Any = None) -> Self:
+            return cls.fromtimestamp(frozen.timestamp(), tz)
 
     monkeypatch.setattr(api, "datetime", Clock)
     person = customer()
@@ -883,7 +883,7 @@ async def test_regional_snapshot_and_local_dates(
             "MA_DVIQLY": person.management_unit,
             "MA_DDO": point,
             "MA_KHANG": person.code,
-            "TU_THANG_NAM": "12/2025",
+            "TU_THANG_NAM": "02/2025",
             "DEN_THANG_NAM": "01/2026",
         }
     for index, point in ((5, "POINT-1"), (9, "POINT-2")):
@@ -891,7 +891,7 @@ async def test_regional_snapshot_and_local_dates(
             "MA_DVIQLY": person.management_unit,
             "MA_DDO": point,
             "TU_NGAY": "25/12/2025",
-            "DEN_NGAY": "31/12/2025",
+            "DEN_NGAY": "01/01/2026",
         }
         assert (
             session.calls[index]["url"]
@@ -917,7 +917,7 @@ async def test_regional_snapshot_and_local_dates(
             "MA_DVIQLY": person.management_unit,
             "MA_DDO": point,
             "TU_NGAY": "01/12/2025",
-            "DEN_NGAY": "31/12/2025",
+            "DEN_NGAY": "01/01/2026",
         }
     assert session.calls[3]["url"] == BASES[region] + "/api/evn/customers/diemdo"
     assert session.calls[3]["method"] == "GET"
@@ -946,6 +946,205 @@ async def test_regional_snapshot_and_local_dates(
         call["headers"]["Authorization"] == "Bearer " + access
         for call in session.calls[3:]
     )
+    session.done()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("frozen", "today", "monthly_start", "readings_start"),
+    [
+        (
+            datetime(2025, 12, 31, 16, 59, tzinfo=UTC),
+            date(2025, 12, 31),
+            "01/2025",
+            "11/2024",
+        ),
+        (
+            datetime(2025, 12, 31, 17, 0, tzinfo=UTC),
+            date(2026, 1, 1),
+            "02/2025",
+            "12/2024",
+        ),
+        (
+            datetime(2026, 1, 31, 17, 0, tzinfo=UTC),
+            date(2026, 2, 1),
+            "03/2025",
+            "01/2025",
+        ),
+        (
+            datetime(2024, 2, 28, 17, 0, tzinfo=UTC),
+            date(2024, 2, 29),
+            "03/2023",
+            "01/2023",
+        ),
+        (
+            datetime(2024, 2, 29, 17, 0, tzinfo=UTC),
+            date(2024, 3, 1),
+            "04/2023",
+            "02/2023",
+        ),
+    ],
+)
+async def test_snapshot_twelve_months_and_inclusive_days_across_rollovers(
+    identity: dict[str, str],
+    tokens: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    frozen: datetime,
+    today: date,
+    monthly_start: str,
+    readings_start: str,
+) -> None:
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz: Any = None) -> Self:
+            return cls.fromtimestamp(frozen.timestamp(), tz)
+
+    monkeypatch.setattr(api, "datetime", Clock)
+    person = customer()
+    session = Session(
+        Reply([contract()]),
+        config(),
+        *snapshot_replies(person, secrets.token_urlsafe(24)),
+    )
+    snapshot = await make_client(session, identity, tokens=tokens).fetch_snapshot(
+        person
+    )
+    assert snapshot.fetched_at == frozen
+    assert [call["url"] for call in session.calls[3:]] == [
+        BASES["PB"] + path
+        for path in (
+            "/api/evn/customers/diemdo",
+            "/api/evn/tracuu/diennangthang",
+            "/api/evn/tracuu/diennangngay",
+            "/api/evn/tracuu/chisothang",
+            "/api/evn/tracuu/chisongay",
+            "/api/evn/customers/info",
+            "/api/evn/tracuu/hoadon",
+            "/api/evn/tracuu/lichsu-hoadon",
+            "/api/evn/thanhtoan/danhsach-nganhang",
+            "/api/evn/tracuu/ngungcapdien",
+        )
+    ]
+    monthly_body = session.calls[4]["json"]
+    assert monthly_body == {
+        "MA_DVIQLY": person.management_unit,
+        "MA_DDO": "POINT-1",
+        "MA_KHANG": person.code,
+        "TU_THANG_NAM": monthly_start,
+        "DEN_THANG_NAM": today.strftime("%m/%Y"),
+    }
+    first_month, first_year = map(int, monthly_body["TU_THANG_NAM"].split("/"))
+    last_month, last_year = map(int, monthly_body["DEN_THANG_NAM"].split("/"))
+    first = date(first_year, first_month, 1)
+    last = date(last_year, last_month, 1)
+    assert (last.year - first.year) * 12 + last.month - first.month + 1 == 12
+    assert session.calls[6]["json"] == monthly_body | {"TU_THANG_NAM": readings_start}
+    assert session.calls[10]["json"] == {
+        "TU_THANG_NAM": readings_start,
+        "DEN_THANG_NAM": today.strftime("%m/%Y"),
+    }
+    for index, days in ((5, 7), (7, 31)):
+        assert session.calls[index]["json"] == {
+            "MA_DVIQLY": person.management_unit,
+            "MA_DDO": "POINT-1",
+            "TU_NGAY": (today - timedelta(days=days)).strftime("%d/%m/%Y"),
+            "DEN_NGAY": today.strftime("%d/%m/%Y"),
+        }
+    session.done()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("response", ["current", "historical_only", "empty"])
+async def test_snapshot_periods_are_only_fetched_endpoint_data(
+    identity: dict[str, str],
+    tokens: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    response: str,
+) -> None:
+    frozen = datetime(2025, 12, 31, 17, 30, tzinfo=UTC)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz: Any = None) -> Self:
+            return cls.fromtimestamp(frozen.timestamp(), tz)
+
+    monkeypatch.setattr(api, "datetime", Clock)
+    person = customer()
+    owner = {
+        "MA_KHANG": person.code,
+        "MA_DVIQLY": person.management_unit,
+        "MA_DDO": "POINT-1",
+    }
+    month_labels = [(2025, month) for month in range(2, 13)] + [(2026, 1)]
+    if response != "current":
+        month_labels = month_labels[:-1]
+    days = [date(2025, 12, 30), date(2025, 12, 31)]
+    if response == "current":
+        days.append(date(2026, 1, 1))
+    monthly = [
+        owner | {"NAM": year, "THANG": month, "DIEN_TTHU": 50 + index}
+        for index, (year, month) in enumerate(month_labels)
+    ]
+    daily = [
+        owner
+        | {
+            "NGAY": day.strftime("%d/%m/%Y"),
+            "NGAY_HTHI": day.strftime("%d/%m/%Y"),
+            "BCS": "KT",
+            "DIEN_TTHU": 2.5 + index,
+        }
+        for index, day in enumerate(days)
+    ]
+    invoices = (
+        [owner | {"ID_HDON": "CURRENT", "NAM": 2026, "THANG": 1, "TONG_TIEN": 123}]
+        if response == "current"
+        else []
+    )
+    paid = [
+        owner
+        | {
+            "ID_HDON": f"PREVIOUS-{month}",
+            "NAM": 2025,
+            "THANG": month,
+            "TONG_TIEN": 100 + month,
+        }
+        for month in (11, 12)
+    ]
+    if response == "empty":
+        monthly, daily, paid = [], [], []
+    monthly_readings = [
+        owner | {"NAM": 2026, "THANG": 1, "CHISO_CU": 100, "CHISO_MOI": 999}
+    ]
+    daily_readings = [owner | {"NGAY": "01/01/2026", "CHISO_CU": 100, "CHISO_MOI": 999}]
+    replies = snapshot_replies(person, secrets.token_urlsafe(24))
+    replies[2:6] = [
+        Reply(monthly),
+        Reply(daily),
+        Reply(monthly_readings),
+        Reply(daily_readings),
+    ]
+    replies[7:9] = [Reply(invoices), Reply(paid)]
+    session = Session(Reply([contract()]), config(), *replies)
+    snapshot = await make_client(session, identity, tokens=tokens).fetch_snapshot(
+        person
+    )
+    assert snapshot.monthly == {"POINT-1": monthly}
+    assert snapshot.daily == {"POINT-1": daily}
+    assert snapshot.monthly_readings == {"POINT-1": monthly_readings}
+    assert snapshot.daily_readings == {"POINT-1": daily_readings}
+    assert snapshot.invoices == invoices
+    assert snapshot.paid_invoices == paid
+    assert session.calls[4]["json"]["TU_THANG_NAM"] == "02/2025"
+    assert session.calls[4]["json"]["DEN_THANG_NAM"] == "01/2026"
+    assert session.calls[5]["json"]["DEN_NGAY"] == "01/01/2026"
+    if response == "current":
+        assert len(snapshot.monthly["POINT-1"]) == 12
+        assert snapshot.monthly["POINT-1"][-1]["DIEN_TTHU"] == 61
+        assert snapshot.daily["POINT-1"][-1]["DIEN_TTHU"] == 4.5
+    else:
+        assert not any(row["NAM"] == 2026 for row in snapshot.monthly["POINT-1"])
+        assert not any(row["NGAY"] == "01/01/2026" for row in snapshot.daily["POINT-1"])
+        assert snapshot.invoices == []
     session.done()
 
 
@@ -1693,7 +1892,7 @@ async def test_valid_snapshot_consumption_model_roundtrip(
     sys.modules[spec.name] = models
     spec.loader.exec_module(models)
     person = customer()
-    monthly = [
+    monthly: list[dict[str, Any]] = [
         {
             "NAM": 2026,
             "THANG": 9,
@@ -1719,7 +1918,7 @@ async def test_valid_snapshot_consumption_model_roundtrip(
             "DIEN_TTHU": "7.5",
         },
     ]
-    daily = [
+    daily: list[dict[str, Any]] = [
         {
             "NGAY": "05/10/2026",
             "NGAY_HTHI": "05/10/2026",

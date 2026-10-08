@@ -35,16 +35,22 @@ from .const import CONF_CUSTOMERS, CONF_SELECTED_CUSTOMERS, DOMAIN, VERSION
 from .coordinator import EvnConfigEntry, EvnCoordinator, customer_key
 from .models import (
     PeriodUsage,
+    _date,
     _integer,
     _interval,
     _number,
     _outage_time,
+    _reading_stamp,
+    customer_month_energy,
+    daily_consumption_on,
     daily_summary,
+    invoice_for_month,
     latest_reading,
     month_over_month,
     monthly_summary,
     next_outage,
     outstanding_from_active,
+    previous_months,
     trailing_average,
 )
 
@@ -334,7 +340,56 @@ def _outage_dto(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _comparisons(snapshot: Snapshot, as_of: date) -> dict[str, Any]:
+    days = [as_of - timedelta(days=offset) for offset in (2, 1, 0)]
+    current = as_of.year, as_of.month
+    months = [*reversed(previous_months(as_of, 2)), current]
+    return {
+        "as_of": as_of.isoformat(),
+        "points": [
+            {
+                "point_id": point["id"],
+                "daily": [
+                    {
+                        "period": day.isoformat(),
+                        "kwh": _number(
+                            daily_consumption_on(
+                                snapshot.daily.get(point["id"], []), day
+                            )
+                        ),
+                        "provisional": True,
+                    }
+                    for day in days
+                ],
+            }
+            for point in _points(snapshot)
+        ],
+        "monthly": [
+            {
+                "period": f"{year:04d}-{month:02d}",
+                "kwh": _number(
+                    customer_month_energy(
+                        snapshot.measurement_points,
+                        snapshot.monthly,
+                        snapshot.monthly_readings,
+                        year,
+                        month,
+                    )
+                ),
+                "vnd": _number(
+                    invoice_for_month(
+                        snapshot.invoices, snapshot.paid_invoices, year, month
+                    )
+                ),
+                "provisional": (year, month) == current,
+            }
+            for year, month in months
+        ],
+    }
+
+
 def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
+    as_of = _now()
     result: dict[str, Any] = {
         "customer": _customer_dto(snapshot),
         "available": available,
@@ -350,9 +405,11 @@ def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
         "outages": [],
         "outage_count": len(snapshot.outages),
         "next_outage": None,
+        "comparisons": {"as_of": as_of.isoformat(), "points": [], "monthly": []},
     }
     if not available:
         return result
+    result["comparisons"] = _comparisons(snapshot, as_of)
     result["info"] = _info_dto(snapshot.info)
     result["contracts"] = _contracts(snapshot.contracts)
     result["banks"] = _banks(snapshot.banks)
@@ -416,7 +473,28 @@ def _daily(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return result
 
 
+def _reading_time(
+    row: dict[str, Any], kind: str
+) -> tuple[str | None, str | None, str | None]:
+    display = row.get("NGAY_CKY" if kind == "monthly" else "THOI_DIEM")
+    if isinstance(display, str) and ":" in display and display == display.strip():
+        source: dict[str, Any] = {"THOI_DIEM": display}
+        if kind == "daily" and re.fullmatch(
+            r"[0-9]{2}:[0-9]{2}(?::[0-9]{2})?", display
+        ):
+            source["NGAY"] = row.get("NGAY")
+        parsed = _reading_stamp(source)
+        if parsed is not None:
+            stamp = parsed[0]
+            return stamp.isoformat(), stamp.date().isoformat(), "time"
+    day = _date(row.get("NGAY_CKY" if kind == "monthly" else "NGAY"))
+    if day is None and kind == "daily":
+        day = _date(display)
+    return None, day.isoformat() if day is not None else None, "day" if day else None
+
+
 def _reading(row: dict[str, Any], kind: str) -> dict[str, Any]:
+    timestamp, reading_date, resolution = _reading_time(row, kind)
     period = _safe_text(
         row.get("NGAY_HTHI") or row.get("NGAY") or row.get("THOI_DIEM"), 128
     )
@@ -431,6 +509,9 @@ def _reading(row: dict[str, Any], kind: str) -> dict[str, Any]:
         meter = str(meter)
     return {
         "period": period,
+        "timestamp": timestamp,
+        "reading_date": reading_date,
+        "resolution": resolution,
         "meter": _safe_text(meter, 128),
         "register": _safe_text(row.get("BCS"), 64),
         "old": _number(row.get("CHISO_CU")),
@@ -446,6 +527,25 @@ def _due_date(row: dict[str, Any]) -> str | None:
     if value is None or value == "":
         value = row.get("TT")
     return _safe_text(value, 128) or None
+
+
+def _payable_amount(row: dict[str, Any]) -> float | None:
+    status = row.get("TTRANG_TTOAN")
+    if status == "DATT":
+        return 0.0
+    if status == "TTOANMOTPHAN":
+        kind = row.get("LOAI_PSINH")
+        if (
+            not isinstance(kind, str)
+            or not kind.strip()
+            or kind != kind.strip()
+            or kind == "TH"
+        ):
+            return None
+    elif status != "CHUATT":
+        return None
+    amount = _number(row.get("TONG_NO"))
+    return abs(amount) if amount is not None else None
 
 
 def _invoice_dto(
@@ -476,6 +576,7 @@ def _invoice_dto(
         "amount": _number(row.get("TONG_TIEN")),
         "tax": _number(row.get("TIEN_GTGT")),
         "outstanding": _number(row.get("TONG_NO")),
+        "payable_amount": _payable_amount(row),
         "status": status,
         "status_label": label,
         "paid_date": _safe_text(row.get("NGAY_TTOAN"), 128),
@@ -755,6 +856,14 @@ class _PanelManager:
                 "point_id": point,
                 "start": first.isoformat(),
                 "end": last.isoformat(),
+                "daily_window": {
+                    "start": details.daily_start.isoformat()
+                    if details.daily_start is not None
+                    else None,
+                    "end": details.daily_end.isoformat()
+                    if details.daily_end is not None
+                    else None,
+                },
                 "fetched_at": _timestamp(details.fetched_at),
                 "monthly": _monthly(details.monthly),
                 "daily": _daily(details.daily),

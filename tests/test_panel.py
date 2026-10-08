@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator
-from datetime import UTC, date, datetime
+from copy import deepcopy
+from datetime import UTC, date, datetime, timedelta
 from importlib.metadata import version
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
@@ -29,7 +30,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, Unauthorized
 from homeassistant.helpers.http import KEY_AUTHENTICATED, request_handler_factory
 
-from custom_components.evn_cskh import panel
+from custom_components.evn_cskh import panel, sensor
 from custom_components.evn_cskh.api import (
     Customer,
     DetailSnapshot,
@@ -58,6 +59,7 @@ PERSON = Customer(
 OTHER = Customer("OFFLINE-OTHER", "OFFLINE-UNIT", "Other synthetic name")
 POINT = "OFFLINE-POINT"
 NOW = datetime(2026, 10, 7, 5, tzinfo=UTC)
+PANEL_NOW = panel._now
 START = "2026-01-01"
 END = "2026-10-06"
 START_DATE = date.fromisoformat(START)
@@ -218,6 +220,27 @@ def expected_usage(point: str = POINT) -> dict[str, Any]:
             "kwh": 3.0,
             "kind": "KT",
         },
+    }
+
+
+def expected_comparisons() -> dict[str, Any]:
+    return {
+        "as_of": "2026-10-07",
+        "points": [
+            {
+                "point_id": POINT,
+                "daily": [
+                    {"period": "2026-10-05", "kwh": None, "provisional": True},
+                    {"period": "2026-10-06", "kwh": 2.5, "provisional": True},
+                    {"period": "2026-10-07", "kwh": None, "provisional": True},
+                ],
+            }
+        ],
+        "monthly": [
+            {"period": "2026-08", "kwh": 10.0, "vnd": 220.0, "provisional": False},
+            {"period": "2026-09", "kwh": 12.5, "vnd": 330.0, "provisional": False},
+            {"period": "2026-10", "kwh": None, "vnd": 220.0, "provisional": True},
+        ],
     }
 
 
@@ -775,6 +798,7 @@ async def test_overview_cached_refresh_and_unavailable(
         "outages": [],
         "outage_count": 2,
         "next_outage": None,
+        "comparisons": {"as_of": "2026-10-07", "points": [], "monthly": []},
     }
 
 
@@ -787,12 +811,14 @@ async def test_details_contract_aggregation_and_redaction(
         "point_id",
         "start",
         "end",
+        "daily_window",
         "fetched_at",
         "monthly",
         "daily",
         "readings",
         "invoices",
     }
+    assert result["daily_window"] == {"start": None, "end": None}
     assert result["monthly"] == [
         {"period": "2026-01", "kwh": 4},
         {"period": "2026-09", "kwh": 12.5},
@@ -803,6 +829,9 @@ async def test_details_contract_aggregation_and_redaction(
     ]
     assert result["readings"][0] == {
         "period": "2026-09",
+        "timestamp": None,
+        "reading_date": None,
+        "resolution": None,
         "meter": "SYNTHETIC-METER",
         "register": "KT",
         "old": 10,
@@ -813,6 +842,9 @@ async def test_details_contract_aggregation_and_redaction(
     }
     assert result["readings"][1] == {
         "period": "06/10/2026",
+        "timestamp": None,
+        "reading_date": "2026-10-06",
+        "resolution": "day",
         "meter": "",
         "register": "",
         "old": None,
@@ -830,6 +862,7 @@ async def test_details_contract_aggregation_and_redaction(
         "amount": 110,
         "tax": 10,
         "outstanding": 110,
+        "payable_amount": 110.0,
         "status": "CHUATT",
         "status_label": "Chưa thanh toán",
         "paid_date": "",
@@ -851,22 +884,147 @@ async def test_details_contract_aggregation_and_redaction(
 
 
 @pytest.mark.parametrize(
-    "status,label",
+    "status,label,payable",
     [
-        ("CHUATT", "Chưa thanh toán"),
-        ("DATT", "Đã thanh toán"),
-        ("TTOANMOTPHAN", "Đã thanh toán một phần"),
-        ("DAHT", "Đã hoàn trả"),
-        ("CHUAHT", "Chưa hoàn trả"),
-        ("CHOXULY", "Chờ xử lý"),
-        (None, "Không xác định"),
-        ("NEW-STATUS", "Không xác định"),
+        ("CHUATT", "Chưa thanh toán", 110.0),
+        ("DATT", "Đã thanh toán", 0.0),
+        ("TTOANMOTPHAN", "Đã thanh toán một phần", None),
+        ("DAHT", "Đã hoàn trả", None),
+        ("CHUAHT", "Chưa hoàn trả", None),
+        ("CHOXULY", "Chờ xử lý", None),
+        (None, "Không xác định", None),
+        ("NEW-STATUS", "Không xác định", None),
     ],
 )
-def test_invoice_status_is_explicit(status: str | None, label: str) -> None:
+def test_invoice_status_is_explicit(
+    status: str | None, label: str, payable: float | None
+) -> None:
     result = panel._invoice_dto(invoice_row(TTRANG_TTOAN=status))
     assert result["status_label"] == label
     assert result["status"] == (status if status in panel._STATUSES else "UNKNOWN")
+    assert result["outstanding"] == 110.0
+    assert result["payable_amount"] == payable
+
+
+@pytest.mark.parametrize(
+    "status,kind", [("CHUATT", None), ("TTOANMOTPHAN", "TT"), ("TTOANMOTPHAN", "HC")]
+)
+@pytest.mark.parametrize(
+    "raw,expected",
+    [(110, 110.0), (-110.5, 110.5), ("-12.50", 12.5), ("0", 0.0), (0, 0.0)],
+)
+def test_invoice_payable_uses_absolute_valid_outstanding(
+    status: str, kind: str | None, raw: Any, expected: float
+) -> None:
+    row = invoice_row(TTRANG_TTOAN=status, LOAI_PSINH=kind, TONG_NO=raw)
+    original = deepcopy(row)
+    result = panel._invoice_dto(row)
+    assert result["payable_amount"] == expected
+    assert type(result["payable_amount"]) is float
+    assert result["outstanding"] == float(raw)
+    assert result["amount"] == 110.0
+    assert row == original
+    json.dumps(result, allow_nan=False)
+
+
+@pytest.mark.parametrize("status", ["DATT", "CHUATT", "TTOANMOTPHAN"])
+@pytest.mark.parametrize(
+    "raw",
+    [None, True, False, "", "NaN", "1,000", "1e3", float("nan"), float("inf"), [], {}],
+)
+def test_invoice_payable_invalid_outstanding_never_uses_invoice_total(
+    status: str, raw: Any
+) -> None:
+    result = panel._invoice_dto(
+        invoice_row(TTRANG_TTOAN=status, LOAI_PSINH="TT", TONG_NO=raw, TONG_TIEN=900)
+    )
+    assert result["payable_amount"] == (0.0 if status == "DATT" else None)
+    assert result["outstanding"] is None
+    assert result["amount"] == 900.0
+    json.dumps(result, allow_nan=False)
+
+
+@pytest.mark.parametrize(
+    "kind", [None, "", " ", "TH", True, False, 1, [], {}, " TT", "TT ", "TH\n"]
+)
+def test_partial_invoice_payable_requires_explicit_non_refund_kind(kind: Any) -> None:
+    result = panel._invoice_dto(
+        invoice_row(TTRANG_TTOAN="TTOANMOTPHAN", LOAI_PSINH=kind, TONG_NO=110)
+    )
+    assert result["payable_amount"] is None
+    assert result["outstanding"] == 110.0
+    assert result["status"] == "TTOANMOTPHAN"
+    assert result["status_label"] == (
+        "Đã hoàn trả một phần" if kind == "TH" else "Đã thanh toán một phần"
+    )
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        "DAHT",
+        "CHUAHT",
+        "CHOXULY",
+        "UNKNOWN",
+        "NEW-STATUS",
+        None,
+        True,
+        False,
+        1,
+        [],
+        {},
+        "datt",
+        " DATT",
+        "DATT\n",
+        "chuatt",
+        "CHUATT\x00",
+    ],
+)
+def test_invoice_payable_requires_raw_explicit_payment_status(status: Any) -> None:
+    result = panel._invoice_dto(
+        invoice_row(TTRANG_TTOAN=status, LOAI_PSINH="TT", TONG_NO=110)
+    )
+    assert result["payable_amount"] is None
+    assert result["outstanding"] == 110.0
+    json.dumps(result, allow_nan=False)
+
+
+@pytest.mark.parametrize(
+    "status,missing,expected",
+    [
+        ("DATT", "TONG_NO", 0.0),
+        ("CHUATT", "TONG_NO", None),
+        ("TTOANMOTPHAN", "TONG_NO", None),
+        ("TTOANMOTPHAN", "LOAI_PSINH", None),
+        ("DATT", "TTRANG_TTOAN", None),
+    ],
+)
+def test_invoice_payable_missing_fields_are_not_inferred(
+    status: str, missing: str, expected: float | None
+) -> None:
+    row = invoice_row(TTRANG_TTOAN=status, LOAI_PSINH="TT")
+    del row[missing]
+    assert panel._invoice_dto(row)["payable_amount"] == expected
+
+
+@pytest.mark.parametrize(
+    "updates,expected",
+    [
+        ({"TTRANG_TTOAN": "DATT", "status": "CHUATT", "payable_amount": 900}, 0.0),
+        ({"TTRANG_TTOAN": None, "status": "DATT", "payable_amount": 0}, None),
+        ({"TTRANG_TTOAN": "CHUATT", "status": "DATT", "TONG_NO": -25}, 25.0),
+        ({"TONG_NO": None, "outstanding": 900, "tong_no": 900, "TONG_TIEN": 900}, None),
+        ({"TTRANG_TTOAN": "TTOANMOTPHAN", "LOAI_HDON": "TT", "loai_psinh": "TT"}, None),
+        (
+            {"TTRANG_TTOAN": "TTOANMOTPHAN", "LOAI_PSINH": "TH", "loai_psinh": "TT"},
+            None,
+        ),
+    ],
+)
+def test_invoice_payable_ignores_conflicting_aliases(
+    updates: dict[str, Any], expected: float | None
+) -> None:
+    assert panel._invoice_dto(invoice_row(**updates))["payable_amount"] == expected
 
 
 @pytest.mark.parametrize(
@@ -886,7 +1044,7 @@ def test_invoice_energy_and_unknown_numbers(kind: str | None, unit: str) -> None
     assert result["energy_unit"] == unit
     assert all(
         result[key] is None
-        for key in ("amount", "tax", "outstanding", "energy", "cycle")
+        for key in ("amount", "tax", "outstanding", "payable_amount", "energy", "cycle")
     )
     if kind is None:
         assert result["documents"] == []
@@ -1255,7 +1413,9 @@ async def test_overview_directory_info_and_caps(
         "outages",
         "outage_count",
         "next_outage",
+        "comparisons",
     }
+    assert result["comparisons"] == expected_comparisons()
     assert result["customer"] == panel._customer_dto(make_snapshot())
     assert result["info"] == expected_info()
     assert result["contracts"] == [
@@ -1338,6 +1498,75 @@ async def test_overview_outstanding_uses_active_invoices(
     assert result["invoices"][0]["org_code"] == "BANK-1"
     assert result["invoices"][0]["payment_channel_label"] == f"Offline bank 1{XSS}"
     assert result["invoices"][0]["due_date"] == "20/10/2026"
+
+
+@pytest.mark.parametrize("command", ["overview", "details"])
+async def test_invoice_payable_status_in_overview_and_details(
+    hass: HomeAssistant, entry: EvnConfigEntry, command: str
+) -> None:
+    rows = [
+        invoice_row(ID_HDON=f"ACTIVE-{index}", TTRANG_TTOAN=status, LOAI_PSINH=kind)
+        for index, (status, kind) in enumerate(
+            (
+                ("DATT", None),
+                ("CHUATT", None),
+                ("TTOANMOTPHAN", "TT"),
+                ("TTOANMOTPHAN", "TH"),
+                ("TTOANMOTPHAN", None),
+                ("DAHT", None),
+                ("CHUAHT", None),
+                ("CHOXULY", None),
+                ("UNKNOWN", None),
+            )
+        )
+    ]
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.invoices = rows
+    snapshot.paid_invoices = [paid_row(1, TONG_NO=500)]
+    details = make_details()
+    details.invoices = deepcopy(rows)
+    cast(AsyncMock, entry.runtime_data.client.details).side_effect = None
+    cast(AsyncMock, entry.runtime_data.client.details).return_value = details
+    args = detail_args(entry)
+    if command == "overview":
+        args = {key: args[key] for key in ("entry_id", "customer_key")}
+    result = (await ws(hass, command, **args))["result"]
+    assert [row["payable_amount"] for row in result["invoices"]] == [
+        0.0,
+        110.0,
+        110.0,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    ]
+    assert [row["outstanding"] for row in result["invoices"]] == [110.0] * len(rows)
+    assert result["invoices"][3]["status_label"] == "Đã hoàn trả một phần"
+    if command == "overview":
+        assert result["outstanding"] == {"amount": None, "count": None}
+        assert result["paid_recent"][0]["payable_amount"] == 0.0
+        assert result["paid_recent"][0]["outstanding"] == 500.0
+
+
+async def test_active_paid_invoice_positive_balance_does_not_imply_debt(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.invoices = [invoice_row(TTRANG_TTOAN="DATT", TONG_NO=110)]
+    snapshot.paid_invoices = []
+    args = {"entry_id": entry.entry_id, "customer_key": customer_key(PERSON)}
+    result = (await ws(hass, "overview", **args))["result"]
+    assert len(result["invoices"]) == 1
+    assert result["invoices"][0]["outstanding"] == 110.0
+    assert result["invoices"][0]["payable_amount"] == 0.0
+    assert result["outstanding"] == {"amount": 0.0, "count": 0}
+    assert result["paid_count"] == 0
+    entry.runtime_data.last_update_success = False
+    result = (await ws(hass, "overview", **args))["result"]
+    assert result["outstanding"] == {"amount": None, "count": None}
+    assert result["invoices"] == result["paid_recent"] == []
 
 
 async def test_overview_paid_invoices_are_tolerant_and_bounded(
@@ -1469,6 +1698,7 @@ def test_invoice_dto_never_carries_customer_identity() -> None:
         "amount",
         "tax",
         "outstanding",
+        "payable_amount",
         "status",
         "status_label",
         "paid_date",
@@ -1535,3 +1765,585 @@ async def test_overview_dto_lists_stay_bounded(
     ]
     assert len(set(keys)) == len(keys)
     assert all(len(key) == 32 and "/" not in key and "+" not in key for key in keys)
+
+
+@pytest.mark.parametrize(
+    "utc_now,as_of,months",
+    [
+        (
+            datetime(2025, 12, 31, 16, 59, 59, tzinfo=UTC),
+            date(2025, 12, 31),
+            ["2025-10", "2025-11", "2025-12"],
+        ),
+        (
+            datetime(2025, 12, 31, 17, tzinfo=UTC),
+            date(2026, 1, 1),
+            ["2025-11", "2025-12", "2026-01"],
+        ),
+    ],
+)
+def test_comparison_calendar_uses_vietnam_now_not_fetch_time(
+    monkeypatch: pytest.MonkeyPatch,
+    utc_now: datetime,
+    as_of: date,
+    months: list[str],
+) -> None:
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz: Any = None) -> datetime:
+            return utc_now.astimezone(tz)
+
+    snapshot = make_snapshot()
+    snapshot.fetched_at = FrozenDatetime(2024, 1, 1, tzinfo=UTC)
+    monkeypatch.setattr(panel, "datetime", FrozenDatetime)
+    monkeypatch.setattr(panel, "_now", PANEL_NOW)
+    assert panel._now() == as_of
+    result = panel._overview(snapshot, True)["comparisons"]
+    assert result["as_of"] == as_of.isoformat()
+    assert [row["period"] for row in result["points"][0]["daily"]] == [
+        (as_of - timedelta(days=offset)).isoformat() for offset in (2, 1, 0)
+    ]
+    assert [row["period"] for row in result["monthly"]] == months
+    assert [row["provisional"] for row in result["monthly"]] == [False, False, True]
+    assert all(row["provisional"] is True for row in result["points"][0]["daily"])
+    json.dumps(result, allow_nan=False)
+
+
+@pytest.mark.parametrize("available", [False, True])
+def test_overview_comparisons_share_one_as_of(
+    monkeypatch: pytest.MonkeyPatch, available: bool
+) -> None:
+    now = Mock(side_effect=[date(2026, 1, 1), date(2026, 2, 1)])
+    monkeypatch.setattr(panel, "_now", now)
+    result = panel._overview(make_snapshot(), available)["comparisons"]
+    now.assert_called_once_with()
+    assert result["as_of"] == "2026-01-01"
+    if available:
+        assert [row["period"] for row in result["points"][0]["daily"]] == [
+            "2025-12-30",
+            "2025-12-31",
+            "2026-01-01",
+        ]
+        assert [row["period"] for row in result["monthly"]] == [
+            "2025-11",
+            "2025-12",
+            "2026-01",
+        ]
+    else:
+        assert result == {"as_of": "2026-01-01", "points": [], "monthly": []}
+
+
+async def test_daily_comparisons_match_sensors_without_index_inference(
+    hass: HomeAssistant, entry: EvnConfigEntry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sensor, "vn_now", lambda: NOW.date())
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    snapshot.daily[POINT] = [
+        {"NGAY": day, "SO_CTO": "METER-A", "BCS": "KT", "DIEN_TTHU": value}
+        for day, value in (
+            ("06/10/2026", 4.25),
+            ("07/10/2026", 0),
+            ("05/10/2026", -1.5),
+        )
+    ]
+    snapshot.daily_readings[POINT] = [
+        daily_reading_row(day, CHISO_MOI=1000 + day * 100, DIEN_TTHU=9999)
+        for day in (5, 6, 7)
+    ]
+    args = {"entry_id": entry.entry_id, "customer_key": customer_key(PERSON)}
+    result = (await ws(hass, "overview", **args))["result"]["comparisons"]
+    assert result["points"] == [
+        {
+            "point_id": POINT,
+            "daily": [
+                {"period": "2026-10-05", "kwh": -1.5, "provisional": True},
+                {"period": "2026-10-06", "kwh": 4.25, "provisional": True},
+                {"period": "2026-10-07", "kwh": 0.0, "provisional": True},
+            ],
+        }
+    ]
+    entities = {
+        description.key: sensor.EvnSensor(
+            entry.runtime_data, entry, PERSON, description, point=POINT
+        )
+        for description in sensor.POINT_SENSORS
+        if description.key in sensor._DAY_OFFSETS
+    }
+    keys = ("consumption_two_days_ago", "consumption_yesterday", "consumption_today")
+    for key, row in zip(keys, result["points"][0]["daily"], strict=True):
+        assert entities[key].native_value == row["kwh"]
+        assert entities[key].extra_state_attributes["target_date"] == row["period"]
+        assert entities[key].extra_state_attributes["provisional"] is row["provisional"]
+    snapshot.daily[POINT].pop(1)
+    result = (await ws(hass, "overview", **args))["result"]["comparisons"]
+    assert result["points"][0]["daily"][-1] == {
+        "period": "2026-10-07",
+        "kwh": None,
+        "provisional": True,
+    }
+    assert entities["consumption_today"].native_value is None
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [],
+        [{"NGAY_HTHI": "05/10/2026 - 07/10/2026", "BCS": "KT", "DIEN_TTHU": 30}],
+        [{"NGAY": "07/10/2026", "BCS": "KT", "CHISO_MOI": 200}],
+        [{"NGAY": "07/10/2026", "BCS": "BT", "DIEN_TTHU": 3}],
+        [{"NGAY": "bad", "BCS": "KT", "DIEN_TTHU": 3}],
+    ],
+)
+def test_daily_comparisons_unknown_or_multiday_are_null(
+    rows: list[dict[str, Any]],
+) -> None:
+    snapshot = make_snapshot()
+    snapshot.daily[POINT] = rows
+    snapshot.daily_readings[POINT] = [daily_reading_row(7)]
+    result = panel._overview(snapshot, True)["comparisons"]
+    assert result["points"] == [
+        {
+            "point_id": POINT,
+            "daily": [
+                {"period": "2026-10-05", "kwh": None, "provisional": True},
+                {"period": "2026-10-06", "kwh": None, "provisional": True},
+                {"period": "2026-10-07", "kwh": None, "provisional": True},
+            ],
+        }
+    ]
+
+
+async def test_customer_month_comparisons_match_sensors_all_points_and_invoice_merge(
+    hass: HomeAssistant, entry: EvnConfigEntry, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    as_of = date(2026, 1, 1)
+    monkeypatch.setattr(panel, "_now", lambda: as_of)
+    monkeypatch.setattr(sensor, "vn_now", lambda: as_of)
+    snapshot = entry.runtime_data.data[customer_key(PERSON)]
+    last = "OFFLINE-LAST-POINT"
+    snapshot.measurement_points = [
+        PRIVATE | {"MA_DDO": POINT},
+        PRIVATE | {"MA_DDO": last},
+    ]
+    snapshot.monthly = {
+        POINT: [
+            {"NAM": year, "THANG": month, "DIEN_TTHU": value}
+            for year, month, value in ((2026, 1, 0), (2025, 11, 10), (2025, 12, 20))
+        ],
+        last: [{"NAM": 2025, "THANG": 11, "DIEN_TTHU": 1}],
+        "UNOWNED": [{"NAM": 2026, "THANG": 1, "DIEN_TTHU": 99999}],
+    }
+    snapshot.monthly_readings = {
+        POINT: [monthly_reading_row(1, DIEN_TTHU=99999, NGAY_CKY="01/01/2026")],
+        last: [
+            {"NAM": 2025, "THANG": 12, "LOAI_CHISO": "KT", "DIEN_TTHU": 5},
+            *[
+                {"NAM": 2026, "THANG": 1, "BCS": band, "DIEN_TTHU": value}
+                for band, value in (("KT", 3), ("BT", 10), ("CD", 10), ("TD", 10))
+            ],
+        ],
+    }
+    snapshot.daily = {
+        POINT: [{"NGAY": "01/01/2026", "BCS": "KT", "DIEN_TTHU": 4}],
+        last: [{"NGAY": "01/01/2026", "BCS": "KT", "DIEN_TTHU": 7}],
+    }
+    active = invoice_row(
+        ID_HDON="ACTIVE-JAN",
+        ID_HDON_DC=None,
+        NAM=2026,
+        THANG=1,
+        TONG_TIEN=100,
+        TONG_NO=-70,
+        TIEN_GTGT=7,
+        DIEN_TTHU=999,
+    )
+    paid = paid_row(1, ID_HDON="PAID-JAN", ID_HDON_DC=None, THANG=1, TONG_TIEN=50)
+    snapshot.invoices = [active, deepcopy(active)]
+    snapshot.paid_invoices = [
+        active | {"TTRANG_TTOAN": "DATT", "TONG_TIEN": 9999, "TONG_NO": 0},
+        paid,
+        deepcopy(paid),
+        paid_row(2, NAM=2025, THANG=12, TONG_TIEN=0),
+        paid_row(3, NAM=2025, THANG=11, TONG_TIEN=200),
+    ]
+    original = deepcopy(snapshot)
+    result = (
+        await ws(
+            hass, "overview", entry_id=entry.entry_id, customer_key=customer_key(PERSON)
+        )
+    )["result"]["comparisons"]
+    assert result == {
+        "as_of": "2026-01-01",
+        "points": [
+            {
+                "point_id": point,
+                "daily": [
+                    {"period": "2025-12-30", "kwh": None, "provisional": True},
+                    {"period": "2025-12-31", "kwh": None, "provisional": True},
+                    {"period": "2026-01-01", "kwh": value, "provisional": True},
+                ],
+            }
+            for point, value in ((POINT, 4.0), (last, 7.0))
+        ],
+        "monthly": [
+            {"period": "2025-11", "kwh": 11.0, "vnd": 200.0, "provisional": False},
+            {"period": "2025-12", "kwh": 25.0, "vnd": 0.0, "provisional": False},
+            {"period": "2026-01", "kwh": 3.0, "vnd": 150.0, "provisional": True},
+        ],
+    }
+    assert snapshot == original
+    entities = {
+        description.key: sensor.EvnSensor(
+            entry.runtime_data, entry, PERSON, description
+        )
+        for description in sensor.CUSTOMER_SENSORS
+        if description.key.startswith(("consumption_", "invoice_"))
+        and description.key.endswith("period")
+    }
+    for suffix, row in zip(
+        ("prev_prev_period", "prev_period", "this_period"),
+        result["monthly"],
+        strict=True,
+    ):
+        assert entities[f"consumption_{suffix}"].native_value == row["kwh"]
+        assert entities[f"invoice_{suffix}"].native_value == row["vnd"]
+        assert (
+            entities[f"consumption_{suffix}"].extra_state_attributes["target_month"]
+            == row["period"]
+        )
+        assert (
+            entities[f"consumption_{suffix}"].extra_state_attributes["provisional"]
+            is row["provisional"]
+        )
+    serialized = json.dumps(result, allow_nan=False)
+    assert not any(value in serialized for value in PRIVATE.values())
+    assert not any(
+        key in serialized
+        for key in (*PRIVATE, "key", "MA_KHANG", "MA_DVIQLY", "MA_DDO")
+    )
+    snapshot.monthly_readings[last] = []
+    result = (
+        await ws(
+            hass, "overview", entry_id=entry.entry_id, customer_key=customer_key(PERSON)
+        )
+    )["result"]["comparisons"]
+    assert [row["kwh"] for row in result["monthly"]] == [11.0, None, None]
+    assert [row["vnd"] for row in result["monthly"]] == [200.0, 0.0, 150.0]
+    assert entities["consumption_this_period"].native_value is None
+    assert entities["consumption_prev_period"].native_value is None
+
+
+@pytest.mark.parametrize("value", [None, "NaN", float("inf"), True, "1,000"])
+def test_comparisons_invalid_values_are_null_not_replaced_by_readings(
+    value: Any,
+) -> None:
+    snapshot = make_snapshot()
+    snapshot.monthly = {POINT: [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": value}]}
+    snapshot.monthly_readings = {
+        POINT: [monthly_reading_row(10, NGAY_CKY="07/10/2026")]
+    }
+    snapshot.daily = {POINT: [{"NGAY": "07/10/2026", "BCS": "KT", "DIEN_TTHU": value}]}
+    snapshot.invoices = [invoice_row(THANG=10, TONG_TIEN=value)]
+    snapshot.paid_invoices = [
+        snapshot.invoices[0] | {"TONG_TIEN": 500, "TTRANG_TTOAN": "DATT"}
+    ]
+    result = panel._overview(snapshot, True)["comparisons"]
+    assert result["monthly"][-1] == {
+        "period": "2026-10",
+        "kwh": None,
+        "vnd": None,
+        "provisional": True,
+    }
+    assert result["points"][0]["daily"][-1]["kwh"] is None
+    json.dumps(result, allow_nan=False)
+
+
+@pytest.mark.parametrize("value", [0, None, -5])
+def test_monthly_comparison_units_are_independent(value: int | None) -> None:
+    snapshot = make_snapshot()
+    snapshot.monthly = {POINT: [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": value}]}
+    snapshot.monthly_readings = {}
+    snapshot.invoices = [invoice_row(THANG=10, TONG_TIEN=value)]
+    snapshot.paid_invoices = []
+    assert panel._overview(snapshot, True)["comparisons"]["monthly"][-1] == {
+        "period": "2026-10",
+        "kwh": value,
+        "vnd": value,
+        "provisional": True,
+    }
+    snapshot.invoices = []
+    assert panel._overview(snapshot, True)["comparisons"]["monthly"][-1]["kwh"] == value
+    assert panel._overview(snapshot, True)["comparisons"]["monthly"][-1]["vnd"] is None
+    snapshot.invoices = [invoice_row(THANG=10, TONG_TIEN=value)]
+    snapshot.monthly = {}
+    assert panel._overview(snapshot, True)["comparisons"]["monthly"][-1]["kwh"] is None
+    assert panel._overview(snapshot, True)["comparisons"]["monthly"][-1]["vnd"] == value
+
+
+def test_available_empty_comparisons_keep_calendar_slots_without_samples() -> None:
+    snapshot = make_snapshot()
+    snapshot.measurement_points = []
+    snapshot.monthly = snapshot.daily = snapshot.monthly_readings = (
+        snapshot.daily_readings
+    ) = {}
+    snapshot.invoices = snapshot.paid_invoices = []
+    assert panel._overview(snapshot, True)["comparisons"] == {
+        "as_of": "2026-10-07",
+        "points": [],
+        "monthly": [
+            {"period": "2026-08", "kwh": None, "vnd": None, "provisional": False},
+            {"period": "2026-09", "kwh": None, "vnd": None, "provisional": False},
+            {"period": "2026-10", "kwh": None, "vnd": None, "provisional": True},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "fields,timestamp,reading_date,resolution",
+    [
+        ({"NGAY": "07/10/2026"}, None, "2026-10-07", "day"),
+        ({"THOI_DIEM": "07/10/2026"}, None, "2026-10-07", "day"),
+        (
+            {"NGAY": "07/10/2026", "THOI_DIEM": "08:30"},
+            "2026-10-07T08:30:00+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        (
+            {"NGAY": "07/10/2026", "THOI_DIEM": "08:30:15"},
+            "2026-10-07T08:30:15+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        (
+            {"NGAY": "07/10/2026", "THOI_DIEM": "00:00"},
+            "2026-10-07T00:00:00+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        (
+            {"THOI_DIEM": "07/10/2026 08:30"},
+            "2026-10-07T08:30:00+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        (
+            {"NGAY": "06/10/2026", "THOI_DIEM": "07/10/2026 08:30:15"},
+            "2026-10-07T08:30:15+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        (
+            {"NGAY": "bad", "THOI_DIEM": "07/10/2026 08:30:15"},
+            "2026-10-07T08:30:15+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        (
+            {"NGAY": "07/10/2026", "NGAY_HTHI": "08/10/2026", "THOI_DIEM": "08:30"},
+            "2026-10-07T08:30:00+07:00",
+            "2026-10-07",
+            "time",
+        ),
+        ({"NGAY": "07/10/2026", "THOI_DIEM": "bad"}, None, "2026-10-07", "day"),
+        ({"NGAY": "07/10/2026", "THOI_DIEM": "25:00"}, None, "2026-10-07", "day"),
+        ({"NGAY": "07/10/2026", "THOI_DIEM": ""}, None, "2026-10-07", "day"),
+        ({"NGAY": None, "THOI_DIEM": None}, None, None, None),
+        ({"NGAY_HTHI": "07/10/2026"}, None, None, None),
+        ({}, None, None, None),
+    ],
+)
+def test_daily_reading_timestamp_only_from_verified_event_time(
+    fields: dict[str, Any],
+    timestamp: str | None,
+    reading_date: str | None,
+    resolution: str | None,
+) -> None:
+    row = PRIVATE | fields | {"SO_CTO": 123, "BCS": "KT", "CHISO_MOI": "0"}
+    original = deepcopy(row)
+    dto = panel._reading(row, "daily")
+    assert dto == {
+        "period": fields.get("NGAY_HTHI")
+        or fields.get("NGAY")
+        or fields.get("THOI_DIEM")
+        or "",
+        "timestamp": timestamp,
+        "reading_date": reading_date,
+        "resolution": resolution,
+        "meter": "123",
+        "register": "KT",
+        "old": None,
+        "new": 0.0,
+        "multiplier": None,
+        "kwh": None,
+        "kind": "daily",
+    }
+    assert row == original
+    assert not any(
+        value in json.dumps(dto, allow_nan=False) for value in PRIVATE.values()
+    )
+
+
+@pytest.mark.parametrize(
+    "closing,timestamp,reading_date,resolution",
+    [
+        ("30/09/2026", None, "2026-09-30", "day"),
+        ("31/12/2025", None, "2025-12-31", "day"),
+        ("01/10/2026", None, "2026-10-01", "day"),
+        (
+            "30/09/2026 23:45",
+            "2026-09-30T23:45:00+07:00",
+            "2026-09-30",
+            "time",
+        ),
+        (
+            "30/09/2026 23:45:12",
+            "2026-09-30T23:45:12+07:00",
+            "2026-09-30",
+            "time",
+        ),
+        (None, None, None, None),
+        ("bad", None, None, None),
+        ("23:45", None, None, None),
+    ],
+)
+def test_monthly_reading_uses_actual_closing_date_not_month_label_or_opening(
+    closing: str | None,
+    timestamp: str | None,
+    reading_date: str | None,
+    resolution: str | None,
+) -> None:
+    row = monthly_reading_row(
+        9,
+        NGAY_CKY=closing,
+        NGAY_DKY="01/09/2026 08:00",
+        NGAY="07/10/2026",
+        THOI_DIEM="07/10/2026 12:00",
+        SO_CTO="SYNTHETIC-METER",
+    )
+    dto = panel._reading(row, "monthly")
+    assert dto == {
+        "period": "2026-09",
+        "timestamp": timestamp,
+        "reading_date": reading_date,
+        "resolution": resolution,
+        "meter": "SYNTHETIC-METER",
+        "register": "KT",
+        "old": 900.0,
+        "new": 920.0,
+        "multiplier": 1.0,
+        "kwh": 20.0,
+        "kind": "monthly",
+    }
+
+
+@pytest.mark.parametrize("kind", ["monthly", "daily"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        True,
+        20261007,
+        {},
+        "",
+        "bad",
+        "2026-10-07",
+        "2026-10-07T08:30:00+07:00",
+        "07/10/26 08:30",
+        "7/10/2026 08:30",
+        "07/1/2026 08:30",
+        "07/10/2026 8:30",
+        "07/10/2026 08:3",
+        "07/10/2026 08:30:1",
+        "07/10/2026 08:30:60",
+        "07/10/2026 24:00",
+        "31/02/2026 08:30",
+        "07/10/2026 08:30Z",
+        "07/10/2026  08:30",
+        "07/10/2026\t08:30",
+        " 07/10/2026 08:30",
+        "07/10/2026 08:30 ",
+        "07/10/2026 08:30\n",
+    ],
+)
+def test_invalid_reading_times_return_null_without_losing_index(
+    kind: str, value: Any
+) -> None:
+    row = PRIVATE | {
+        "NAM": 2026,
+        "THANG": 9,
+        "NGAY_CKY": value,
+        "THOI_DIEM": value,
+        "CHISO_MOI": "12.5",
+        "SO_CTO": "SYNTHETIC-METER",
+        "BCS": "KT",
+    }
+    dto = panel._reading(row, kind)
+    assert dto["timestamp"] is None
+    assert dto["reading_date"] is None
+    assert dto["resolution"] is None
+    assert dto["new"] == 12.5
+    assert dto["meter"] == "SYNTHETIC-METER"
+    assert dto["register"] == "KT"
+    assert dto["kind"] == kind
+    json.dumps(dto, allow_nan=False)
+
+
+@pytest.mark.parametrize(
+    "window",
+    [
+        (None, None),
+        (date(2026, 9, 6), date(2026, 10, 6)),
+        (date(2026, 10, 7), date(2026, 10, 7)),
+    ],
+)
+async def test_details_effective_daily_window_and_reading_order(
+    hass: HomeAssistant,
+    entry: EvnConfigEntry,
+    window: tuple[date | None, date | None],
+) -> None:
+    details = make_details(end=NOW.date())
+    details.daily_start, details.daily_end = window
+    details.daily.append({"NGAY": "07/10/2026", "BCS": "KT", "DIEN_TTHU": 0})
+    details.monthly_readings = [monthly_reading_row(9, NGAY_CKY="30/09/2026")]
+    details.daily_readings = [
+        daily_reading_row(7, THOI_DIEM="08:30", SO_CTO="SYNTHETIC-METER"),
+        daily_reading_row(6, THOI_DIEM="06/10/2026 23:45:12", SO_CTO="SYNTHETIC-METER"),
+        daily_reading_row(5, SO_CTO="SYNTHETIC-METER"),
+        daily_reading_row(4, THOI_DIEM="bad", SO_CTO="SYNTHETIC-METER"),
+    ]
+    cast(AsyncMock, entry.runtime_data.client.details).side_effect = None
+    cast(AsyncMock, entry.runtime_data.client.details).return_value = details
+    result = (await ws(hass, "details", **detail_args(entry, end="2026-10-07")))[
+        "result"
+    ]
+    assert result["start"] == START and result["end"] == "2026-10-07"
+    assert result["daily_window"] == {
+        "start": window[0].isoformat() if window[0] is not None else None,
+        "end": window[1].isoformat() if window[1] is not None else None,
+    }
+    assert result["daily"][-1] == {"period": "07/10/2026", "kwh": 0.0}
+    assert result["readings"] == [
+        panel._reading(row, "monthly") for row in details.monthly_readings
+    ] + [panel._reading(row, "daily") for row in details.daily_readings]
+    assert [row["timestamp"] for row in result["readings"]] == [
+        None,
+        "2026-10-07T08:30:00+07:00",
+        "2026-10-06T23:45:12+07:00",
+        None,
+        None,
+    ]
+    assert [row["reading_date"] for row in result["readings"]] == [
+        "2026-09-30",
+        "2026-10-07",
+        "2026-10-06",
+        "2026-10-05",
+        "2026-10-04",
+    ]
+    assert [row["resolution"] for row in result["readings"]] == [
+        "day",
+        "time",
+        "time",
+        "day",
+        "day",
+    ]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -21,14 +21,22 @@ from .const import customer_device_info, scope_id
 from .coordinator import EvnConfigEntry, EvnCoordinator, customer_key
 from .models import (
     PeriodUsage,
+    customer_month_energy,
+    daily_consumption_on,
     daily_summary,
+    invoice_for_month,
+    latest_cycle_index,
+    latest_daily_index,
     latest_invoice,
     latest_reading,
+    month_label,
     month_over_month,
     monthly_summary,
     next_outage,
     outstanding_from_active,
+    previous_months,
     trailing_average,
+    vn_now,
 )
 
 PARALLEL_UPDATES = 0
@@ -46,6 +54,11 @@ _INVOICE_FIELDS = (
     "paid_date",
     "status_label",
 )
+_DAY_OFFSETS = {
+    "consumption_today": 0,
+    "consumption_yesterday": 1,
+    "consumption_two_days_ago": 2,
+}
 
 POINT_SENSORS = (
     SensorEntityDescription(
@@ -92,6 +105,33 @@ POINT_SENSORS = (
         translation_key="meter_read_date",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    SensorEntityDescription(
+        key="current_provisional_index",
+        translation_key="current_provisional_index",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="previous_cycle_final_index",
+        translation_key="previous_cycle_final_index",
+    ),
+    SensorEntityDescription(
+        key="consumption_today",
+        translation_key="consumption_today",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="consumption_yesterday",
+        translation_key="consumption_yesterday",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="consumption_two_days_ago",
+        translation_key="consumption_two_days_ago",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
 )
 
 CUSTOMER_SENSORS = (
@@ -128,6 +168,56 @@ CUSTOMER_SENSORS = (
     SensorEntityDescription(
         key="fetched_at",
         translation_key="fetched_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="current_period_detail",
+        translation_key="current_period_detail",
+    ),
+    SensorEntityDescription(
+        key="invoice_year",
+        translation_key="invoice_year",
+    ),
+    SensorEntityDescription(
+        key="invoice_this_period",
+        translation_key="invoice_this_period",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="VND",
+    ),
+    SensorEntityDescription(
+        key="invoice_prev_period",
+        translation_key="invoice_prev_period",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="VND",
+    ),
+    SensorEntityDescription(
+        key="invoice_prev_prev_period",
+        translation_key="invoice_prev_prev_period",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="VND",
+    ),
+    SensorEntityDescription(
+        key="consumption_this_period",
+        translation_key="consumption_this_period",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="consumption_prev_period",
+        translation_key="consumption_prev_period",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="consumption_prev_prev_period",
+        translation_key="consumption_prev_prev_period",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+    ),
+    SensorEntityDescription(
+        key="next_update",
+        translation_key="next_update",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -265,6 +355,34 @@ def _number(value: Any) -> float | int | None:
     )
 
 
+def _point_rows(source: Any, point: str) -> list[dict[str, Any]]:
+    if not isinstance(source, dict):
+        return []
+    rows = source.get(point)
+    return rows if isinstance(rows, list) else []
+
+
+def _customer_month_energy(snapshot: Snapshot, period: tuple[int, int]) -> float | None:
+    return customer_month_energy(
+        snapshot.measurement_points,
+        snapshot.monthly,
+        snapshot.monthly_readings,
+        period[0],
+        period[1],
+    )
+
+
+def _next_update(coordinator: EvnCoordinator) -> datetime | None:
+    candidate = getattr(coordinator, "next_iteration", None)
+    if (
+        not isinstance(candidate, datetime)
+        or candidate.tzinfo is None
+        or candidate.utcoffset() is None
+    ):
+        return None
+    return candidate.astimezone(UTC)
+
+
 class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
     _attr_has_entity_name = True
 
@@ -309,6 +427,10 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
 
     @property
     def available(self) -> bool:
+        if self.entity_description.key == "next_update":
+            return (
+                _next_update(self.coordinator) is not None or self._snapshot is not None
+            )
         return self._snapshot is not None
 
     def _usage(self, snapshot: Snapshot) -> PeriodUsage | None:
@@ -337,6 +459,8 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
 
     @property
     def native_value(self) -> StateType | datetime:
+        if self.entity_description.key == "next_update":
+            return _next_update(self.coordinator)
         snapshot = self._snapshot
         if snapshot is None:
             return None
@@ -381,7 +505,137 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                 return outage.start if outage is not None else None
             case "fetched_at":
                 return snapshot.fetched_at
+            case "current_provisional_index":
+                return latest_daily_index(
+                    _point_rows(snapshot.daily_readings, self._point or "")
+                )[0]
+            case "previous_cycle_final_index":
+                return latest_cycle_index(
+                    _point_rows(snapshot.monthly_readings, self._point or ""),
+                    0,
+                    as_of=vn_now(),
+                )
+            case (
+                "consumption_today"
+                | "consumption_yesterday"
+                | "consumption_two_days_ago"
+            ):
+                days = _DAY_OFFSETS[self.entity_description.key]
+                target = vn_now() - timedelta(days=days)
+                return daily_consumption_on(
+                    _point_rows(snapshot.daily, self._point or ""), target
+                )
+            case "current_period_detail":
+                return month_label(vn_now()) or None
+            case "invoice_year":
+                today = vn_now()
+                return today.year if isinstance(today, date) else None
+            case (
+                "invoice_this_period"
+                | "invoice_prev_period"
+                | "invoice_prev_prev_period"
+            ):
+                period = self._period()
+                if period is None:
+                    return None
+                return invoice_for_month(
+                    snapshot.invoices, snapshot.paid_invoices, period[0], period[1]
+                )
+            case (
+                "consumption_this_period"
+                | "consumption_prev_period"
+                | "consumption_prev_prev_period"
+            ):
+                period = self._period()
+                if period is None:
+                    return None
+                return _customer_month_energy(snapshot, period)
         return None
+
+    def _period(self) -> tuple[int, int] | None:
+        today = vn_now()
+        if not isinstance(today, date):
+            return None
+        match self.entity_description.key:
+            case "invoice_this_period" | "consumption_this_period":
+                return today.year, today.month
+            case _:
+                periods = previous_months(today, 2)
+                index = (
+                    1 if self.entity_description.key.endswith("prev_prev_period") else 0
+                )
+                return periods[index] if len(periods) > index else None
+
+    def _calendar_attributes(self, snapshot: Snapshot) -> dict[str, Any]:
+        key = self.entity_description.key
+        today = vn_now()
+        if key in _DAY_OFFSETS:
+            target = today - timedelta(days=_DAY_OFFSETS[key])
+            return {
+                "target_date": target.isoformat(),
+                "period_basis": "calendar_day",
+                "source": "diennangngay",
+                "provisional": True,
+            }
+        if key == "previous_cycle_final_index":
+            periods = previous_months(today, 1)
+            return {
+                "target_month": f"{periods[0][0]:04d}-{periods[0][1]:02d}"
+                if periods
+                else None,
+                "as_of": today.isoformat(),
+                "period_basis": "previous_completed_month_label",
+                "cycle_basis": "latest_verified_end_date_or_month_cycle_order",
+                "source": "chisothang",
+                "provisional": False,
+            }
+        if key.startswith(("invoice_", "consumption_")) and key.endswith("period"):
+            period = self._period()
+            if period is None:
+                return {}
+            invoice = key.startswith("invoice_")
+            if invoice:
+                source: str | None = "hoadon+lichsu-hoadon"
+            else:
+                sources = set()
+                for point in snapshot.measurement_points:
+                    code = point.get("MA_DDO")
+                    if not isinstance(code, str):
+                        continue
+                    for name, rows in (
+                        ("diennangthang", _point_rows(snapshot.monthly, code)),
+                        ("chisothang", _point_rows(snapshot.monthly_readings, code)),
+                    ):
+                        if any(
+                            isinstance(row, dict) and _record_period(row) == period
+                            for row in rows
+                        ):
+                            sources.add(name)
+                            break
+                source = "+".join(sorted(sources)) or None
+            return {
+                "target_month": f"{period[0]:04d}-{period[1]:02d}",
+                "period_basis": "invoice_month_label"
+                if invoice
+                else "energy_month_label",
+                "source": source,
+                "provisional": not invoice and period == (today.year, today.month),
+            }
+        if key == "current_period_detail":
+            return {
+                "target_month": f"{today.year:04d}-{today.month:02d}",
+                "period_basis": "calendar_month_label",
+                "source": "vietnam_calendar",
+                "provisional": False,
+            }
+        if key == "invoice_year":
+            return {
+                "target_year": today.year,
+                "period_basis": "calendar_year",
+                "source": "vietnam_calendar",
+                "provisional": False,
+            }
+        return {}
 
     def _point_attributes(self, snapshot: Snapshot) -> dict[str, Any]:
         attributes: dict[str, Any] = {}
@@ -393,6 +647,15 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                     value = _number(change.get(field))
                     if value is not None:
                         attributes[field] = value
+        elif key == "current_provisional_index":
+            attributes.update({"source": "chisongay", "provisional": True})
+            index, stamp = latest_daily_index(
+                _point_rows(snapshot.daily_readings, self._point or "")
+            )
+            if index is not None and stamp is not None:
+                text = _text(stamp, 128)
+                attributes["latest_read_at"] = text
+                attributes["period"] = text.split(" ")[0]
         elif key in _METER_FIELDS:
             reading = self._reading(snapshot)
             if reading is not None:
@@ -457,12 +720,17 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         snapshot = self._snapshot
+        key = self.entity_description.key
         if snapshot is None:
+            if key == "next_update" and _next_update(self.coordinator) is not None:
+                return {"source": "coordinator_timer", "provisional": False}
             return {}
         attributes: dict[str, Any] = {
             "last_update": snapshot.fetched_at.isoformat(),
         }
-        key = self.entity_description.key
+        attributes.update(self._calendar_attributes(snapshot))
+        if key == "next_update":
+            attributes.update({"source": "coordinator_timer", "provisional": False})
         if self._point is not None:
             attributes["measurement_point"] = self._point[:256]
             attributes.update(self._point_attributes(snapshot))

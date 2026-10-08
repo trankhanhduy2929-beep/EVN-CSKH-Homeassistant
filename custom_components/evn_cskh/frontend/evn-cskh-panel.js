@@ -1,7 +1,10 @@
 const STYLE = `
 :host{display:block;min-width:0;color:var(--primary-text-color,#212121);background:var(--primary-background-color,#f4f5f7);font-family:var(--primary-font-family,inherit);font-size:14px;line-height:1.5;color-scheme:light;--evn-surface:var(--card-background-color,#fff);--evn-line:var(--divider-color,#dce0e4);--evn-muted:var(--secondary-text-color,#61666d);--evn-accent:var(--primary-color,#0075a8);--evn-error:var(--error-color,#db4437);--evn-success:var(--success-color,#168039);--evn-warning:var(--warning-color,#9b6511);--evn-hover:color-mix(in srgb,var(--primary-text-color,#212121) 6%,var(--evn-surface))}
-:host([dark]){color-scheme:dark}*{box-sizing:border-box;min-width:0}h1,h2,h3,p,dl,dd,figure,ul{margin:0}ul{padding:0;list-style:none}h1{font-size:20px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:16px;font-weight:600}p,dd,h2,h3{overflow-wrap:anywhere}button,input,select{font:inherit;color:inherit;max-width:100%}button,input,select{border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);min-height:40px;padding:8px 12px}button{cursor:pointer;font-weight:500;line-height:1.4}button:hover:not(:disabled):not([aria-disabled=true]){background:var(--evn-hover)}button:disabled,button[aria-disabled=true]{cursor:not-allowed;opacity:.6}button[aria-busy=true]{cursor:progress;opacity:1}button.primary{background:var(--evn-accent);border-color:transparent;color:var(--text-primary-color,#fff)}button.primary:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--evn-accent) 85%,var(--primary-text-color,#212121))}button.quiet{background:transparent;border-color:transparent}button.link{border-color:transparent;color:var(--evn-accent);background:transparent;text-align:left}button.link:hover{text-decoration:underline}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--evn-accent);outline-offset:3px}input,select{width:100%;height:40px}input[aria-invalid=true]{border-color:var(--evn-error)}label{display:block;width:fit-content;font-size:12px;font-weight:500;color:var(--evn-muted);margin-bottom:6px}svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}button.icon{display:inline-flex;align-items:center;justify-content:center;width:40px;padding:8px;flex:none;color:var(--evn-muted)}.topbar{background:var(--evn-surface);border-bottom:1px solid var(--evn-line)}.top-inner{max-width:1328px;margin:auto;padding:16px 24px;display:flex;align-items:center;gap:24px}.brand{display:flex;align-items:center;gap:12px;flex:1}.account-tools{display:flex;align-items:end;gap:12px}.account-field{width:320px}.account-tools>button{min-width:106px}#menu{display:none}:host([narrow]) #menu{display:inline-flex}.shell{max-width:1328px;margin:auto;padding:24px;display:grid;gap:20px}.intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.intro h2{font-size:20px}.intro p{margin-top:4px}.muted,.meta{color:var(--evn-muted)}.meta{font-size:12px}.freshness{text-align:right;max-width:300px}.tabs{display:flex;gap:24px;border-bottom:1px solid var(--evn-line);padding:4px 4px 0}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;min-height:48px;padding:10px 4px;color:var(--evn-muted);white-space:nowrap;flex:none}.tabs button[aria-selected=true]{border-bottom-color:var(--evn-accent);color:var(--evn-accent)}.stack{display:grid;gap:16px}.card{background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;padding:20px}.card-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:16px}.card-head p{margin-top:4px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{min-height:134px;display:flex;flex-direction:column;gap:8px}.metric-label{color:var(--evn-muted);font-size:13px}.metric-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric-value.compact{font-size:18px}.metric .meta{margin-top:auto}.overview-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px;align-items:start}.chart-card{min-height:340px}.chart{display:grid;gap:6px;margin-top:32px}.chart-column{text-align:center;min-width:0}.track{height:164px;position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-accent);border-radius:4px 4px 0 0}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted)}.loading::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--evn-accent);margin-right:8px;animation:pulse 1.4s ease-in-out infinite}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:620px}.invoice-table tbody tr{cursor:pointer}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes pulse{50%{opacity:.35}}
+:host([dark]){color-scheme:dark}*{box-sizing:border-box;min-width:0}h1,h2,h3,p,dl,dd,figure,ul{margin:0}ul{padding:0;list-style:none}h1{font-size:20px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:16px;font-weight:600}p,dd,h2,h3{overflow-wrap:anywhere}button,input,select{font:inherit;color:inherit;max-width:100%}button,input,select{border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);min-height:40px;padding:8px 12px}button{cursor:pointer;font-weight:500;line-height:1.4}button:hover:not(:disabled):not([aria-disabled=true]){background:var(--evn-hover)}button:disabled,button[aria-disabled=true]{cursor:not-allowed;opacity:.6}button[aria-busy=true]{cursor:progress;opacity:1}button.primary{background:var(--evn-accent);border-color:transparent;color:var(--text-primary-color,#fff)}button.primary:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--evn-accent) 85%,var(--primary-text-color,#212121))}button.quiet{background:transparent;border-color:transparent}button.link{border-color:transparent;color:var(--evn-accent);background:transparent;text-align:left}button.link:hover{text-decoration:underline}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--evn-accent);outline-offset:3px}input,select{width:100%;height:40px}input[aria-invalid=true]{border-color:var(--evn-error)}label{display:block;width:fit-content;font-size:12px;font-weight:500;color:var(--evn-muted);margin-bottom:6px}svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}button.icon{display:inline-flex;align-items:center;justify-content:center;width:40px;padding:8px;flex:none;color:var(--evn-muted)}.topbar{background:var(--evn-surface);border-bottom:1px solid var(--evn-line)}.top-inner{max-width:1328px;margin:auto;padding:16px 24px;display:flex;align-items:center;gap:24px}.brand{display:flex;align-items:center;gap:12px;flex:1}.account-tools{display:flex;align-items:end;gap:12px}.account-field{width:320px}.account-tools>button{min-width:106px}#menu{display:none}:host([narrow]) #menu{display:inline-flex}.shell{max-width:1328px;margin:auto;padding:24px;display:grid;gap:20px}.intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.intro h2{font-size:20px}.intro p{margin-top:4px}.muted,.meta{color:var(--evn-muted)}.meta{font-size:12px}.freshness{text-align:right;max-width:300px}.tabs{display:flex;gap:24px;border-bottom:1px solid var(--evn-line);padding:4px 4px 0}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;min-height:48px;padding:10px 4px;color:var(--evn-muted);white-space:nowrap;flex:none}.tabs button[aria-selected=true]{border-bottom-color:var(--evn-accent);color:var(--evn-accent)}.stack{display:grid;gap:16px}.card{background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;padding:20px}.card-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:16px}.card-head p{margin-top:4px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{min-height:134px;display:flex;flex-direction:column;gap:8px}.metric-label{color:var(--evn-muted);font-size:13px}.metric-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric-value.compact{font-size:18px}.metric .meta{margin-top:auto}.overview-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px;align-items:start}.chart-card{min-height:340px}
+.chart{display:grid;gap:6px;margin-top:32px}.chart-column{text-align:center;min-width:0}.track{height:164px;position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-accent);border-radius:4px 4px 0 0}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted)}.loading::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--evn-accent);margin-right:8px;animation:pulse 1.4s ease-in-out infinite}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:620px}.invoice-table tbody tr{cursor:pointer}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes pulse{50%{opacity:.35}}
+.comparison-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.comparison-card{display:flex;flex-direction:column;gap:12px}.comparison-card h2{font-size:16px}.comparison-card .chart{margin:8px 0 0;gap:12px;align-items:start}.comparison-chart .track{position:relative;height:132px;max-width:none;margin:0 0 12px}.comparison-chart .bar{max-width:32px;min-height:0;left:50%;width:40%;transform:translateX(-50%)}.comparison-chart .bar.current{opacity:1;background:color-mix(in srgb,var(--evn-accent) 35%,var(--evn-surface))}.bar.negative{border-radius:0 0 6px 6px}.zero-axis{position:absolute;left:0;right:0;border-top:1px solid var(--evn-line)}.chart-column{position:relative}.comparison-chart .chart-label{font-size:12px;overflow-wrap:anywhere;white-space:normal;text-align:center;border-top:0;padding-top:0;margin-top:0}.slot-value{display:block;text-align:center;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-top:4px}.slot-date,.slot-state{display:block;color:var(--evn-muted);font-size:12px;text-align:center;overflow-wrap:anywhere;margin-top:4px}.comparison-values table{table-layout:fixed;width:100%;min-width:0}.comparison-values th,.comparison-values td{white-space:normal;overflow-wrap:anywhere}.comparison-values th:first-child{width:32%}.comparison-values td{font-variant-numeric:tabular-nums}.comparison-values .slot-state{text-align:left}.index-card{display:flex;flex-direction:column;gap:16px}.index-card svg.index-chart{width:100%;height:auto;max-height:300px;stroke:none;overflow:visible}.index-chart .index-grid{stroke:var(--evn-line);stroke-width:1;vector-effect:non-scaling-stroke}.index-chart .index-line{stroke:var(--evn-accent);stroke-width:2;fill:none;vector-effect:non-scaling-stroke}.index-chart .index-point{fill:var(--evn-surface);stroke:var(--evn-accent);stroke-width:2;vector-effect:non-scaling-stroke;cursor:pointer}.index-chart .index-point:hover,.index-chart .index-point:focus{fill:var(--evn-accent)}.index-chart text{fill:var(--evn-muted);stroke:none;font-size:12px;font-variant-numeric:tabular-nums}.index-tooltip{min-height:42px;font-variant-numeric:tabular-nums}.index-values{max-height:220px;overflow:auto}.index-values table{min-width:0;width:100%}.index-values th,.index-values td{white-space:normal;overflow-wrap:anywhere}.index-values td{font-variant-numeric:tabular-nums}.index-empty{padding:24px 0}.index-series-field{max-width:100%}
 @media(max-width:1100px){.overview-grid{grid-template-columns:1fr}}
+@media(max-width:767px){.comparison-grid{grid-template-columns:1fr;gap:16px}.comparison-card .chart{gap:8px}.index-card svg.index-chart{min-height:180px}}
 @media(max-width:1000px){.metrics{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.freshness{max-width:220px}}
 @media(max-width:767px){.top-inner{padding:12px 16px;gap:12px;flex-wrap:wrap}.brand{width:100%}#menu{display:inline-flex}.account-tools{width:100%;gap:8px}.account-field{flex:1;width:auto}.shell{padding:16px;gap:16px}.intro{display:block;margin-bottom:4px}.freshness{text-align:left;max-width:none;margin-top:12px}.tabs{gap:16px;justify-content:flex-start;overflow-x:auto;scrollbar-color:transparent transparent}.tabs button{font-size:13px}.card{padding:16px}.metric{min-height:126px}.metric-value{font-size:20px}.metric-value.compact{font-size:16px}.metric-label{font-size:12px}.metrics>.metric:last-child{grid-column:1/-1}.card-head{gap:12px}.filters{gap:12px}.filters>.point-field{grid-column:1/-1}.filters>button{grid-column:1/-1}input,select{font-size:16px;height:44px}.filters button,.account-tools>button{min-height:44px}.segmented button{min-height:36px}.bar-number{display:none}.chart-label{font-size:12px}.track{height:148px}.chart-card{min-height:320px}.invoice-filters{grid-template-columns:1fr}.invoice-table-wrap{display:none}.invoice-cards{display:block}.banner{align-items:start;flex-direction:column}.pagination{align-items:start;flex-direction:column}.pagination nav{width:100%;justify-content:space-between}.outage-time{grid-template-columns:1fr;gap:12px}.dialog-head,.dialog-body{padding:16px}.pdf-actions{display:grid;grid-template-columns:1fr;width:100%}.dialog-info>div,.stat-list>div{grid-template-columns:1fr 1.2fr;gap:12px}.point-grid{grid-template-columns:1fr}.intro h2{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -43,11 +46,136 @@ const defaultRange = () => {
   return { start: new Date(Date.UTC(year, month - 12, 1)).toISOString().slice(0, 10), end };
 };
 const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+const displayDate = value => validDate(value) ? `${value.slice(8, 10)}/${value.slice(5, 7)}/${value.slice(0, 4)}` : "Chưa có ngày";
+const dailyEnd = period => {
+  if (validDate(period)) return period;
+  if (typeof period !== "string") return null;
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s*-\s*(\d{2})\/(\d{2})\/(\d{4}))?$/.exec(period.trim());
+  if (!match) return null;
+  const start = `${match[3]}-${match[2]}-${match[1]}`;
+  const end = match[4] ? `${match[6]}-${match[5]}-${match[4]}` : start;
+  return validDate(start) && validDate(end) && start <= end ? end : null;
+};
+const dailyRecords = records => [...array(records)].sort((a, b) => (dailyEnd(a?.period) || "9999").localeCompare(dailyEnd(b?.period) || "9999"));
+const readingLabel = row => readingMoment(row)?.label || "Chưa có ngày ghi thực tế";
+const comparisonSlots = (comparisons, pointId, field) => {
+  if (!validDate(comparisons?.as_of)) return null;
+  const day = new Date(`${comparisons.as_of}T00:00:00Z`);
+  const periods = [2, 1, 0].map(offset => {
+    const date = new Date(day);
+    if (field === "daily") date.setUTCDate(date.getUTCDate() - offset);
+    else { date.setUTCDate(1); date.setUTCMonth(date.getUTCMonth() - offset); }
+    return date.toISOString().slice(0, field === "daily" ? 10 : 7);
+  });
+  const source = field === "daily" ? array(comparisons.points).find(item => item?.point_id === pointId)?.daily : comparisons.monthly;
+  return periods.map((period, index) => {
+    const item = array(source).find(row => row?.period === period);
+    return {
+      period,
+      kwh: finite(item?.kwh) ? item.kwh : null,
+      vnd: finite(item?.vnd) ? item.vnd : null,
+      provisional: item?.provisional === true,
+      label: field === "daily" ? ["Hôm kia", "Hôm qua", "Hôm nay"][index] : `${period.slice(5, 7)}/${period.slice(0, 4)}`
+    };
+  });
+};
+const columnScale = values => {
+  const known = values.filter(finite);
+  const magnitude = Math.max(1, ...known.map(value => Math.abs(value)));
+  const low = Math.min(0, ...known.map(value => value / magnitude));
+  const high = Math.max(0, ...known.map(value => value / magnitude));
+  const span = high - low || 1;
+  return {
+    low: Math.min(0, ...known),
+    high: Math.max(0, ...known),
+    zero: -low / span * 100,
+    height: value => Math.abs(value / magnitude) / span * 100,
+    bottom: value => (Math.min(0, value / magnitude) - low) / span * 100,
+    top: value => (Math.max(0, value / magnitude) - low) / span * 100
+  };
+};
+const readingMoment = row => {
+  if (row?.resolution === "time" && typeof row.timestamp === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?\+07:00$/.test(row.timestamp) && validDate(row.timestamp.slice(0, 10))) {
+    const stamp = Date.parse(row.timestamp);
+    if (Number.isFinite(stamp) && new Date(stamp + 7 * 3600000).toISOString().slice(0, 19) === row.timestamp.slice(0, 19)) return { stamp, day: row.timestamp.slice(0, 10), label: `${row.timestamp} · ${time(row.timestamp)} · Giờ Việt Nam`, resolution: "time" };
+  }
+  if (row?.resolution === "day" && validDate(row.reading_date)) return { stamp: Date.parse(`${row.reading_date}T00:00:00+07:00`), day: row.reading_date, label: `${displayDate(row.reading_date)} · chỉ biết ngày`, resolution: "day" };
+  return null;
+};
+const monthOrdinal = period => {
+  if (typeof period !== "string") return null;
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(period);
+  return match && Number(match[1]) > 0 ? Number(match[1]) * 12 + Number(match[2]) - 1 : null;
+};
+const readingIdentity = row => typeof row?.meter === "string" && row.meter.trim() && typeof row.register === "string" && row.register.trim() && Object.hasOwn(KINDS, row.kind);
+const readingSeries = readings => {
+  const source = array(readings).slice(0, 1000);
+  const uncertain = source.filter(row => !readingIdentity(row));
+  const groups = new Map();
+  for (const row of source) {
+    if (!row || typeof row !== "object") continue;
+    const key = JSON.stringify([row.meter ?? null, row.register ?? null, row.kind ?? null]);
+    if (!groups.has(key)) groups.set(key, { key, meter: row.meter, register: row.register, kind: row.kind, rows: [] });
+    groups.get(key).rows.push(row);
+  }
+  return [...groups.values()].map(group => {
+    const seen = new Set();
+    const buckets = new Map();
+    const unknown = [];
+    for (const row of group.rows) {
+      const signature = JSON.stringify([row.period, row.timestamp, row.reading_date, row.resolution, row.old, row.new, row.multiplier, row.kwh]);
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      const moment = readingMoment(row);
+      if (!moment) { unknown.push({ value: finite(row.new) ? row.new : null, label: "Chưa có ngày ghi thực tế", stamp: null }); continue; }
+      const key = `${moment.resolution}:${moment.stamp}`;
+      const bucket = buckets.get(key);
+      const value = finite(row.new) ? row.new : null;
+      const monthlyPeriod = group.kind === "monthly" && monthOrdinal(row.period) !== null ? row.period : null;
+      if (bucket) {
+        if (bucket.value !== value) { bucket.value = null; bucket.conflict = true; }
+        if (bucket.monthlyPeriod !== monthlyPeriod) bucket.monthlyPeriod = null;
+      } else buckets.set(key, { ...moment, value, monthlyPeriod, conflict: false });
+    }
+    const points = [...buckets.values()].sort((a, b) => a.stamp - b.stamp);
+    const ambiguousDays = new Set(points.filter(point => point.resolution === "day" && points.some(other => other.day === point.day && other.resolution === "time")).map(point => point.day));
+    const identity = readingIdentity(group);
+    const blocked = !identity || unknown.length > 0 || uncertain.some(row => !row || !Object.hasOwn(KINDS, row.kind) || row.kind === group.kind);
+    const segments = [];
+    let segment = [];
+    let previous = null;
+    const flush = () => { if (segment.length > 1) segments.push(segment); segment = []; };
+    for (const point of points) {
+      const missingDay = previous && group.kind === "daily" && Date.parse(point.day) - Date.parse(previous.day) > 86400000;
+      const previousMonth = monthOrdinal(previous?.monthlyPeriod);
+      const currentMonth = monthOrdinal(point.monthlyPeriod);
+      const missingMonth = previous && group.kind === "monthly" && (previousMonth === null || currentMonth === null || currentMonth - previousMonth < 0 || currentMonth - previousMonth > 1);
+      if (missingDay || missingMonth || (previous && previous.resolution !== point.resolution)) flush();
+      if (!finite(point.value) || ambiguousDays.has(point.day)) flush();
+      else segment.push(point);
+      previous = point;
+    }
+    flush();
+    return { ...group, points, unknown, segments: blocked ? [] : segments, blocked, label: `Công tơ ${text(group.meter)} · ${text(group.register)} · ${KINDS[group.kind] || "Chưa rõ loại"} · Chỉ số gốc` };
+  });
+};
+const svgNode = (tag, attributes = {}, content) => {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, String(value));
+  if (content != null) element.textContent = String(content);
+  return element;
+};
 const paymentState = invoice => {
-  const label = String(invoice.status_label || "").toLocaleLowerCase("vi");
-  if ((finite(invoice.outstanding) && invoice.outstanding > 0) || label.includes("chưa thanh toán") || label.includes("thanh toán một phần")) return "unpaid";
-  if (label.includes("đã thanh toán") || invoice.paid_date) return "paid";
+  if (invoice?.status === "DATT") return "paid";
+  if (invoice?.status === "CHUATT") return "unpaid";
+  if (invoice?.status === "TTOANMOTPHAN") return String(invoice.status_label || "").trim().toLocaleLowerCase("vi") === "đã hoàn trả một phần" ? "unknown" : "unpaid";
   return "unknown";
+};
+const payableAmount = invoice => {
+  if (invoice && Object.hasOwn(invoice, "payable_amount")) return finite(invoice.payable_amount) && invoice.payable_amount >= 0 ? invoice.payable_amount : null;
+  const state = paymentState(invoice);
+  if (state === "paid") return 0;
+  return state === "unpaid" && finite(invoice?.outstanding) ? Math.abs(invoice.outstanding) : null;
 };
 
 export class EvnCskhPanel extends HTMLElement {
@@ -84,7 +212,7 @@ export class EvnCskhPanel extends HTMLElement {
   connectedCallback() {
     this._events?.abort();
     this._events = new AbortController();
-    for (const type of ["click", "change", "input", "submit", "keydown"]) {
+    for (const type of ["click", "change", "input", "submit", "keydown", "focusin", "pointerover"]) {
       this.shadowRoot.addEventListener(type, event => this._event(event), { signal: this._events.signal });
     }
     this._dialog.addEventListener("close", () => this._closeInvoice(), { signal: this._events.signal });
@@ -119,6 +247,7 @@ export class EvnCskhPanel extends HTMLElement {
     this._rangeError = "";
     this._tab = 0;
     this._period = "monthly";
+    this._readingSeries = "";
     this._query = "";
     this._paid = "all";
     this._invoicePage = this._readingPage = 0;
@@ -185,6 +314,7 @@ export class EvnCskhPanel extends HTMLElement {
     this._cancelPdf();
     this._choice = selected;
     this._point = array(selected.customer.points)[0]?.id || "";
+    this._readingSeries = "";
     this._range = defaultRange();
     this._overview = null;
     this._details = null;
@@ -232,7 +362,7 @@ export class EvnCskhPanel extends HTMLElement {
     return "";
   }
 
-  _detailKey() { return `${this._choice?.customer.key || ""}|${this._point}|${this._range.start}|${this._range.end}`; }
+  _detailKey() { return `${this._choice?.entry.entry_id || ""}|${this._choice?.customer.key || ""}|${this._point}|${this._range.start}|${this._range.end}`; }
 
   _invalidateDetails() {
     const restartOverview = this._overviewBusy;
@@ -288,6 +418,20 @@ export class EvnCskhPanel extends HTMLElement {
   _event(event) {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (event.type === "focusin" || event.type === "pointerover") {
+      if (target.matches(".index-point")) {
+        const tooltip = this.shadowRoot.getElementById("meter-index-tooltip");
+        if (tooltip) tooltip.textContent = target.getAttribute("aria-label");
+      }
+      return;
+    }
+    if (event.type === "keydown" && target.matches(".index-point")) {
+      const points = [...target.closest("svg").querySelectorAll(".index-point")];
+      const index = points.indexOf(target);
+      const next = { ArrowRight: Math.min(index + 1, points.length - 1), ArrowLeft: Math.max(0, index - 1), Home: 0, End: points.length - 1 }[event.key];
+      if (next !== undefined) { event.preventDefault(); points[next]?.focus(); }
+      return;
+    }
     if (event.type === "keydown" && target.getAttribute("role") === "tab") {
       const index = Number(target.dataset.tab);
       const size = TABS.length;
@@ -311,7 +455,8 @@ export class EvnCskhPanel extends HTMLElement {
     }
     if (event.type === "change") {
       if (target.id === "customer-select") this._selectCustomer(Number(target.value));
-      if (target.id === "point-select") { this._point = target.value; this._invalidateDetails(); }
+      if (target.id === "point-select") { this._point = target.value; this._readingSeries = ""; this._invalidateDetails(); }
+      if (target.id === "meter-series-select") { this._readingSeries = target.value; this._render(); }
       if (target.id === "date-from" || target.id === "date-to") this._invalidateDetails();
       if (target.id === "paid-select") { this._paid = target.value; this._invoicePage = 0; this._render(); }
       return;
@@ -497,13 +642,13 @@ export class EvnCskhPanel extends HTMLElement {
     const reading = usage?.reading;
     const deltaDetail = mom && finite(mom.percent) ? `${signed(mom.percent)} so với kỳ trước` : monthly?.period ? `Kỳ ${monthly.period} · Chưa có kỳ trước` : "Chưa có kỳ ghi nhận";
     metrics.append(
-      this._metricState("Sản lượng tháng này", finite(monthly?.kwh) ? `${numeric(monthly.kwh)} kWh` : "Chưa có dữ liệu", deltaDetail, !finite(monthly?.kwh)),
+      this._metricState("Điện năng tháng gần nhất", finite(monthly?.kwh) ? `${numeric(monthly.kwh)} kWh` : "Chưa có dữ liệu", deltaDetail, !finite(monthly?.kwh)),
       this._metricState("TB 12 tháng", finite(usage?.average_12m) ? `${numeric(usage.average_12m)} kWh` : "Chưa có dữ liệu", "Trung bình mỗi tháng của điểm đo", !finite(usage?.average_12m)),
       this._metricState("Chỉ số mới nhất", finite(reading?.new) ? numeric(reading.new) : "Chưa có dữ liệu", reading?.period ? `Kỳ ${reading.period} · ${KINDS[reading.kind] || text(reading.kind)}` : "Chưa có chỉ số", true),
       this._metricState("Tiền còn nợ", money(overview?.outstanding?.amount), finite(overview?.outstanding?.count) ? `${numeric(overview.outstanding.count)} hóa đơn chưa trả` : "Chưa xác định số hóa đơn", !finite(overview?.outstanding?.amount)),
       this._metricState("Ngừng điện kế tiếp", overview?.next_outage?.start ? time(overview.next_outage.start) : overview ? "Chưa có lịch" : "Chưa có dữ liệu", overview?.next_outage?.area ? text(overview.next_outage.area) : "Theo kế hoạch của điện lực", true)
     );
-    parent.append(metrics);
+    parent.append(metrics, this._comparisonGrid());
     const layout = node("div", null, "overview-grid");
     const chart = node("section", null, "card chart-card");
     const head = node("header", null, "card-head");
@@ -558,7 +703,7 @@ export class EvnCskhPanel extends HTMLElement {
       finite(item.average_12m) ? `${numeric(item.average_12m)} kWh` : "—",
       finite(item.reading?.new) ? numeric(item.reading.new) : "—"
     ]);
-    card.append(this._table(["Điểm đo", "Tháng này", "TB 12 tháng", "Chỉ số mới"], rows, "Tóm tắt điện năng theo từng điểm đo", "", "scroll-table"));
+    card.append(this._table(["Điểm đo", "Tháng gần nhất", "TB 12 tháng", "Chỉ số mới"], rows, "Tóm tắt điện năng theo từng điểm đo", "", "scroll-table"));
     return card;
   }
 
@@ -591,7 +736,9 @@ export class EvnCskhPanel extends HTMLElement {
     load.disabled = !this._point;
     load.setAttribute("aria-busy", String(this._detailsBusy));
     form.append(load);
-    const help = node("p", "Tối đa 366 ngày. Dữ liệu ngày chỉ có trong 31 ngày gần nhất; một bản ghi ngày có thể gộp nhiều ngày.", "meta filter-help");
+    const window = this._details?.daily_window;
+    const dailyHelp = validDate(window?.start) && validDate(window?.end) ? `Cửa sổ truy vấn ngày thực tế: ${displayDate(window.start)} → ${displayDate(window.end)}.` : "Chưa có cửa sổ truy vấn ngày thực tế.";
+    const help = node("p", `Tối đa 366 ngày cho lịch sử tháng. Dữ liệu ngày được truy vấn tối đa 31 ngày đến ngày kết thúc (không sau hôm nay). ${dailyHelp} Một bản ghi có thể gộp nhiều ngày.`, "meta filter-help");
     help.id = "range-help";
     const error = node("p", this._rangeError, "filter-error");
     error.id = "range-error";
@@ -615,41 +762,95 @@ export class EvnCskhPanel extends HTMLElement {
   }
 
   _renderChart(parent, period, records) {
-    if (!records.length || !records.some(item => finite(item.kwh))) {
+    const values = records.map(item => ({ ...item, provisional: item.provisional === true || (period === "monthly" && array(this._overview?.comparisons?.monthly).some(row => row.period === item.period && row.provisional === true)) }));
+    this._renderColumns(parent, values, { period, title: `Điện năng ${period === "monthly" ? "theo tháng" : "theo ngày"}` });
+  }
+
+  _renderColumns(parent, records, { field = "kwh", unit = "kWh", period = "monthly", title, comparison = false } = {}) {
+    if (!records.length || (!comparison && !records.some(item => finite(item?.[field])))) {
       parent.append(node("p", "Chưa có số liệu điện năng trong khoảng này.", "empty"));
       return;
     }
-    const known = records.filter(item => finite(item.kwh)).map(item => item.kwh);
-    const low = Math.min(0, ...known);
-    const high = Math.max(0, ...known);
-    const span = high - low || 1;
-    const chart = node("div", null, `chart ${period === "daily" ? "daily" : "monthly"}`);
+    const scale = columnScale(records.map(item => item?.[field]));
+    const format = value => field === "vnd" ? money(value) : numeric(value);
+    const fullValue = value => finite(value) ? field === "vnd" ? money(value) : `${numeric(value)} ${unit}` : "Chưa có dữ liệu";
+    const chart = node("div", null, `chart ${period}${comparison ? " comparison-chart" : ""}`);
+    chart.dataset.unit = unit;
+    chart.dataset.field = field;
+    chart.dataset.min = String(scale.low);
+    chart.dataset.max = String(scale.high);
     chart.setAttribute("role", "img");
-    chart.setAttribute("aria-label", `Điện năng ${period === "monthly" ? "theo tháng" : "theo ngày"}, đơn vị kWh. Khoảng trống là chưa có dữ liệu.`);
+    const captions = records.map(item => `${item.label || item.period} (${item.period}): ${fullValue(item[field])}${item.provisional === true ? " · Tạm tính/chưa chốt" : ""}`);
+    chart.setAttribute("aria-label", `${title}, đơn vị ${unit}. ${captions.join("; ")}. Khoảng trống là chưa có dữ liệu, không phải 0.`);
     chart.style.gridTemplateColumns = `repeat(${records.length},minmax(0,1fr))`;
     records.forEach((item, index) => {
       const column = node("div", null, "chart-column");
       column.dataset.period = item.period;
+      column.dataset.state = finite(item[field]) ? "known" : "missing";
+      column.title = captions[index];
+      column.setAttribute("aria-label", captions[index]);
+      if (comparison) column.tabIndex = 0;
       const track = node("div", null, "track");
-      const hasValue = finite(item.kwh);
-      const value = hasValue ? item.kwh : 0;
+      const axis = node("div", null, "zero-axis");
+      axis.style.bottom = `${scale.zero}%`;
+      track.append(axis);
+      const value = item[field];
+      const hasValue = finite(value);
       if (hasValue) {
-        const bar = node("div", null, `bar${item.period === today().slice(0, 7) ? " current" : ""}`);
-        bar.style.height = `${Math.abs(value) / span * 100}%`;
-        bar.style.bottom = `${(Math.min(0, value) - low) / span * 100}%`;
+        const bar = node("div", null, `bar${item.provisional === true ? " current" : ""}${value < 0 ? " negative" : ""}`);
+        bar.style.height = `${scale.height(value)}%`;
+        bar.style.bottom = `${scale.bottom(value)}%`;
         track.append(bar);
       }
-      const amount = node("span", hasValue ? numeric(value) : "—", "bar-number");
-      amount.style.bottom = `${(Math.max(0, value) - low) / span * 100}%`;
-      track.append(amount);
-      column.title = `${item.period}: ${hasValue ? `${numeric(value)} kWh` : "Chưa có dữ liệu"}`;
-      const label = period === "monthly" ? String(item.period).slice(5, 7) : index % Math.max(1, Math.ceil(records.length / 6)) === 0 ? String(item.period).slice(5, 10) : "";
+      if (!comparison) {
+        const amount = node("span", hasValue ? format(value) : "—", "bar-number");
+        amount.style.bottom = `${hasValue ? scale.top(value) : scale.zero}%`;
+        track.append(amount);
+      }
+      const end = dailyEnd(item.period);
+      const label = comparison ? item.label : period === "monthly" ? String(item.period).slice(5, 7) : index % Math.max(1, Math.ceil(records.length / 6)) === 0 ? end ? displayDate(end).slice(0, 5) : "—" : "";
       column.append(track, node("div", label, "chart-label"));
+      if (comparison) {
+        if (period === "daily") column.append(node("span", displayDate(item.period), "slot-date"));
+        if (field !== "vnd") column.append(node("span", hasValue ? format(value) : "Chưa có", "slot-value"));
+        if (item.provisional === true) column.append(node("span", "Tạm tính/chưa chốt", "slot-state"));
+      }
       chart.append(column);
     });
     parent.append(chart);
-    parent.append(node("div", null, "chart-footer"));
+    if (comparison && field === "vnd") {
+      const rows = records.map(item => [item.label, finite(item.vnd) ? money(item.vnd) : "Chưa có"]);
+      parent.append(this._table(["Kỳ", "Tiền hóa đơn (VNĐ)"], rows, "Giá trị ba kỳ · chưa có khác với 0", "comparison-values"));
+    }
+    if (!comparison) parent.append(node("div", null, "chart-footer"));
     parent.append(node("p", `${records[0].period} → ${records.at(-1).period} · Khoảng trống là chưa có dữ liệu, không phải 0.`, "meta"));
+  }
+
+  _comparisonCard(kind) {
+    const daily = kind === "daily";
+    const invoice = kind === "invoice";
+    const title = daily ? "Điện năng ba ngày gần nhất" : invoice ? "Tiền hóa đơn ba kỳ gần nhất" : "Điện năng ba kỳ gần nhất";
+    const card = node("section", null, "card comparison-card");
+    card.dataset.chart = `${kind}-comparison`;
+    card.append(node("h2", title), node("p", daily ? `Điểm đo ${text(this._point)} · kWh` : invoice ? "Tổng khách hàng · VNĐ · kỳ theo tháng" : "Tổng khách hàng · tất cả điểm đo · kỳ theo tháng EVN · kWh", "meta"));
+    if (daily) card.append(node("p", "Có thể tạm tính; ngày chưa công bố để trống", "meta"));
+    const comparisons = this._overview?.comparisons;
+    const records = comparisonSlots(comparisons, this._point, daily ? "daily" : "monthly");
+    card.setAttribute("aria-busy", String(this._overviewBusy));
+    if (records) {
+      card.dataset.asOf = comparisons.as_of;
+      this._renderColumns(card, records, { field: invoice ? "vnd" : "kwh", unit: invoice ? "VNĐ" : "kWh", period: daily ? "daily" : "monthly", title, comparison: true });
+      card.append(node("p", `Mốc dữ liệu ${comparisons.as_of} · So sánh cố định, không theo bộ lọc lịch sử.`, "meta"));
+      if (!records.some(item => finite(item[invoice ? "vnd" : "kwh"]))) card.append(node("p", "Chưa có số liệu cho ba mốc này.", "meta"));
+    } else card.append(this._overviewBusy ? this._status("Đang tải số liệu so sánh…") : node("p", this._overview ? "Máy chủ chưa cung cấp dữ liệu so sánh ba kỳ. Không thay bằng kỳ ghi nhận gần nhất." : "Chưa có dữ liệu so sánh.", "empty"));
+    if (this._overview?.available === false || this._choice?.customer.available === false) card.append(node("p", "Kết nối EVN chưa sẵn sàng; số liệu hiển thị có thể đã cũ.", "meta"));
+    return card;
+  }
+
+  _comparisonGrid() {
+    const grid = node("div", null, "comparison-grid");
+    grid.append(this._comparisonCard("daily"), this._comparisonCard("monthly"));
+    return grid;
   }
 
   _segments(items, current, action, label) {
@@ -672,7 +873,7 @@ export class EvnCskhPanel extends HTMLElement {
   }
 
   _renderEnergy(parent) {
-    parent.append(this._filters());
+    parent.append(this._filters(), this._comparisonGrid());
     const content = node("section", null, "stack");
     this._detailState(content);
     if (this._details) {
@@ -680,7 +881,7 @@ export class EvnCskhPanel extends HTMLElement {
       tools.append(node("h2", this._period === "monthly" ? "Điện năng theo tháng" : "Điện năng theo ngày"), this._segments([["monthly", "Tháng"], ["daily", "Ngày"]], this._period, "period", "Kỳ điện năng"));
       content.append(tools);
       const card = node("section", null, "card chart-card");
-      const records = this._period === "monthly" ? this._monthly() : [...array(this._details.daily)].sort((a, b) => String(a.period).localeCompare(String(b.period), "vi", { numeric: true }));
+      const records = this._period === "monthly" ? this._monthly() : dailyRecords(this._details.daily);
       this._renderChart(card, this._period, records);
       content.append(card);
       const tableCard = node("section", null, "card");
@@ -692,6 +893,78 @@ export class EvnCskhPanel extends HTMLElement {
       content.append(node("p", this._point ? "Chọn khoảng ngày rồi bấm Tải dữ liệu để xem điện năng." : "Khách hàng này chưa có điểm đo để tra cứu.", "empty"));
     }
     parent.append(content);
+  }
+
+  _renderIndexHistory(parent) {
+    const card = node("section", null, "card index-card");
+    card.dataset.chart = "meter-index-history";
+    card.append(node("h2", "Diễn biến chỉ số công tơ"), node("p", `Điểm đo ${text(this._point)} · Chỉ số gốc, không quy đổi thành kWh. Chỉ nối các mốc ghi thực tế cùng công tơ, bộ chỉ số và loại.`, "meta"));
+    card.setAttribute("aria-busy", String(this._detailsBusy));
+    parent.append(card);
+    if (!this._details) {
+      card.append(this._detailsBusy ? this._status("Đang tải lịch sử chỉ số…") : node("p", "Chưa có lịch sử chỉ số để vẽ biểu đồ.", "empty"));
+      return;
+    }
+    const groups = readingSeries(this._details.readings);
+    const series = groups.find(group => group.key === this._readingSeries) || groups[0];
+    if (!series) { card.append(node("p", "Chưa đủ chỉ số có ngày ghi thực tế để vẽ đường.", "index-empty muted")); return; }
+    if (array(this._details.readings).length > 1000) card.append(node("p", "Biểu đồ giới hạn 1.000 bản ghi đầu; bảng lịch sử vẫn giữ toàn bộ dữ liệu.", "meta"));
+    if (groups.length > 1) {
+      const select = node("select");
+      select.id = "meter-series-select";
+      groups.forEach(group => {
+        const option = node("option", group.label);
+        option.value = group.key;
+        option.selected = group.key === series.key;
+        select.append(option);
+      });
+      card.append(this._field("Chuỗi chỉ số", select, "index-series-field"));
+    } else card.append(node("p", series.label, "meta"));
+    const valid = series.points.filter(point => finite(point.value));
+    const tooltip = node("p", valid.length ? `${valid.at(-1).label} · Chỉ số gốc ${numeric(valid.at(-1).value)}` : "Chưa có chỉ số hợp lệ.", "index-tooltip meta");
+    tooltip.id = "meter-index-tooltip";
+    tooltip.setAttribute("role", "status");
+    if (series.blocked) card.append(node("p", "Có bản ghi chưa rõ ngày hoặc định danh; không nối đường qua dữ liệu chưa xác định.", "meta"));
+    if (valid.length < 2) card.append(node("p", "Chưa đủ hai chỉ số có ngày ghi thực tế để vẽ đường.", "index-empty muted"));
+    else {
+      const values = valid.map(point => point.value);
+      const low = Math.min(...values);
+      const high = Math.max(...values);
+      const magnitude = Math.max(1, ...values.map(value => Math.abs(value)));
+      const bottom = low / magnitude;
+      const span = high / magnitude - bottom;
+      const first = series.points[0].stamp;
+      const last = series.points.at(-1).stamp;
+      const x = point => last === first ? 408 : 112 + (point.stamp - first) / (last - first) * 592;
+      const y = value => span ? 216 - (value / magnitude - bottom) / span * 192 : 120;
+      const description = `${series.label}. Thang chỉ số gốc từ ${numeric(low)} đến ${numeric(high)}; trục theo khoảng chỉ số, không suy ra điện năng. Khoảng trống không được nội suy.`;
+      const svg = svgNode("svg", { class: "index-chart", viewBox: "0 0 720 260", role: "img", "aria-label": description, "data-min": low, "data-max": high });
+      svg.append(svgNode("title", {}, description));
+      for (const ratio of span ? [0, 0.5, 1] : [0.5]) {
+        const value = low === high ? low : (bottom + span * ratio) * magnitude;
+        const position = 216 - ratio * 192;
+        const label = numeric(value);
+        svg.append(svgNode("line", { class: "index-grid", x1: 112, x2: 704, y1: position, y2: position }));
+        const tick = svgNode("text", { x: 104, y: position + 4, "text-anchor": "end" }, label.length > 16 ? value.toExponential(3) : label);
+        tick.append(svgNode("title", {}, label));
+        svg.append(tick);
+      }
+      for (const segment of series.segments) {
+        const path = segment.map((point, index) => `${index ? "L" : "M"}${x(point).toFixed(3)},${y(point.value).toFixed(3)}`).join(" ");
+        svg.append(svgNode("path", { class: "index-line", d: path }));
+      }
+      valid.forEach((point, index) => {
+        const label = `${point.label} · Chỉ số gốc ${numeric(point.value)} · ${text(series.meter)} · ${text(series.register)} · ${KINDS[series.kind] || "Chưa rõ loại"}`;
+        const dot = svgNode("circle", { class: "index-point", id: `meter-index-point-${index}`, cx: x(point).toFixed(3), cy: y(point.value).toFixed(3), r: 4, tabindex: "0", role: "button", "aria-label": label, "aria-describedby": "meter-index-tooltip" });
+        dot.append(svgNode("title", {}, label));
+        svg.append(dot);
+      });
+      svg.append(svgNode("text", { x: 112, y: 248 }, displayDate(series.points[0].day)), svgNode("text", { x: 704, y: 248, "text-anchor": "end" }, displayDate(series.points.at(-1).day)));
+      card.append(node("p", `Thang chỉ số gốc: ${numeric(low)} → ${numeric(high)} · Trục thu gọn, không suy ra điện năng từ độ dốc.`, "meta"), svg);
+    }
+    card.append(tooltip);
+    const rows = [...series.points, ...series.unknown].map(point => [point.label, point.conflict ? "Chưa xác định · chỉ số xung đột" : finite(point.value) ? numeric(point.value) : "Chưa có"]);
+    if (rows.length) card.append(this._table(["Mốc ghi thực tế", "Chỉ số gốc"], rows, series.label, "index-values"));
   }
 
   _renderMeter(parent) {
@@ -713,7 +986,7 @@ export class EvnCskhPanel extends HTMLElement {
             ["Chỉ số cũ", numeric(reading.old)],
             ["Chỉ số mới", numeric(reading.new)],
             ["Hệ số", numeric(reading.multiplier)],
-            ["Ngày ghi", text(reading.period)],
+            ["Kỳ ghi nhận", text(reading.period)],
             ["Loại chỉ số", KINDS[reading.kind] || text(reading.kind)],
             ["Điện năng ghi nhận", finite(reading.kwh) ? `${numeric(reading.kwh)} kWh` : "Chưa có dữ liệu"]
           ]) {
@@ -727,7 +1000,9 @@ export class EvnCskhPanel extends HTMLElement {
       }
       content.append(blocks);
     }
+    content.append(this._filters());
     this._detailState(content);
+    this._renderIndexHistory(content);
     if (this._details) {
       const readings = array(this._details.readings);
       const card = node("section", null, "card");
@@ -735,8 +1010,8 @@ export class EvnCskhPanel extends HTMLElement {
       if (!readings.length) card.append(node("p", "Chưa có bản ghi chỉ số trong khoảng đã chọn.", "empty"));
       else {
         this._readingPage = Math.max(0, Math.min(this._readingPage, Math.ceil(readings.length / 20) - 1));
-        const rows = readings.slice(this._readingPage * 20, this._readingPage * 20 + 20).map(item => [text(item.period), text(item.meter), text(item.register), numeric(item.old), numeric(item.new), numeric(item.multiplier), finite(item.kwh) ? `${numeric(item.kwh)} kWh` : "—", KINDS[item.kind] || text(item.kind)]);
-        const table = this._table(["Kỳ ghi nhận", "Công tơ", "Bộ chỉ số", "Chỉ số cũ", "Chỉ số mới", "Hệ số", "kWh", "Loại"], rows, "Chỉ số công tơ do điện lực cung cấp", "", "scroll-table");
+        const rows = readings.slice(this._readingPage * 20, this._readingPage * 20 + 20).map(item => [text(item.period), readingLabel(item), text(item.meter), text(item.register), numeric(item.old), numeric(item.new), numeric(item.multiplier), finite(item.kwh) ? `${numeric(item.kwh)} kWh` : "—", KINDS[item.kind] || text(item.kind)]);
+        const table = this._table(["Kỳ ghi nhận", "Mốc ghi thực tế", "Công tơ", "Bộ chỉ số", "Chỉ số cũ", "Chỉ số mới", "Hệ số", "kWh", "Loại"], rows, "Chỉ số công tơ do điện lực cung cấp", "", "scroll-table");
         table.id = "reading-results";
         card.append(table, this._pagination(readings.length, this._readingPage, 20, "reading-page"));
       }
@@ -758,6 +1033,7 @@ export class EvnCskhPanel extends HTMLElement {
       banner.append(node("p", finite(amount) ? `Tổng tiền còn phải trả: ${money(amount)}${detail}` : `Chưa xác định được số tiền còn nợ${detail}`));
       parent.append(banner);
     }
+    parent.append(this._comparisonCard("invoice"));
     const filters = node("div", null, "invoice-filters");
     const search = node("input");
     search.id = "invoice-search";
@@ -826,12 +1102,12 @@ export class EvnCskhPanel extends HTMLElement {
       if (invoice.cycle != null) first.append(node("p", `Kỳ thu ${text(invoice.cycle)}`, "meta"));
       const status = node("td");
       status.append(this._badge(invoice));
-      row.append(first, node("td", money(invoice.amount), "number"), node("td", money(invoice.outstanding), "number"), status, node("td", text(invoice.due_date), "nowrap"));
+      row.append(first, node("td", money(invoice.amount), "number"), node("td", money(payableAmount(invoice)), "number"), status, node("td", text(invoice.due_date), "nowrap"));
       body.append(row);
       const card = node("article", null, "invoice-card");
       const top = node("div", null, "row");
       top.append(this._invoiceButton(invoice, index, true), this._badge(invoice));
-      card.append(top, node("strong", money(invoice.amount)), node("p", `Còn phải trả: ${money(invoice.outstanding)}`, "meta"), node("p", `Hạn thanh toán: ${text(invoice.due_date)}`, "meta"));
+      card.append(top, node("strong", money(invoice.amount)), node("p", `Còn phải trả: ${money(payableAmount(invoice))}`, "meta"), node("p", `Hạn thanh toán: ${text(invoice.due_date)}`, "meta"));
       cards.append(card);
     }
     table.append(head, body);
@@ -1023,7 +1299,7 @@ export class EvnCskhPanel extends HTMLElement {
       ["Kỳ hóa đơn", text(invoice.period)],
       ["Kỳ thu", text(invoice.cycle)],
       ["Thuế", money(invoice.tax)],
-      ["Còn phải trả", money(invoice.outstanding)],
+      ["Còn phải trả", money(payableAmount(invoice))],
       ["Hạn thanh toán", text(invoice.due_date)],
       ["Đã thanh toán ngày", text(invoice.paid_date)],
       ["Điện năng", finite(invoice.energy) ? `${numeric(invoice.energy)} ${unit}`.trim() : "Chưa có dữ liệu"],
@@ -1171,5 +1447,7 @@ export class EvnCskhPanel extends HTMLElement {
     }
   }
 }
+
+export { columnScale, comparisonSlots, dailyEnd, dailyRecords, readingMoment, readingSeries, paymentState, payableAmount };
 
 if (!customElements.get("evn-cskh-panel")) customElements.define("evn-cskh-panel", EvnCskhPanel);

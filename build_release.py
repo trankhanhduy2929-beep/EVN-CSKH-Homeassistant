@@ -23,6 +23,7 @@ def build() -> None:
     required = {
         "__init__.py",
         "api.py",
+        "binary_sensor.py",
         "button.py",
         "config_flow.py",
         "const.py",

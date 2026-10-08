@@ -319,11 +319,14 @@ async def test_details_contract_and_trusted_regional_routing(region: str) -> Non
         "daily_readings",
         "invoices",
         "fetched_at",
+        "daily_start",
+        "daily_end",
     ]
     assert result.customer == PERSON
     assert result.region == region
     assert result.point == POINT
     assert (result.start, result.end) == (START, TODAY)
+    assert (result.daily_start, result.daily_end) == (date(2025, 12, 2), TODAY)
     assert result.fetched_at == NOW
     assert result.fetched_at.tzinfo is UTC
     assert result.invoices == history + current
@@ -350,11 +353,11 @@ async def test_details_contract_and_trusted_regional_routing(region: str) -> Non
     assert session.calls[5]["json"] == {
         "MA_DVIQLY": PERSON.management_unit,
         "MA_DDO": POINT,
-        "TU_NGAY": "01/12/2025",
-        "DEN_NGAY": "31/12/2025",
+        "TU_NGAY": "02/12/2025",
+        "DEN_NGAY": "01/01/2026",
     }
     assert session.calls[7]["json"] == session.calls[5]["json"] | {
-        "TU_NGAY": "30/11/2025"
+        "TU_NGAY": "01/12/2025"
     }
     assert session.calls[8]["json"] == {
         "TU_THANG_NAM": "11/2025",
@@ -382,12 +385,13 @@ async def test_details_contract_and_trusted_regional_routing(region: str) -> Non
 @pytest.mark.parametrize(
     ("start", "end", "daily_start", "daily_end"),
     [
-        (TODAY - timedelta(days=365), TODAY, date(2025, 12, 1), date(2025, 12, 31)),
-        (TODAY - timedelta(days=366), TODAY, date(2025, 12, 1), date(2025, 12, 31)),
+        (TODAY - timedelta(days=365), TODAY, date(2025, 12, 2), TODAY),
+        (TODAY - timedelta(days=366), TODAY, date(2025, 12, 2), TODAY),
         (date(2025, 12, 1), date(2025, 12, 31), date(2025, 12, 1), date(2025, 12, 31)),
         (date(2025, 8, 1), date(2025, 8, 20), date(2025, 8, 1), date(2025, 8, 20)),
         (date(2024, 2, 27), date(2024, 2, 29), date(2024, 2, 27), date(2024, 2, 29)),
-        (date(2025, 12, 31), TODAY, date(2025, 12, 31), date(2025, 12, 31)),
+        (date(2025, 12, 31), TODAY, date(2025, 12, 31), TODAY),
+        (TODAY, TODAY, TODAY, TODAY),
         (date(2025, 5, 5), date(2025, 5, 5), date(2025, 5, 5), date(2025, 5, 5)),
         (
             TODAY - timedelta(days=5 * 366),
@@ -403,6 +407,7 @@ async def test_calendar_range_and_daily_windows(
     session = Session(contracts(PERSON), config(), *details_replies())
     result = await client_for(session).details(PERSON, POINT, start, end)
     assert (result.start, result.end) == (start, end)
+    assert (result.daily_start, result.daily_end) == (daily_start, daily_end)
     month_fields = {
         "TU_THANG_NAM": start.strftime("%m/%Y"),
         "DEN_THANG_NAM": end.strftime("%m/%Y"),
@@ -427,14 +432,122 @@ async def test_calendar_range_and_daily_windows(
     session.done()
 
 
-async def test_today_only_has_no_completed_daily_window() -> None:
-    session = Session(contracts(PERSON), config(), *details_replies(skip_daily=True))
-    result = await client_for(session).details(PERSON, POINT, TODAY, TODAY)
-    assert result.daily == result.daily_readings == []
-    assert [call["url"] for call in session.calls[4:]] == [
-        BASES["PB"] + DATA_PATHS[index] for index in (0, 2, 4, 5)
-    ]
+@pytest.mark.parametrize(
+    ("frozen", "today", "previous"),
+    [
+        (
+            datetime(2025, 12, 31, 16, 59, tzinfo=UTC),
+            date(2025, 12, 31),
+            date(2025, 12, 30),
+        ),
+        (
+            datetime(2025, 12, 31, 17, 0, tzinfo=UTC),
+            date(2026, 1, 1),
+            date(2025, 12, 31),
+        ),
+        (
+            datetime(2026, 1, 31, 17, 0, tzinfo=UTC),
+            date(2026, 2, 1),
+            date(2026, 1, 31),
+        ),
+        (
+            datetime(2024, 2, 28, 17, 0, tzinfo=UTC),
+            date(2024, 2, 29),
+            date(2024, 2, 28),
+        ),
+        (
+            datetime(2024, 2, 29, 17, 0, tzinfo=UTC),
+            date(2024, 3, 1),
+            date(2024, 2, 29),
+        ),
+    ],
+)
+async def test_details_today_includes_vietnam_calendar_rollovers(
+    monkeypatch: pytest.MonkeyPatch, frozen: datetime, today: date, previous: date
+) -> None:
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz: Any = None) -> Self:
+            return cls.fromtimestamp(frozen.timestamp(), tz)
+
+    monkeypatch.setattr(api, "datetime", Clock)
+    session = Session(contracts(PERSON), config(), *details_replies())
+    client = client_for(session)
+    result = await client.details(PERSON, POINT, today, today)
+    assert result.fetched_at == frozen
+    assert (result.start, result.end) == (today, today)
+    assert (result.daily_start, result.daily_end) == (today, today)
+    assert session.calls[5]["json"]["TU_NGAY"] == today.strftime("%d/%m/%Y")
+    assert session.calls[5]["json"]["DEN_NGAY"] == today.strftime("%d/%m/%Y")
+    assert session.calls[7]["json"] == session.calls[5]["json"] | {
+        "TU_NGAY": previous.strftime("%d/%m/%Y")
+    }
+    before = len(session.calls)
+    with pytest.raises(api.EvnResponseError):
+        await client.details(PERSON, POINT, today, today + timedelta(days=1))
+    assert len(session.calls) == before
     session.done()
+
+
+@pytest.mark.parametrize(
+    "response", ["reported", "null_energy", "previous_only", "empty"]
+)
+async def test_today_only_requests_actual_today_without_estimated_energy(
+    response: str,
+) -> None:
+    daily = [
+        owned()
+        | {
+            "MA_DDO": POINT,
+            "NGAY": TODAY.strftime("%d/%m/%Y"),
+            "NGAY_HTHI": TODAY.isoformat() + "T00:00:00+07:00",
+            "DIEN_TTHU": 4.5,
+        }
+    ]
+    if response == "null_energy":
+        daily[0]["DIEN_TTHU"] = None
+    elif response == "previous_only":
+        daily[0]["NGAY"] = (TODAY - timedelta(days=1)).strftime("%d/%m/%Y")
+        daily[0]["NGAY_HTHI"] = "2025-12-31T00:00:00+07:00"
+    elif response == "empty":
+        daily = []
+    readings = [
+        owned() | {"MA_DDO": POINT, "NGAY": "31/12/2025", "CHISO_MOI": 100},
+        owned() | {"MA_DDO": POINT, "NGAY": "01/01/2026", "CHISO_MOI": 999},
+    ]
+    replies = details_replies()
+    replies[2] = Reply([])
+    replies[3] = Reply(daily)
+    replies[5] = Reply(readings)
+    session = Session(contracts(PERSON), config(), *replies)
+    result = await client_for(session).details(PERSON, POINT, TODAY, TODAY)
+    assert (result.start, result.end) == (TODAY, TODAY)
+    assert (result.daily_start, result.daily_end) == (TODAY, TODAY)
+    assert result.monthly == []
+    assert result.daily == daily
+    assert result.daily_readings == readings
+    assert [call["url"] for call in session.calls[4:]] == [
+        BASES["PB"] + path for path in DATA_PATHS
+    ]
+    assert session.calls[5]["json"] == {
+        "MA_DVIQLY": PERSON.management_unit,
+        "MA_DDO": POINT,
+        "TU_NGAY": "01/01/2026",
+        "DEN_NGAY": "01/01/2026",
+    }
+    assert session.calls[7]["json"] == session.calls[5]["json"] | {
+        "TU_NGAY": "31/12/2025"
+    }
+    session.done()
+
+
+def test_detail_snapshot_effective_daily_bounds_default_for_existing_fixtures() -> None:
+    result = api.DetailSnapshot(
+        PERSON, "PB", POINT, START, TODAY, [], [], [], [], [], NOW
+    )
+    assert (result.start, result.end) == (START, TODAY)
+    assert result.daily_start is None
+    assert result.daily_end is None
 
 
 @pytest.mark.parametrize(
@@ -448,6 +561,13 @@ async def test_today_only_has_no_completed_daily_window() -> None:
         (START, 123),
         (START.isoformat(), TODAY),
         (START, TODAY.isoformat()),
+        (START.isoformat(), TODAY.isoformat()),
+        ("2025-13-01", TODAY),
+        (START, "2026-02-30"),
+        ("2025-11-10T00:00:00+07:00", TODAY),
+        (START, "2026-01-01T00:00:00Z"),
+        ("10/11/2025", TODAY),
+        (START, "01/01/2026"),
         (datetime(2025, 12, 1, tzinfo=UTC), TODAY),
         (START, datetime(2025, 12, 1, tzinfo=UTC)),
         (TODAY, START),
@@ -591,6 +711,104 @@ async def test_any_endpoint_failure_is_not_empty_data(stage: int, status: int) -
     assert "synthetic-private" not in "".join(traceback.format_exception(caught.value))
     assert not client._issued_invoices
     assert failed.consumed == 0
+    session.done()
+
+
+@pytest.mark.parametrize("response", ["current", "historical_only", "empty"])
+async def test_details_raw_periods_keep_missing_months_and_optional_fields_absent(
+    response: str,
+) -> None:
+    monthly = [
+        {"NAM": 2025, "THANG": 11, "DIEN_TTHU": 10},
+        {"NAM": 2025, "THANG": 12, "DIEN_TTHU": 20},
+    ]
+    daily = [
+        {"NGAY": "30/12/2025", "DIEN_TTHU": 2},
+        {"NGAY": "31/12/2025", "DIEN_TTHU": 3},
+    ]
+    history = [
+        {
+            "ID_HDON": f"OFFLINE-HISTORY-{month}",
+            "NAM": 2025,
+            "THANG": month,
+            "TONG_TIEN": month * 100,
+        }
+        for month in (11, 12)
+    ]
+    current = []
+    if response == "current":
+        monthly.append({"NAM": 2026, "THANG": 1, "DIEN_TTHU": 4})
+        daily.append({"NGAY": "01/01/2026", "DIEN_TTHU": 1.5})
+        current = [
+            {"ID_HDON": "OFFLINE-CURRENT", "NAM": 2026, "THANG": 1, "TONG_TIEN": 400}
+        ]
+    elif response == "empty":
+        monthly, daily, history = [], [], []
+    monthly_readings = [{"NAM": 2026, "THANG": 1, "CHISO_CU": 10, "CHISO_MOI": 999}]
+    daily_readings = [{"NGAY": "01/01/2026", "CHISO_CU": 10, "CHISO_MOI": 999}]
+    replies = details_replies(history=history, current=current)
+    replies[2:6] = [
+        Reply(monthly),
+        Reply(daily),
+        Reply(monthly_readings),
+        Reply(daily_readings),
+    ]
+    session = Session(contracts(PERSON), config(), *replies)
+    result = await client_for(session).details(PERSON, POINT, START, TODAY)
+    assert result.monthly == monthly
+    assert result.daily == daily
+    assert result.monthly_readings == monthly_readings
+    assert result.daily_readings == daily_readings
+    assert result.invoices == history + current
+    assert (result.start, result.end) == (START, TODAY)
+    assert (result.daily_start, result.daily_end) == (date(2025, 12, 2), TODAY)
+    assert all("MA_DDO" not in row for row in result.monthly + result.daily)
+    assert all("NGAY_HTHI" not in row for row in result.daily)
+    assert all("TTRANG_TTOAN" not in row for row in result.invoices)
+    if response != "current":
+        assert not any(row["NAM"] == 2026 for row in result.monthly)
+        assert not any(row["NGAY"] == "01/01/2026" for row in result.daily)
+        assert not any(row["NAM"] == 2026 for row in result.invoices)
+    session.done()
+
+
+async def test_daily_chart_fetch_includes_all_31_days_and_32_readings() -> None:
+    daily_start = date(2025, 12, 2)
+    daily = [
+        owned()
+        | {
+            "MA_DDO": POINT,
+            "NGAY": (daily_start + timedelta(days=offset)).strftime("%d/%m/%Y"),
+            "DIEN_TTHU": offset + 0.5,
+        }
+        for offset in range(31)
+    ]
+    readings = [
+        owned()
+        | {
+            "MA_DDO": POINT,
+            "NGAY": (daily_start + timedelta(days=offset - 1)).strftime("%d/%m/%Y"),
+            "CHISO_MOI": 100 + offset,
+        }
+        for offset in range(32)
+    ]
+    replies = details_replies()
+    replies[3] = Reply(daily)
+    replies[5] = Reply(readings)
+    session = Session(contracts(PERSON), config(), *replies)
+    result = await client_for(session).details(PERSON, POINT, START, TODAY)
+    assert (result.start, result.end) == (START, TODAY)
+    assert (result.daily_start, result.daily_end) == (daily_start, TODAY)
+    assert result.daily == daily
+    assert result.daily_readings == readings
+    assert len(result.daily) == 31
+    assert len(result.daily_readings) == 32
+    assert result.daily[-1]["NGAY"] == result.daily_readings[-1]["NGAY"] == "01/01/2026"
+    assert result.daily[-1]["DIEN_TTHU"] == 30.5
+    assert session.calls[5]["json"]["TU_NGAY"] == "02/12/2025"
+    assert session.calls[5]["json"]["DEN_NGAY"] == "01/01/2026"
+    assert session.calls[7]["json"]["TU_NGAY"] == "01/12/2025"
+    assert session.calls[7]["json"]["DEN_NGAY"] == "01/01/2026"
     session.done()
 
 
@@ -1911,7 +2129,7 @@ async def test_snapshot_reading_windows_are_one_point_back_and_last_days() -> No
         "MA_DVIQLY": PERSON.management_unit,
         "MA_DDO": POINT,
         "TU_NGAY": "01/12/2025",
-        "DEN_NGAY": "31/12/2025",
+        "DEN_NGAY": "01/01/2026",
     }
     assert session.calls[10]["json"] == {
         "TU_THANG_NAM": "12/2024",

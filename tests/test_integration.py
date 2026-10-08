@@ -5,7 +5,7 @@ import hashlib
 import json
 import re
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, cast
@@ -16,6 +16,7 @@ import pytest
 import pytest_asyncio
 import voluptuous as vol
 from aiohttp import ClientSession
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.components.button import ButtonEntity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -44,7 +45,7 @@ from homeassistant.helpers.selector import SelectSelector, TextSelector
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from custom_components import evn_cskh as integration
-from custom_components.evn_cskh import button, config_flow, sensor
+from custom_components.evn_cskh import binary_sensor, button, config_flow, sensor
 from custom_components.evn_cskh.api import (
     Customer,
     EvnAuthError,
@@ -89,6 +90,7 @@ IDENTITY = {
     CONF_PASSWORD: "offline-password +&%/ mật khẩu",
 }
 FETCHED_AT = datetime(2026, 10, 7, 5, tzinfo=UTC)
+PRIVATE_INVOICE_ID = "PRIVATE-INVOICE"
 INFO = {
     "tenKhang": "Synthetic Public Name",
     "diaChi": "Synthetic Public Address",
@@ -99,6 +101,8 @@ INFO = {
 POINT_A_READINGS = [
     {
         "NGAY": "05/10/2026",
+        "THOI_DIEM": "05/10/2026 08:00",
+        "BCS": "KT",
         "LOAI_CHISO": "KT",
         "CHISO_CU": 900,
         "CHISO_MOI": 1000,
@@ -107,6 +111,8 @@ POINT_A_READINGS = [
     },
     {
         "NGAY": "06/10/2026",
+        "THOI_DIEM": "06/10/2026 08:00",
+        "BCS": "KT",
         "LOAI_CHISO": "KT",
         "CHISO_CU": 1000,
         "CHISO_MOI": 1012.5,
@@ -116,6 +122,8 @@ POINT_A_READINGS = [
 ]
 MONTHLY_READINGS = [
     {
+        "NAM": 2026,
+        "THANG": 10,
         "NGAY_CKY": "31/10/2026",
         "LOAI_CHISO": "KT",
         "CHISO_CU": 1012.5,
@@ -126,7 +134,7 @@ MONTHLY_READINGS = [
 ]
 INVOICES = [
     {
-        "ID_HDON": "PRIVATE INVOICE A",
+        "ID_HDON": f"{PRIVATE_INVOICE_ID}-A",
         "TTRANG_TTOAN": "CHUATT",
         "TONG_NO": "-125000",
         "TONG_TIEN": 9999999,
@@ -137,11 +145,11 @@ INVOICES = [
         "MA_TCHUC": "BANK-A",
         "KENH_THANH_TOAN": "Synthetic channel",
     },
-    {"ID_HDON": "PRIVATE INVOICE B", "TTRANG_TTOAN": "DATT"},
+    {"ID_HDON": f"{PRIVATE_INVOICE_ID}-B", "TTRANG_TTOAN": "DATT"},
 ]
 PAID_INVOICES = [
     {
-        "ID_HDON": "PRIVATE INVOICE C",
+        "ID_HDON": f"{PRIVATE_INVOICE_ID}-C",
         "TTRANG_TTOAN": "DATT",
         "NAM": 2026,
         "THANG": 9,
@@ -162,6 +170,7 @@ def block_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(ClientSession, "_request", blocked)
     monkeypatch.setattr(asyncio, "open_connection", blocked)
+    monkeypatch.setattr(sensor, "vn_now", lambda: date(2026, 10, 7))
 
 
 @pytest_asyncio.fixture
@@ -385,7 +394,7 @@ def test_real_homeassistant_types_and_identity() -> None:
     assert issubclass(EvnCoordinator, DataUpdateCoordinator)
     assert issubclass(EvnSensor, SensorEntity)
     assert issubclass(EvnButton, ButtonEntity)
-    assert issubclass(EvnButton, ButtonEntity)
+    assert issubclass(binary_sensor.EvnBinarySensor, BinarySensorEntity)
     ha_path = __import__("homeassistant.core", fromlist=["core"]).__file__
     assert ha_path is not None
     assert "site-packages/homeassistant" in str(Path(ha_path))
@@ -395,12 +404,13 @@ def test_real_homeassistant_types_and_identity() -> None:
     )
     assert DOMAIN == "evn_cskh"
     assert NAME == "EVN CSKH"
-    assert VERSION == "0.3.0"
+    assert VERSION == "0.4.0"
     assert MIN_HA_VERSION == "2025.12"
-    assert PLATFORMS == (Platform.SENSOR, Platform.BUTTON)
+    assert PLATFORMS == (Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR)
+    assert binary_sensor.PLATFORMS is PLATFORMS
 
 
-def test_manifest_and_complete_translations() -> None:
+def test_manifest_version_matches_release() -> None:
     folder = ROOT / "custom_components" / DOMAIN
     manifest = json.loads((folder / "manifest.json").read_text())
     assert manifest == {
@@ -414,6 +424,10 @@ def test_manifest_and_complete_translations() -> None:
         "requirements": [],
         "version": VERSION,
     }
+
+
+def test_complete_translations() -> None:
+    folder = ROOT / "custom_components" / DOMAIN
     english = json.loads((folder / "strings.json").read_text())
     assert english == json.loads((folder / "translations" / "en.json").read_text())
     vietnamese = json.loads((folder / "translations" / "vi.json").read_text())
@@ -434,6 +448,15 @@ def test_manifest_and_complete_translations() -> None:
     sensor_keys = point_keys | {description.key for description in CUSTOMER_SENSORS}
     assert set(english["entity"]["sensor"]) == sensor_keys
     assert set(vietnamese["entity"]["sensor"]) == sensor_keys
+    assert set(english["entity"]["binary_sensor"]) == {"outage_scheduled"}
+    assert (
+        english["entity"]["binary_sensor"]["outage_scheduled"]["name"]
+        == "Outage scheduled"
+    )
+    assert (
+        vietnamese["entity"]["binary_sensor"]["outage_scheduled"]["name"]
+        == "Lịch cắt điện"
+    )
     assert set(english["entity"]["button"]) == {"refresh"}
     assert set(vietnamese["entity"]["button"]) == {"refresh"}
     assert vietnamese["entity"]["button"]["refresh"]["name"]
@@ -444,7 +467,35 @@ def test_manifest_and_complete_translations() -> None:
         for names in (english["entity"]["sensor"], vietnamese["entity"]["sensor"]):
             name = names[description.key]["name"]
             assert name
-            assert ("{measurement_point}" in name) == (description.key in point_keys)
+            assert ("{measurement_point}" in name) == (
+                description.key in {item.key for item in POINT_SENSORS[:8]}
+            )
+    labels = {
+        "current_provisional_index": "Chỉ số tạm chốt",
+        "previous_cycle_final_index": "Chỉ số cuối kỳ trước",
+        "consumption_today": "Tiêu thụ hôm nay",
+        "consumption_yesterday": "Tiêu thụ hôm qua",
+        "consumption_two_days_ago": "Tiêu thụ hôm kia",
+        "current_period_detail": "Chi tiết kỳ này",
+        "invoice_year": "Hóa đơn năm nay",
+        "invoice_this_period": "Kỳ này",
+        "invoice_prev_period": "Kỳ trước",
+        "invoice_prev_prev_period": "Kỳ trước nữa",
+        "consumption_this_period": "Tiêu thụ kỳ này",
+        "consumption_prev_period": "Tiêu thụ kỳ trước",
+        "consumption_prev_prev_period": "Tiêu thụ kỳ trước nữa",
+        "next_update": "Cập nhật lúc",
+    }
+    for key, name in labels.items():
+        assert vietnamese["entity"]["sensor"][key]["name"] == name
+    assert (
+        english["entity"]["sensor"]["current_provisional_index"]["name"]
+        == "Provisional index"
+    )
+    assert (
+        english["entity"]["sensor"]["previous_cycle_final_index"]["name"]
+        == "Previous cycle final index"
+    )
 
 
 @pytest.mark.parametrize(
@@ -1070,6 +1121,7 @@ async def test_failed_batch_hides_stale_values_and_recovers(
     coordinator = entry.runtime_data
     previous = coordinator.data
     entities = collect_sensor(coordinator, entry)
+    previous_values = [entity.native_value for entity in entities]
     changed = snapshot_for(customers[0])
     changed.monthly["POINT-A"][1]["DIEN_TTHU"] = 777
     client.fetch_snapshot.side_effect = [changed, EvnResponseError()]
@@ -1084,7 +1136,7 @@ async def test_failed_batch_hides_stale_values_and_recovers(
     await coordinator.async_refresh()
     assert coordinator.last_update_success
     assert all(entity.available for entity in entities)
-    assert all(entity.native_value is not None for entity in entities)
+    assert [entity.native_value for entity in entities] == previous_values
 
 
 @pytest.mark.asyncio
@@ -1121,8 +1173,10 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
     await sensor.async_setup_entry(hass, entry, add)
     add.assert_called_once()
     entities: list[EvnSensor] = add.call_args.args[0]
-    assert len(entities) == 46
-    assert len({entity.unique_id for entity in entities}) == 46
+    assert len(entities) == 84
+    assert len({entity.unique_id for entity in entities}) == 84
+    assert len(POINT_SENSORS) == 13
+    assert len(CUSTOMER_SENSORS) == 16
     assert (
         len(
             {
@@ -1148,7 +1202,7 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         ("meter_reading", "POINT-B"): 1050.0,
         ("meter_multiplier", "POINT-A"): 2.0,
         ("meter_multiplier", "POINT-B"): 3.0,
-        ("meter_read_date", "POINT-A"): "06/10/2026",
+        ("meter_read_date", "POINT-A"): "06/10/2026 08:00",
         ("meter_read_date", "POINT-B"): "31/10/2026",
         ("outstanding_amount", None): 125000.0,
         ("outstanding_count", None): 1,
@@ -1157,6 +1211,25 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         ("paid_invoice_count", None): 1,
         ("next_outage", None): datetime(2099, 10, 8, 8, tzinfo=LOCAL),
         ("fetched_at", None): FETCHED_AT,
+        ("current_provisional_index", "POINT-A"): 1012.5,
+        ("current_provisional_index", "POINT-B"): None,
+        ("previous_cycle_final_index", "POINT-A"): None,
+        ("previous_cycle_final_index", "POINT-B"): None,
+        ("consumption_today", "POINT-A"): None,
+        ("consumption_today", "POINT-B"): None,
+        ("consumption_yesterday", "POINT-A"): None,
+        ("consumption_yesterday", "POINT-B"): None,
+        ("consumption_two_days_ago", "POINT-A"): None,
+        ("consumption_two_days_ago", "POINT-B"): None,
+        ("current_period_detail", None): "10-2026",
+        ("invoice_year", None): 2026,
+        ("invoice_this_period", None): 9999999.0,
+        ("invoice_prev_period", None): 500000.0,
+        ("invoice_prev_prev_period", None): None,
+        ("consumption_this_period", None): 40.0,
+        ("consumption_prev_period", None): 1800.0,
+        ("consumption_prev_prev_period", None): None,
+        ("next_update", None): None,
     }
     assert {key for key, _ in expected} == {
         description.key for description in (*CUSTOMER_SENSORS, *POINT_SENSORS)
@@ -1178,6 +1251,15 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "period",
             "measurement_point",
             "last_update",
+            "latest_read_at",
+            "target_date",
+            "target_month",
+            "target_year",
+            "as_of",
+            "period_basis",
+            "cycle_basis",
+            "source",
+            "provisional",
             "schedule_end",
             "area",
             "reason",
@@ -1210,7 +1292,7 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "PRIVATE NAME",
             "PRIVATE CONTRACT",
             "PRIVATE ADDRESS",
-            "PRIVATE INVOICE",
+            PRIVATE_INVOICE_ID,
             IDENTITY[CONF_USERNAME],
             IDENTITY[CONF_PASSWORD],
             tokens.access_token,
@@ -1289,6 +1371,7 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "meter_multiplier",
             "meter_read_date",
             "paid_invoice_count",
+            "next_update",
         ):
             assert entity.entity_category is EntityCategory.DIAGNOSTIC
         else:
@@ -1421,8 +1504,8 @@ async def test_empty_and_uncertain_data_not_fabricated(
     assert change.native_value is None
     assert change.available
     assert change.extra_state_attributes["current"] == 5.0
-    assert change.extra_state_attributes["previous"] == 0.0
-    assert change.extra_state_attributes["delta"] == 5.0
+    assert "previous" not in change.extra_state_attributes
+    assert "delta" not in change.extra_state_attributes
     assert previous.native_value is None
     assert previous.available
     assert "period" not in previous.extra_state_attributes
@@ -1598,7 +1681,11 @@ async def test_native_ha_state_serialization_translation_and_unavailability(
         attributes = calculated.attributes
         assert attributes["friendly_name"]
         assert "{" not in attributes["friendly_name"]
-        if key in ("average_12m_energy", "month_over_month"):
+        if key in (
+            "average_12m_energy",
+            "month_over_month",
+            "current_provisional_index",
+        ):
             assert attributes["state_class"] == "measurement"
         else:
             assert "state_class" not in attributes
@@ -1764,3 +1851,485 @@ async def test_button_unique_ids_stable_scopes_and_reload_safe(
     assert variants[-1].device_info == original.device_info
     assert len({entity.unique_id for entity in variants[:4]}) == 4
     assert original.device_info != variants[3].device_info
+
+
+@pytest.mark.asyncio
+async def test_binary_platform_states_identity_and_unavailability(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers, tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    coordinator = entry.runtime_data
+    add = Mock()
+    await binary_sensor.async_setup_entry(hass, entry, add)
+    entities = add.call_args.args[0]
+    sensors = collect_sensor(coordinator, entry)
+    buttons = collect_button(coordinator, entry)
+    assert len(sensors) == 84
+    assert len(buttons) == len(entities) == 2
+    assert len({entity.unique_id for entity in [*sensors, *buttons, *entities]}) == 88
+    for entity, customer in zip(entities, customers, strict=True):
+        assert isinstance(entity, BinarySensorEntity)
+        assert entity.available and entity.is_on is True
+        assert entity.translation_key == "outage_scheduled"
+        assert entity.entity_category is EntityCategory.DIAGNOSTIC
+        assert entity.device_class is None
+        assert entity.device_info == EvnButton(coordinator, entry, customer).device_info
+        assert entity.extra_state_attributes == {
+            "last_update": FETCHED_AT.isoformat(),
+            "start": "2099-10-08T08:00:00+07:00",
+            "end": "2099-10-08T10:00:00+07:00",
+        }
+    coordinator.data[customer_key(customers[0])].outages = []
+    assert entities[0].is_on is False and entities[1].is_on is True
+    assert entities[0].extra_state_attributes == {"last_update": FETCHED_AT.isoformat()}
+    coordinator.data[customer_key(customers[1])].outages[0].pop("TGIAN_KTHUC")
+    assert "end" not in entities[1].extra_state_attributes
+    coordinator.last_update_success = False
+    assert all(not entity.available and entity.is_on is None for entity in entities)
+    assert all(entity.extra_state_attributes == {} for entity in entities)
+    coordinator.last_update_success = True
+    coordinator.data.pop(customer_key(customers[0]))
+    assert not entities[0].available and entities[1].available
+    restored = make_entry(hass, customers, tokens)
+    other_account = make_entry(hass, customers, tokens, username="another-offline-user")
+    description = binary_sensor.BINARY_SENSORS[0]
+    assert (
+        binary_sensor.EvnBinarySensor(
+            coordinator, restored, customers[1], description
+        ).unique_id
+        == entities[1].unique_id
+    )
+    assert (
+        binary_sensor.EvnBinarySensor(
+            coordinator, other_account, customers[1], description
+        ).unique_id
+        != entities[1].unique_id
+    )
+
+
+@pytest.mark.asyncio
+async def test_calendar_sensors_cross_year_and_preserve_existing_ids(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    snapshot = entry.runtime_data.data[customer_key(customers[0])]
+    snapshot.measurement_points = [{"MA_DDO": "POINT-A"}]
+    snapshot.monthly = {
+        "POINT-A": [
+            {"NAM": 2026, "THANG": 1, "DIEN_TTHU": 10},
+            {"NAM": 2025, "THANG": 12, "DIEN_TTHU": 20},
+        ]
+    }
+    snapshot.monthly_readings = {
+        "POINT-A": [
+            {"NAM": 2025, "THANG": 11, "DIEN_TTHU": 30, "CHISO_MOI": 100},
+            {"NAM": 2025, "THANG": 12, "DIEN_TTHU": 20, "CHISO_MOI": 120},
+        ]
+    }
+    snapshot.daily = {
+        "POINT-A": [
+            {
+                "NGAY": day,
+                "NGAY_HTHI": day,
+                "BCS": "KT",
+                "SO_CTO": "METER-A",
+                "DIEN_TTHU": amount,
+            }
+            for day, amount in (
+                ("30/12/2025", 1),
+                ("31/12/2025", 2),
+                ("01/01/2026", 3),
+            )
+        ]
+    }
+    snapshot.daily_readings = {
+        "POINT-A": [
+            {"NGAY": day, "BCS": "KT", "CHISO_MOI": index}
+            for day, index in (
+                ("30/12/2025", 117),
+                ("31/12/2025", 119),
+                ("01/01/2026", 122),
+            )
+        ]
+    }
+    snapshot.monthly_readings["POINT-A"][0]["BCS"] = "KT"
+    snapshot.invoices = [
+        {
+            "ID_HDON": "CURRENT",
+            "NAM": 2026,
+            "THANG": 1,
+            "TTRANG_TTOAN": "CHUATT",
+            "TONG_TIEN": 1000,
+        }
+    ]
+    snapshot.paid_invoices = [
+        {
+            "ID_HDON": "PREVIOUS",
+            "NAM": 2025,
+            "THANG": 12,
+            "TONG_TIEN": 2000,
+            "NGAY_TTOAN": "31/12/2025",
+        },
+        {
+            "ID_HDON": "OLDER",
+            "NAM": 2025,
+            "THANG": 11,
+            "TONG_TIEN": 3000,
+            "NGAY_TTOAN": "30/11/2025",
+        },
+    ]
+    monkeypatch.setattr(sensor, "vn_now", lambda: date(2026, 1, 1))
+    entities = {
+        entity.entity_description.key: entity
+        for entity in collect_sensor(entry.runtime_data, entry)
+    }
+    expected = {
+        "consumption_today": 3.0,
+        "consumption_yesterday": 2.0,
+        "consumption_two_days_ago": 1.0,
+        "current_provisional_index": 122.0,
+        "previous_cycle_final_index": 120.0,
+        "current_period_detail": "01-2026",
+        "invoice_year": 2026,
+        "invoice_this_period": 1000.0,
+        "invoice_prev_period": 2000.0,
+        "invoice_prev_prev_period": 3000.0,
+        "consumption_this_period": 10.0,
+        "consumption_prev_period": 20.0,
+        "consumption_prev_prev_period": 30.0,
+    }
+    for key, value in expected.items():
+        assert entities[key].native_value == value
+    old = entities["prev_month_energy"]
+    alias = entities["consumption_prev_period"]
+    assert old.native_value == alias.native_value
+    assert old.unique_id != alias.unique_id and old.device_info == alias.device_info
+    assert (
+        entities["current_provisional_index"].state_class
+        is SensorStateClass.MEASUREMENT
+    )
+    assert entities["current_provisional_index"].native_unit_of_measurement is None
+    snapshot.daily_readings["POINT-A"] = []
+    snapshot.daily["POINT-A"] = []
+    snapshot.monthly_readings["POINT-A"] = []
+    assert entities["current_provisional_index"].native_value is None
+    assert entities["previous_cycle_final_index"].native_value is None
+    assert entities["consumption_today"].native_value is None
+    assert entities["consumption_prev_prev_period"].native_value is None
+
+
+@pytest.mark.asyncio
+async def test_next_update_uses_coordinator_schedule_not_snapshot_time(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    coordinator = entry.runtime_data
+    entity = next(
+        item
+        for item in collect_sensor(coordinator, entry)
+        if item.entity_description.key == "next_update"
+    )
+    assert entity.native_value is None
+    coordinator._schedule_refresh()
+    scheduled = entity.native_value
+    assert isinstance(scheduled, datetime) and scheduled.tzinfo is UTC
+    assert abs((scheduled - datetime.now(UTC)).total_seconds() - 360 * 60) < 2
+    assert entity.entity_category is EntityCategory.DIAGNOSTIC
+    assert entity.device_class is SensorDeviceClass.TIMESTAMP
+    coordinator._async_unsub_refresh()
+    assert entity.native_value is None
+    coordinator.update_interval = timedelta(minutes=60)
+    coordinator._schedule_refresh()
+    assert abs((entity.native_value - datetime.now(UTC)).total_seconds() - 60 * 60) < 2
+    coordinator.last_update_success = False
+    assert entity.available and isinstance(entity.native_value, datetime)
+    assert entity.extra_state_attributes == {
+        "source": "coordinator_timer",
+        "provisional": False,
+    }
+    assert not any(
+        item.available
+        for item in collect_sensor(coordinator, entry)
+        if item.entity_description.key != "next_update"
+    )
+    await coordinator.async_shutdown()
+    assert not entity.available and entity.native_value is None
+
+
+@pytest.mark.asyncio
+async def test_requested_daily_sensors_read_energy_not_index_snapshot(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    snapshot = entry.runtime_data.data[customer_key(customers[0])]
+    snapshot.measurement_points = [{"MA_DDO": "POINT-A"}]
+    snapshot.daily_readings["POINT-A"] = [
+        {
+            "NGAY": day,
+            "THOI_DIEM": day + " 08:00",
+            "BCS": "KT",
+            "SO_CTO": "METER-A",
+            "CHISO_MOI": value,
+            "HSN": 2,
+        }
+        for day, value in (
+            ("05/10/2026", 1000),
+            ("06/10/2026", 1012.5),
+            ("07/10/2026", 1018),
+        )
+    ]
+    snapshot.daily["POINT-A"] = [
+        {
+            "NGAY": day,
+            "NGAY_HTHI": day,
+            "SO_CTO": "METER-A",
+            "BCS": "KT",
+            "DIEN_TTHU": value,
+        }
+        for day, value in (
+            ("05/10/2026", -1.5),
+            ("06/10/2026", 4.25),
+            ("07/10/2026", 0),
+        )
+    ]
+    entities = {
+        item.entity_description.key: item
+        for item in collect_sensor(entry.runtime_data, entry)
+    }
+    for key, value, target in (
+        ("consumption_today", 0.0, "2026-10-07"),
+        ("consumption_yesterday", 4.25, "2026-10-06"),
+        ("consumption_two_days_ago", -1.5, "2026-10-05"),
+    ):
+        entity = entities[key]
+        assert entity.native_value == value
+        attributes = entity.extra_state_attributes
+        assert attributes["target_date"] == target
+        assert attributes["source"] == "diennangngay"
+        assert attributes["provisional"] is True
+        assert attributes["period_basis"] == "calendar_day"
+    assert entities["current_provisional_index"].native_value == 1018.0
+    snapshot.daily["POINT-A"].pop()
+    assert entities["consumption_today"].native_value is None
+    snapshot.daily["POINT-A"] = [
+        dict(row) for row in snapshot.daily_readings["POINT-A"]
+    ]
+    assert all(entities[key].native_value is None for key in sensor._DAY_OFFSETS)
+    snapshot.daily["POINT-A"] = [
+        {"NGAY_HTHI": "05/10/2026 - 07/10/2026", "BCS": "KT", "DIEN_TTHU": 100}
+    ]
+    assert all(entities[key].native_value is None for key in sensor._DAY_OFFSETS)
+
+
+@pytest.mark.asyncio
+async def test_previous_final_index_sensor_uses_as_of_and_verified_counter(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    snapshot = entry.runtime_data.data[customer_key(customers[0])]
+    snapshot.measurement_points = [{"MA_DDO": "POINT-A"}]
+    snapshot.monthly_readings["POINT-A"] = [
+        {
+            "NAM": 2026,
+            "THANG": 9,
+            "KY": 1,
+            "BCS": "KT",
+            "SO_CTO": "OLD",
+            "NGAY_CKY": "15/09/2026",
+            "CHISO_MOI": 9000,
+        },
+        {
+            "NAM": 2026,
+            "THANG": 9,
+            "KY": 2,
+            "BCS": "KT",
+            "SO_CTO": "NEW",
+            "NGAY_CKY": "30/09/2026",
+            "CHISO_MOI": 100,
+        },
+        {
+            "NAM": 2026,
+            "THANG": 10,
+            "BCS": "KT",
+            "SO_CTO": "NEW",
+            "NGAY_CKY": "06/10/2026",
+            "CHISO_MOI": 110,
+        },
+    ]
+    entities = {
+        item.entity_description.key: item
+        for item in collect_sensor(entry.runtime_data, entry)
+    }
+    entity = entities["previous_cycle_final_index"]
+    assert entity.native_value == 100.0
+    assert entity.device_class is None and entity.native_unit_of_measurement is None
+    attributes = entity.extra_state_attributes
+    assert attributes["target_month"] == "2026-09"
+    assert attributes["as_of"] == "2026-10-07"
+    assert attributes["period_basis"] == "previous_completed_month_label"
+    assert attributes["cycle_basis"] == "latest_verified_end_date_or_month_cycle_order"
+    assert attributes["source"] == "chisothang" and attributes["provisional"] is False
+    snapshot.monthly_readings["POINT-A"].append(
+        snapshot.monthly_readings["POINT-A"][1] | {"BCS": "BT"}
+    )
+    assert entity.native_value is None
+    snapshot.monthly_readings["POINT-A"].pop()
+    monkeypatch.setattr(sensor, "vn_now", lambda: date(2026, 11, 1))
+    assert entity.native_value == 110.0
+
+
+@pytest.mark.asyncio
+async def test_customer_month_sensors_share_typed_helper_and_explicit_sources(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    snapshot = entry.runtime_data.data[customer_key(customers[0])]
+    snapshot.measurement_points = [
+        {"MA_DDO": "POINT-A"},
+        {"MA_DDO": "POINT-A"},
+        {"MA_DDO": "POINT-B"},
+    ]
+    snapshot.monthly = {"POINT-A": [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": 0}]}
+    snapshot.monthly_readings = {
+        "POINT-A": [{"NAM": 2026, "THANG": 10, "BCS": "KT", "DIEN_TTHU": 999}],
+        "POINT-B": [
+            {"NAM": 2026, "THANG": 10, "BCS": band, "DIEN_TTHU": value}
+            for band, value in (("KT", 5), ("BT", 1), ("CD", 1), ("TD", 1))
+        ],
+    }
+    entities = {
+        item.entity_description.key: item
+        for item in collect_sensor(entry.runtime_data, entry)
+    }
+    current = entities["consumption_this_period"]
+    assert current.native_value == 5.0
+    assert current.extra_state_attributes["target_month"] == "2026-10"
+    assert current.extra_state_attributes["source"] == "chisothang+diennangthang"
+    assert current.extra_state_attributes["period_basis"] == "energy_month_label"
+    assert current.extra_state_attributes["provisional"] is True
+    assert entities["consumption_prev_period"].native_value is None
+    snapshot.monthly["POINT-A"][0]["DIEN_TTHU"] = None
+    assert current.native_value is None
+    shared = Mock(return_value=123.25)
+    monkeypatch.setattr(sensor, "customer_month_energy", shared)
+    assert sensor._customer_month_energy(snapshot, (2026, 10)) == 123.25
+    shared.assert_called_once_with(
+        snapshot.measurement_points,
+        snapshot.monthly,
+        snapshot.monthly_readings,
+        2026,
+        10,
+    )
+
+
+@pytest.mark.asyncio
+async def test_invoice_period_sensor_keeps_distinct_history_and_unknown_vs_zero(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    snapshot = entry.runtime_data.data[customer_key(customers[0])]
+    active = {
+        "ID_HDON": "CURRENT",
+        "ID_HDON_DC": None,
+        "NAM": 2026,
+        "THANG": 10,
+        "KY": 2,
+        "TONG_TIEN": 100,
+        "TTRANG_TTOAN": "CHUATT",
+    }
+    snapshot.invoices = [active]
+    snapshot.paid_invoices = [
+        active | {"TTRANG_TTOAN": "DATT", "TONG_TIEN": 999},
+        {
+            "ID_HDON": "PAID",
+            "NAM": 2026,
+            "THANG": 10,
+            "KY": 1,
+            "TONG_TIEN": 50,
+            "NGAY_TTOAN": "01/11/2026",
+        },
+    ]
+    entity = next(
+        item
+        for item in collect_sensor(entry.runtime_data, entry)
+        if item.entity_description.key == "invoice_this_period"
+    )
+    assert entity.native_value == 150.0
+    assert entity.extra_state_attributes["target_month"] == "2026-10"
+    assert entity.extra_state_attributes["period_basis"] == "invoice_month_label"
+    assert entity.extra_state_attributes["source"] == "hoadon+lichsu-hoadon"
+    snapshot.invoices = []
+    snapshot.paid_invoices = []
+    assert entity.native_value is None
+    snapshot.invoices = [active | {"TONG_TIEN": 0}]
+    assert entity.native_value == 0.0
+    snapshot.invoices[0]["TONG_TIEN"] = None
+    assert entity.native_value is None
+
+
+@pytest.mark.asyncio
+async def test_actual_retry_timer_survives_cloud_failure_without_stale_data(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    client, _ = mocked_client
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    coordinator = entry.runtime_data
+    entities = collect_sensor(coordinator, entry)
+    next_update = next(
+        item for item in entities if item.entity_description.key == "next_update"
+    )
+    unsubscribe = coordinator.async_add_listener(Mock())
+    try:
+        client.fetch_snapshot.side_effect = EvnConnectionError()
+        await coordinator.async_refresh()
+        assert not coordinator.last_update_success
+        assert next_update.available
+        stamp = next_update.native_value
+        assert isinstance(stamp, datetime) and stamp.tzinfo is UTC
+        assert coordinator.next_iteration is not None
+        assert abs((stamp - coordinator.next_iteration).total_seconds()) < 0.1
+        for item in entities:
+            if item is next_update:
+                continue
+            assert not item.available
+            assert item.native_value is None and item.extra_state_attributes == {}
+        coordinator._async_unsub_refresh()
+        assert not next_update.available and next_update.native_value is None
+    finally:
+        unsubscribe()
+        await coordinator.async_shutdown()

@@ -105,6 +105,53 @@
       },
       "fetched_at": {
         "name": "Last successful update"
+      },
+      "current_provisional_index": {
+        "name": "Provisional index"
+      },
+      "previous_cycle_final_index": {
+        "name": "Previous cycle final index"
+      },
+      "consumption_today": {
+        "name": "Energy consumed today"
+      },
+      "consumption_yesterday": {
+        "name": "Energy consumed yesterday"
+      },
+      "consumption_two_days_ago": {
+        "name": "Energy consumed two days ago"
+      },
+      "current_period_detail": {
+        "name": "Current period"
+      },
+      "invoice_year": {
+        "name": "Invoice year"
+      },
+      "invoice_this_period": {
+        "name": "Invoice this period"
+      },
+      "invoice_prev_period": {
+        "name": "Invoice previous period"
+      },
+      "invoice_prev_prev_period": {
+        "name": "Invoice two periods ago"
+      },
+      "consumption_this_period": {
+        "name": "Energy this period"
+      },
+      "consumption_prev_period": {
+        "name": "Energy previous period"
+      },
+      "consumption_prev_prev_period": {
+        "name": "Energy two periods ago"
+      },
+      "next_update": {
+        "name": "Next update"
+      }
+    },
+    "binary_sensor": {
+      "outage_scheduled": {
+        "name": "Outage scheduled"
       }
     }
   },

@@ -2,7 +2,7 @@ import importlib.util
 import json
 import sys
 from copy import deepcopy
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
@@ -36,6 +36,14 @@ latest_reading = models.latest_reading
 outstanding_summary = models.outstanding_summary
 outstanding_from_active = models.outstanding_from_active
 latest_invoice = models.latest_invoice
+month_label = models.month_label
+vn_now = models.vn_now
+previous_months = models.previous_months
+daily_consumption_on = models.daily_consumption_on
+latest_cycle_index = models.latest_cycle_index
+latest_daily_index = models.latest_daily_index
+invoice_for_month = models.invoice_for_month
+customer_month_energy = models.customer_month_energy
 LOCAL = ZoneInfo("Asia/Ho_Chi_Minh")
 NOW = datetime(2026, 10, 7, 12, tzinfo=LOCAL)
 INVALID_NUMBERS = (
@@ -829,8 +837,8 @@ def test_month_over_month_totals_and_percent() -> None:
 
 def test_month_over_month_sums_same_period_and_ignores_string_whitespace() -> None:
     records = [
-        _monthly_usage(10, month=10),
-        _monthly_usage(" 2.5 ", month=10),
+        _monthly_usage(10, month=10, KY=1),
+        _monthly_usage(" 2.5 ", month=10, KY=2),
         _monthly_usage(5, month=9),
     ]
     assert month_over_month(records) == {
@@ -854,11 +862,11 @@ def test_month_over_month_previous_zero_has_no_percent() -> None:
     }
 
 
-def test_month_over_month_single_period_uses_zero_previous() -> None:
+def test_month_over_month_single_period_has_unknown_previous() -> None:
     assert month_over_month([_monthly_usage(10)]) == {
         "current": 10.0,
-        "previous": 0.0,
-        "delta": 10.0,
+        "previous": None,
+        "delta": None,
         "percent": None,
     }
 
@@ -931,7 +939,7 @@ def test_latest_reading_daily_uses_ngay_and_kind_bcs() -> None:
         "THOI_DIEM": "06/10/2026 08:30",
     }
     assert latest_reading([record]) == {
-        "period": "06/10/2026",
+        "period": "06/10/2026 08:30",
         "old": None,
         "new": None,
         "multiplier": None,
@@ -1032,3 +1040,1247 @@ def test_latest_invoice_rejects_bad_numbers(field: str) -> None:
 
 def test_latest_invoice_unknown_status_rejected() -> None:
     assert latest_invoice([_invoice_record(TTRANG_TTOAN="WEIRD")]) is None
+
+
+def _daily_reading(value: Any = 25, **fields: Any) -> dict[str, Any]:
+    return {
+        "NGAY": "06/10/2026",
+        "THOI_DIEM": "06/10/2026 07:30",
+        "BCS": "KT",
+        "SO_CTO": "METER-A",
+        "CHISO_CU": 1000,
+        "CHISO_MOI": 1012.5,
+        "HSN": 2,
+        "DIEN_TTHU": value,
+        **fields,
+    }
+
+
+def _cycle_record(month: Any = 10, index: Any = 1050, **fields: Any) -> dict[str, Any]:
+    return {
+        "NAM": 2026,
+        "THANG": month,
+        "SO_KY": 1,
+        "CHISO_MOI": index,
+        "SO_CTO": "METER-A",
+        **fields,
+    }
+
+
+def test_month_label_and_previous_months_cross_year_boundary() -> None:
+    assert month_label(date(2026, 10, 7)) == "10-2026"
+    assert month_label(date(2026, 1, 1)) == "01-2026"
+    assert previous_months(date(2026, 10, 7), 2) == [(2026, 9), (2026, 8)]
+    assert previous_months(date(2026, 1, 15), 3) == [(2025, 12), (2025, 11), (2025, 10)]
+    assert previous_months(date(2026, 3, 30), 1) == [(2026, 2)]
+
+
+@pytest.mark.parametrize("value", [None, {}, "", date, 20261007])
+def test_month_label_rejects_non_dates(value: Any) -> None:
+    assert month_label(value) == ""
+
+
+@pytest.mark.parametrize(
+    "value", [None, {}, [], [None], [_daily("x")], [_daily(1, BCS=None)], "x"]
+)
+def test_daily_consumption_on_no_data_is_none(value: Any) -> None:
+    assert daily_consumption_on(value, date(2026, 10, 6)) is None
+
+
+@pytest.mark.parametrize("target", [None, {}, "", datetime(2026, 10, 6, tzinfo=UTC)])
+def test_daily_consumption_on_requires_a_date(target: Any) -> None:
+    assert daily_consumption_on([_daily_reading()], target) is None
+
+
+def test_daily_consumption_on_selects_the_requested_day() -> None:
+    records = [_daily_reading(25), _daily_reading(200, NGAY="05/10/2026")]
+    assert daily_consumption_on(records, date(2026, 10, 6)) == 25.0
+    assert daily_consumption_on(records, date(2026, 10, 5)) == 200.0
+    assert daily_consumption_on(records, date(2026, 10, 7)) is None
+
+
+def test_daily_consumption_on_does_not_assign_multi_day_total_to_one_day() -> None:
+    records = [
+        _daily_reading(
+            25,
+            NGAY=None,
+            NGAY_HTHI="05/10/2026 - 06/10/2026",
+        )
+    ]
+    assert daily_consumption_on(records, date(2026, 10, 6)) is None
+    assert daily_consumption_on(records, date(2026, 10, 5)) is None
+
+
+def test_daily_consumption_on_groups_registers_like_daily_summary() -> None:
+    records = [
+        _daily_reading(1, BCS="BT"),
+        _daily_reading(2, BCS="CD"),
+        _daily_reading(3, BCS="TD"),
+    ]
+    assert daily_consumption_on(records, date(2026, 10, 6)) == 6.0
+    mixed = [
+        _daily_reading(1, BCS="BT"),
+        _daily_reading(9, BCS="KT"),
+    ]
+    assert daily_consumption_on(mixed, date(2026, 10, 6)) == 9.0
+    assert (
+        daily_consumption_on([_daily_reading(1, BCS="BT")], date(2026, 10, 6)) is None
+    )
+
+
+def test_daily_consumption_on_does_not_fabricate_missing_energy() -> None:
+    assert daily_consumption_on([_daily_reading("25")], date(2026, 10, 6)) == 25.0
+    without_total = _daily_reading()
+    without_total.pop("DIEN_TTHU")
+    assert daily_consumption_on([without_total], date(2026, 10, 6)) is None
+    scaled = without_total | {"CHISO_MOI": 1020, "HSN": "3"}
+    assert daily_consumption_on([scaled], date(2026, 10, 6)) is None
+    rolled = without_total | {"CHISO_MOI": 900}
+    assert daily_consumption_on([rolled], date(2026, 10, 6)) is None
+
+
+def test_daily_consumption_on_rejects_bad_numbers_and_duplicate_conflicts() -> None:
+    assert daily_consumption_on([_daily_reading("NaN")], date(2026, 10, 6)) is None
+    assert daily_consumption_on([_daily_reading(True)], date(2026, 10, 6)) is None
+    conflicting = [
+        _daily_reading(25),
+        _daily_reading(26, THOI_DIEM="06/10/2026 07:30"),
+    ]
+    assert daily_consumption_on(conflicting, date(2026, 10, 6)) is None
+
+
+def test_latest_cycle_index_selects_descending_periods() -> None:
+    records = [
+        _cycle_record(8, 900),
+        _cycle_record(10, 1050, KY=1),
+        _cycle_record(10, 1060, KY=2),
+        _cycle_record(9, 1000),
+    ]
+    assert latest_cycle_index(records) == 1060.0
+    assert latest_cycle_index(records, 0) == 1060.0
+    assert latest_cycle_index(records, 1) == 1000.0
+    assert latest_cycle_index(records, 2) == 900.0
+    assert latest_cycle_index(records, 3) is None
+
+
+@pytest.mark.parametrize(
+    "records",
+    [
+        None,
+        {},
+        [],
+        [None],
+        [{"CHISO_MOI": 1}],
+        [_cycle_record(month=13)],
+        [_cycle_record(index="NaN")],
+    ],
+)
+def test_latest_cycle_index_failures(records: Any) -> None:
+    assert latest_cycle_index(records) is None
+
+
+@pytest.mark.parametrize("position", [-1, 1.0, True, "0", None, 121])
+def test_latest_cycle_index_invalid_position(position: Any) -> None:
+    assert latest_cycle_index([_cycle_record()], position) is None
+
+
+def test_latest_daily_index_prefers_reading_time_stamp() -> None:
+    records = [
+        _daily_reading(NGAY="05/10/2026", THOI_DIEM="05/10/2026 07:30", CHISO_MOI=1000),
+        _daily_reading(
+            NGAY="06/10/2026", THOI_DIEM="06/10/2026 07:45", CHISO_MOI=1012.5
+        ),
+    ]
+    assert latest_daily_index(records) == (1012.5, "06/10/2026 07:45")
+    without_time = [_daily_reading(THOI_DIEM=None, CHISO_MOI=7)]
+    assert latest_daily_index(without_time) == (7.0, "06/10/2026")
+
+
+@pytest.mark.parametrize(
+    "records", [None, {}, [], [None], [{"CHISO_MOI": 1}], [_daily_reading(NGAY="bad")]]
+)
+def test_latest_daily_index_failures(records: Any) -> None:
+    assert latest_daily_index(records) == (None, None)
+
+
+def test_latest_daily_index_rejects_bad_index_numbers() -> None:
+    assert latest_daily_index([_daily_reading(CHISO_MOI="NaN")]) == (None, None)
+
+
+def test_invoice_for_month_retains_distinct_paid_cycles_with_active() -> None:
+    active = [
+        _invoice_record(TTRANG_TTOAN="CHUATT", TONG_TIEN=125000),
+        _invoice_record(ID_HDON="INVOICE-B", TTRANG_TTOAN="DATT", TONG_TIEN=25000),
+    ]
+    paid = [_invoice_record(ID_HDON="INVOICE-C", TONG_TIEN=999999)]
+    assert invoice_for_month(active, paid, 2026, 10) == 1149999.0
+
+
+def test_invoice_for_month_falls_back_to_paid_history() -> None:
+    active = [_invoice_record(TTRANG_TTOAN=None)]
+    paid = [
+        _invoice_record(ID_HDON="INVOICE-P", TONG_TIEN=400000, THANG=9),
+        _invoice_record(ID_HDON="INVOICE-Q", TONG_TIEN=100000, THANG=9),
+    ]
+    assert invoice_for_month(active, paid, 2026, 9) == 500000.0
+    assert invoice_for_month(active, paid, 2026, 10) is None
+
+
+@pytest.mark.parametrize(
+    ("active", "paid", "year", "month"),
+    [
+        (None, [], 2026, 10),
+        ([], None, 2026, 10),
+        ([], [], 2026, 10),
+        ([None], [], 2026, 10),
+        ([], [{}], 2026, 13),
+        ([], [{}], 0, 10),
+        ([], [{}], "2026", 10),
+        ([], [{}], 2026, True),
+        ([_invoice_record(TONG_TIEN="NaN")], [], 2026, 10),
+    ],
+)
+def test_invoice_for_month_unknown(
+    active: Any, paid: Any, year: Any, month: Any
+) -> None:
+    assert invoice_for_month(active, paid, year, month) is None
+
+
+def test_vn_now_uses_local_calendar_day(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz: Any = None) -> datetime:
+            assert tz == LOCAL
+            return datetime(2026, 10, 7, 17, 30, tzinfo=UTC).astimezone(tz)
+
+    monkeypatch.setattr(models, "datetime", Clock)
+    assert vn_now() == date(2026, 10, 8)
+
+
+@pytest.mark.parametrize("count", [-1, True, 1.5, "2", None])
+def test_previous_months_invalid_count(count: Any) -> None:
+    assert previous_months(date(2026, 1, 1), count) == []
+
+
+def test_previous_months_empty_and_minimum_date() -> None:
+    assert previous_months(date(2026, 1, 1), 0) == []
+    assert previous_months(date.min, 2) == []
+    assert previous_months(date(1, 2, 1), 3) == [(1, 1)]
+
+
+@pytest.mark.parametrize("value", INVALID_NUMBERS)
+def test_new_model_helpers_reject_ambiguous_numbers(value: Any) -> None:
+    assert daily_consumption_on([_daily_reading(value)], date(2026, 10, 6)) is None
+    assert latest_daily_index([_daily_reading(CHISO_MOI=value)]) == (None, None)
+    assert latest_cycle_index([_cycle_record(index=value)]) is None
+    assert invoice_for_month([_invoice_record(TONG_TIEN=value)], [], 2026, 10) is None
+
+
+def test_latest_daily_index_orders_times_and_months_not_strings() -> None:
+    records = [
+        _daily_reading(NGAY="30/09/2026", THOI_DIEM="30/09/2026 23:00", CHISO_MOI=1000),
+        _daily_reading(NGAY="01/10/2026", THOI_DIEM="01/10/2026 11:00", CHISO_MOI=1015),
+        _daily_reading(NGAY="01/10/2026", THOI_DIEM="01/10/2026 09:00", CHISO_MOI=1012),
+    ]
+    assert latest_daily_index(records) == (1015.0, "01/10/2026 11:00")
+    assert latest_daily_index(list(reversed(records))) == (1015.0, "01/10/2026 11:00")
+    assert latest_daily_index([_daily_reading(THOI_DIEM="08:30:00")]) == (
+        1012.5,
+        "08:30:00",
+    )
+
+
+@pytest.mark.parametrize(
+    "stamp", [True, 123, "bad", "06/10/2026 25:00", "06/10/2026\ninjected"]
+)
+def test_latest_daily_index_invalid_timestamp(stamp: Any) -> None:
+    assert latest_daily_index([_daily_reading(THOI_DIEM=stamp)]) == (None, None)
+
+
+def test_latest_daily_index_conflicting_ties_are_unknown() -> None:
+    row = _daily_reading()
+    assert latest_daily_index([row, row.copy()]) == (1012.5, "06/10/2026 07:30")
+    for updates in ({"CHISO_MOI": 99}, {"SO_CTO": "METER-B"}, {"BCS": "BT"}):
+        assert latest_daily_index([row, row | updates]) == (None, None)
+
+
+def test_invoice_for_month_deduplicates_and_preserves_unknown() -> None:
+    row = _invoice_record(TONG_TIEN=25)
+    assert invoice_for_month([row, row.copy()], [], 2026, 10) == 25.0
+    assert invoice_for_month([row, row | {"TONG_TIEN": 30}], [], 2026, 10) is None
+    assert invoice_for_month([row | {"TONG_TIEN": None}], [row], 2026, 10) is None
+    assert invoice_for_month([row | {"TONG_TIEN": 0}], [], 2026, 10) == 0.0
+    assert invoice_for_month([row | {"TTRANG_TTOAN": None}], [row], 2026, 10) is None
+
+
+def test_new_model_helpers_do_not_mutate_input() -> None:
+    rows = [_daily_reading()]
+    saved = deepcopy(rows)
+    daily_consumption_on(rows, date(2026, 10, 6))
+    latest_daily_index(rows)
+    assert rows == saved
+    invoices = [_invoice_record()]
+    saved = deepcopy(invoices)
+    invoice_for_month(invoices, invoices, 2026, 10)
+    assert invoices == saved
+    cycles = [_cycle_record()]
+    saved = deepcopy(cycles)
+    latest_cycle_index(cycles)
+    assert cycles == saved
+
+
+def test_daily_consumption_is_not_derived_from_consecutive_indices() -> None:
+    rows = [
+        {
+            "NGAY": day,
+            "BCS": "KT",
+            "SO_CTO": "METER-A",
+            "HSN": 2,
+            "CHISO_MOI": value,
+            "THOI_DIEM": day + " 08:00",
+        }
+        for day, value in (
+            ("04/10/2026", 900),
+            ("05/10/2026", 1000),
+            ("06/10/2026", 1012.5),
+        )
+    ]
+    original = deepcopy(rows)
+    assert daily_consumption_on(rows, date(2026, 10, 6)) is None
+    assert daily_consumption_on(rows, date(2026, 10, 5)) is None
+    assert daily_consumption_on(rows, date(2026, 10, 4)) is None
+    assert daily_consumption_on(rows, date(2026, 10, 7)) is None
+    assert rows == original
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"CHISO_MOI": 90},
+        {"CHISO_MOI": True},
+        {"HSN": None},
+        {"HSN": True},
+        {"HSN": 0},
+        {"HSN": "NaN"},
+        {"HSN": 3},
+        {"SO_CTO": "METER-B"},
+        {"BCS": "BT"},
+        {"MA_DDO": "OTHER"},
+        {"NGAY": "07/10/2026"},
+    ],
+)
+def test_daily_index_difference_rejects_unverified_predecessors(
+    updates: dict[str, Any],
+) -> None:
+    previous = {
+        "NGAY": "05/10/2026",
+        "BCS": "KT",
+        "SO_CTO": "METER-A",
+        "HSN": 2,
+        "CHISO_MOI": 100,
+    }
+    current = previous | {"NGAY": "06/10/2026", "CHISO_MOI": 110} | updates
+    assert daily_consumption_on([previous, current], date(2026, 10, 6)) is None
+
+
+def test_daily_index_tariff_registers_do_not_imply_energy() -> None:
+    rows = []
+    for register, index, increment in (("BT", 100, 1), ("CD", 200, 2), ("TD", 300, 3)):
+        base = {"BCS": register, "SO_CTO": "METER-A", "HSN": 2}
+        rows.extend(
+            [
+                base | {"NGAY": "05/10/2026", "CHISO_MOI": index},
+                base | {"NGAY": "06/10/2026", "CHISO_MOI": index + increment},
+            ]
+        )
+    assert daily_consumption_on(rows, date(2026, 10, 6)) is None
+
+
+@pytest.mark.parametrize("index", [100, 110])
+def test_actual_daily_index_schema_without_energy_remains_unknown(index: int) -> None:
+    rows = [
+        {
+            "NGAY": day,
+            "THOI_DIEM": day + " 08:00",
+            "BCS": "KT",
+            "SO_CTO": "METER-A",
+            "CHISO_MOI": value,
+        }
+        for day, value in (("05/10/2026", 100), ("06/10/2026", index))
+    ]
+    assert daily_consumption_on(rows, date(2026, 10, 6)) is None
+    assert latest_daily_index(rows) == (float(index), "06/10/2026 08:00")
+
+
+@pytest.mark.parametrize("value", [0, -2.5, "7.125"])
+def test_daily_consumption_uses_energy_date_not_index_timestamp(value: Any) -> None:
+    row = _daily(value, THOI_DIEM="07/10/2026 08:00", CHISO_MOI=9999, HSN=10)
+    assert daily_consumption_on([row, deepcopy(row)], date(2026, 10, 6)) == float(value)
+    assert daily_consumption_on([row], date(2026, 10, 7)) is None
+    assert (
+        daily_consumption_on(
+            [row | {"NGAY": None, "NGAY_HTHI": None}], date(2026, 10, 7)
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize("day", [5, 6, 7])
+def test_daily_consumption_multiday_overlap_invalidates_single_day(day: int) -> None:
+    interval = _daily(30, NGAY_HTHI="05/10/2026 - 07/10/2026")
+    single = _daily(0, NGAY=f"{day:02d}/10/2026", NGAY_HTHI=f"{day:02d}/10/2026")
+    assert daily_consumption_on([single, interval], date(2026, 10, day)) is None
+
+
+def test_monthly_aggregates_share_deduplication_and_correction_semantics() -> None:
+    rows = [
+        _monthly(10, THANG=9),
+        _monthly(20),
+        _monthly(-2, KY=2),
+        _monthly(4, SO_CTO="METER-B"),
+    ]
+    rows.extend(deepcopy(rows))
+    assert monthly_summary(rows) == PeriodUsage(22.0, "2026-10")
+    assert models._period_totals(rows) == {(2026, 9): 10.0, (2026, 10): 22.0}
+    assert month_over_month(rows) == {
+        "current": 22.0,
+        "previous": 10.0,
+        "delta": 12.0,
+        "percent": 120.0,
+    }
+    assert trailing_average(rows) == 16.0
+    assert trailing_average(list(reversed(rows))) == 16.0
+
+
+@pytest.mark.parametrize(
+    "helper", [models._period_totals, month_over_month, trailing_average]
+)
+@pytest.mark.parametrize(
+    "changes", [{"DIEN_TTHU": 30}, {"metadata": "conflict"}, {"DIEN_TTHU": "20"}]
+)
+def test_monthly_aggregates_reject_same_identity_conflicts(
+    helper: Any, changes: dict[str, Any]
+) -> None:
+    row = _monthly(20)
+    assert helper([_monthly(10, THANG=9), row, row | changes]) is None
+
+
+@pytest.mark.parametrize(
+    "helper", [models._period_totals, month_over_month, trailing_average]
+)
+@pytest.mark.parametrize("value", [None, True, "bad"])
+def test_monthly_aggregates_never_sum_partial_invalid_period(
+    helper: Any, value: Any
+) -> None:
+    rows = [_monthly(10, THANG=9), _monthly(20), _monthly(value, KY=2)]
+    assert helper(rows) is None
+
+
+def test_month_over_month_requires_adjacent_calendar_labels_across_years() -> None:
+    rows = [_monthly(10, NAM=2025, THANG=12), _monthly(15, NAM=2026, THANG=1)]
+    assert month_over_month(rows) == {
+        "current": 15.0,
+        "previous": 10.0,
+        "delta": 5.0,
+        "percent": 50.0,
+    }
+    rows[0]["THANG"] = 11
+    assert month_over_month(rows) == {
+        "current": 15.0,
+        "previous": None,
+        "delta": None,
+        "percent": None,
+    }
+    assert trailing_average(rows) == 12.5
+
+
+def test_trailing_average_uses_last_twelve_validated_periods_not_row_count() -> None:
+    rows = [_monthly(100, NAM=2025, THANG=12)]
+    rows.extend(_monthly(month, THANG=month) for month in range(1, 13))
+    rows.extend(deepcopy(rows))
+    rows.append(_monthly(None, NAM=2027, THANG=1))
+    assert trailing_average(rows) == 6.5
+    assert trailing_average(rows, 2) == 11.5
+
+
+def test_latest_reading_monthly_uses_closing_date_and_newer_lower_counter() -> None:
+    older = _reading(
+        NGAY_DKY="01/09/2026", NGAY_CKY="01/10/2026", SO_CTO="OLD", CHISO_MOI=9000
+    )
+    newer = _reading(
+        NGAY_DKY="30/08/2026", NGAY_CKY="02/10/2026", SO_CTO="NEW", CHISO_MOI=100
+    )
+    result = latest_reading([newer, older])
+    assert result is not None and result["new"] == 100.0
+    assert result["period"] == "02/10/2026"
+
+
+def test_latest_reading_daily_orders_full_timestamp_before_day_or_counter() -> None:
+    rows = [
+        _daily_reading(THOI_DIEM="06/10/2026 09:00", CHISO_MOI=9000, SO_CTO="OLD"),
+        _daily_reading(THOI_DIEM="07/10/2026 08:00", CHISO_MOI=100, SO_CTO="NEW"),
+        _daily_reading(THOI_DIEM="06/10/2026 10:00", CHISO_MOI=9001, SO_CTO="OLD"),
+    ]
+    result = latest_reading(rows)
+    assert result is not None and result["new"] == 100.0
+    assert result["period"] == "07/10/2026 08:00"
+    assert latest_reading(list(reversed(rows))) == result
+    same_day = latest_reading([rows[0], rows[2]])
+    assert same_day is not None and same_day["new"] == 9001.0
+    assert same_day["period"] == "06/10/2026 10:00"
+
+
+@pytest.mark.parametrize("factory", [_reading, _daily_reading])
+@pytest.mark.parametrize(
+    "changes",
+    [{"SO_CTO": "METER-B"}, {"BCS": "BT"}, {"LOAI_CHISO": "TD"}, {"CHISO_MOI": 9000}],
+)
+def test_latest_reading_ties_require_one_verified_counter(
+    factory: Any, changes: dict[str, Any]
+) -> None:
+    row = factory(SO_CTO="METER-A")
+    assert latest_reading([row, deepcopy(row)]) == latest_reading([row])
+    assert latest_reading([row, row | changes]) is None
+
+
+def test_latest_cycle_index_as_of_filters_month_labels_and_future_boundaries() -> None:
+    rows = [
+        _cycle_record(8, 800, NGAY_CKY="31/08/2026"),
+        _cycle_record(9, 900, NGAY_CKY="05/10/2026"),
+        _cycle_record(9, 950, KY=2, NGAY_CKY="09/10/2026"),
+        _cycle_record(10, 1000, NGAY_CKY="06/10/2026"),
+        _cycle_record(11, "bad", NGAY_CKY="30/11/2026"),
+    ]
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 7)) == 900.0
+    assert latest_cycle_index(rows, 1, as_of=date(2026, 10, 7)) == 800.0
+    assert latest_cycle_index(rows, 2, as_of=date(2026, 10, 7)) is None
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 5)) == 900.0
+
+
+def test_latest_cycle_index_chooses_newer_replacement_not_larger_counter() -> None:
+    rows = [
+        _cycle_record(
+            9, 9000, SO_CTO="OLD", NGAY_DKY="01/09/2026", NGAY_CKY="15/09/2026"
+        ),
+        _cycle_record(
+            9, 100, SO_CTO="NEW", NGAY_DKY="15/09/2026", NGAY_CKY="30/09/2026"
+        ),
+    ]
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 7)) == 100.0
+    assert latest_cycle_index(list(reversed(rows))) == 100.0
+    assert latest_cycle_index(rows + [deepcopy(rows[1])]) == 100.0
+    fallback = [
+        row | {"KY": cycle, "NGAY_CKY": None, "NGAY_DKY": None}
+        for cycle, row in enumerate(rows, 1)
+    ]
+    assert latest_cycle_index(fallback) == 100.0
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"SO_CTO": "METER-B"},
+        {"BCS": "BT"},
+        {"LOAI_CHISO": "TD"},
+        {"CHISO_MOI": 9000},
+        {"metadata": "conflict"},
+    ],
+)
+def test_latest_cycle_index_ambiguous_ties_are_unknown(changes: dict[str, Any]) -> None:
+    row = _cycle_record(9, 100, BCS="KT", LOAI_CHISO="KT", NGAY_CKY="30/09/2026")
+    assert latest_cycle_index([row, row | changes], as_of=date(2026, 10, 7)) is None
+    fallback = row | {"NGAY_CKY": None}
+    assert latest_cycle_index([fallback, fallback | changes]) is None
+
+
+def test_latest_cycle_index_chronological_boundary_priority_and_year_rollover() -> None:
+    rows = [
+        _cycle_record(12, 100, NAM=2025, NGAY_CKY="31/12/2025"),
+        _cycle_record(1, 1),
+    ]
+    assert latest_cycle_index(rows, as_of=date(2026, 1, 1)) == 100.0
+    rows = [
+        _cycle_record(8, 80, NGAY_CKY="30/09/2026"),
+        _cycle_record(9, 90, NGAY_CKY="29/09/2026"),
+    ]
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 7)) == 80.0
+    assert (
+        latest_cycle_index(rows + [_cycle_record(9, 95, KY=2)], as_of=date(2026, 10, 7))
+        == 80.0
+    )
+
+
+@pytest.mark.parametrize(
+    "as_of", [True, "2026-10-07", datetime(2026, 10, 7, tzinfo=UTC), {}]
+)
+def test_latest_cycle_index_requires_calendar_date_as_of(as_of: Any) -> None:
+    assert latest_cycle_index([_cycle_record(9)], as_of=as_of) is None
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"NGAY_CKY": "bad"},
+        {"NGAY_DKY": "01/10/2026", "NGAY_CKY": "30/09/2026"},
+        {"KY": True},
+        {"SO_KY": 0},
+    ],
+)
+def test_latest_cycle_index_invalid_cycle_metadata_is_unknown(
+    fields: dict[str, Any],
+) -> None:
+    assert (
+        latest_cycle_index([_cycle_record(9, **fields)], as_of=date(2026, 10, 7))
+        is None
+    )
+
+
+def test_invoice_month_reconciles_exact_identity_not_cycle_or_payment_date() -> None:
+    active = [_invoice_record(TTRANG_TTOAN="CHUATT", TONG_TIEN=100, KY=2)]
+    overlap = active[0] | {"TTRANG_TTOAN": "DATT", "TONG_TIEN": 999}
+    history = _invoice_record(
+        ID_HDON="INVOICE-B", TONG_TIEN=50, KY=1, NGAY_TTOAN="01/11/2026"
+    )
+    history.pop("TTRANG_TTOAN")
+    assert (
+        invoice_for_month(active, [overlap, history, deepcopy(history)], 2026, 10)
+        == 150.0
+    )
+    assert invoice_for_month(active, [overlap, history], 2026, 11) is None
+    assert latest_invoice([history])["status"] is None
+    assert latest_invoice([history])["status_label"] is None
+
+
+def test_invoice_month_active_overlap_removes_old_history_month_label() -> None:
+    row = _invoice_record(TONG_TIEN=100)
+    assert invoice_for_month([row], [row | {"THANG": 9}], 2026, 9) is None
+    assert invoice_for_month([row], [row | {"THANG": 9}], 2026, 10) == 100.0
+
+
+def test_invoice_month_raw_adjustment_pairs_are_distinct_and_deduplicated() -> None:
+    row = _invoice_record(TONG_TIEN=10, ID_HDON="001", ID_HDON_DC=None)
+    rows = [
+        row,
+        row | {"ID_HDON_DC": "ADJUSTED", "TONG_TIEN": 5},
+        row | {"ID_HDON": 1, "TONG_TIEN": 2},
+    ]
+    assert invoice_for_month(rows, deepcopy(rows), 2026, 10) == 17.0
+    assert invoice_for_month([row], [row, row | {"TONG_TIEN": 20}], 2026, 10) is None
+
+
+@pytest.mark.parametrize("identifier", [None, "", True, [], 1.5])
+@pytest.mark.parametrize("source", ["active", "paid"])
+def test_invoice_month_requires_identity(identifier: Any, source: str) -> None:
+    rows = [_invoice_record(ID_HDON=identifier)]
+    assert (
+        invoice_for_month(
+            rows if source == "active" else [],
+            rows if source == "paid" else [],
+            2026,
+            10,
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"TTRANG_TTOAN": "DAHT"},
+        {"TTRANG_TTOAN": "CHUAHT"},
+        {"LOAI_PSINH": "TH"},
+        {"TTRANG_TTOAN": "UNKNOWN"},
+    ],
+)
+@pytest.mark.parametrize("source", ["active", "paid"])
+def test_invoice_month_rejects_unsupported_refunds_cancellations(
+    fields: dict[str, Any], source: str
+) -> None:
+    rows = [_invoice_record(**fields)]
+    assert (
+        invoice_for_month(
+            rows if source == "active" else [],
+            rows if source == "paid" else [],
+            2026,
+            10,
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "paid_date", [None, "", "bad", "31/02/2026", True, "07/10/2026 25:00"]
+)
+def test_invoice_history_without_status_requires_valid_payment_date(
+    paid_date: Any,
+) -> None:
+    row = _invoice_record(NGAY_TTOAN=paid_date)
+    row.pop("TTRANG_TTOAN")
+    assert invoice_for_month([], [row], 2026, 10) is None
+
+
+@pytest.mark.parametrize("paid_date", ["07/10/2026", "07/10/2026 08:30"])
+def test_invoice_history_payment_date_allows_amount_without_fabricating_status(
+    paid_date: str,
+) -> None:
+    row = _invoice_record(NGAY_TTOAN=paid_date, TONG_TIEN=0)
+    row.pop("TTRANG_TTOAN")
+    assert invoice_for_month([], [row], 2026, 10) == 0.0
+    normalized = latest_invoice([row])
+    assert normalized["status"] is None and normalized["status_label"] is None
+    assert invoice_for_month([], [row | {"TONG_TIEN": None}], 2026, 10) is None
+
+
+def test_customer_month_energy_counts_owned_distinct_points_once() -> None:
+    point = {"MA_DDO": "POINT-A", "MA_KHANG": "OWNER"}
+    points = [
+        point,
+        deepcopy(point),
+        point | {"display": "another name"},
+        {"MA_DDO": "POINT-B"},
+    ]
+    monthly = {
+        "POINT-A": [_monthly(10, MA_DDO="POINT-A", MA_KHANG="OWNER")],
+        "POINT-B": [_monthly(-2)],
+        "UNOWNED": [_monthly(1000)],
+    }
+    readings = {
+        "POINT-A": [_monthly(900, BCS="KT")],
+        "POINT-B": [_monthly(900, BCS="KT")],
+    }
+    original = deepcopy((points, monthly, readings))
+    assert customer_month_energy(points, monthly, readings, 2026, 10) == 8.0
+    assert customer_month_energy(points, monthly, readings, 2026, 9) is None
+    assert (points, monthly, readings) == original
+
+
+def test_customer_month_energy_primary_zero_and_invalid_never_replaced_by_index() -> (
+    None
+):
+    points = [{"MA_DDO": "POINT-A"}]
+    readings = {"POINT-A": [_monthly(100, BCS="KT")]}
+    assert (
+        customer_month_energy(points, {"POINT-A": [_monthly(0)]}, readings, 2026, 10)
+        == 0.0
+    )
+    assert (
+        customer_month_energy(points, {"POINT-A": [_monthly(None)]}, readings, 2026, 10)
+        is None
+    )
+    assert (
+        customer_month_energy(
+            points + [{"MA_DDO": "POINT-B"}],
+            {"POINT-A": [_monthly(1)]},
+            readings,
+            2026,
+            10,
+        )
+        is None
+    )
+
+
+def test_customer_month_energy_fallback_uses_canonical_meter_register_cycle_groups() -> (
+    None
+):
+    points = [{"MA_DDO": "POINT-A"}, {"MA_DDO": "POINT-B"}]
+    rows = [
+        _monthly(10, BCS="KT", NGAY_DKY="01/09/2026", NGAY_CKY="30/09/2026", THANG=9),
+        *[
+            _monthly(
+                100, BCS=register, NGAY_DKY="01/09/2026", NGAY_CKY="30/09/2026", THANG=9
+            )
+            for register in ("BT", "CD", "TD")
+        ],
+        *[
+            _monthly(value, SO_CTO="METER-B", BCS=register, THANG=9)
+            for value, register in ((2, "BT"), (-1, "CD"), (3, "TD"))
+        ],
+        _monthly(5, BCS="KT", KY=2, THANG=9),
+    ]
+    rows.extend(deepcopy(rows))
+    assert (
+        customer_month_energy(
+            points, {"POINT-B": [_monthly(1, THANG=9)]}, {"POINT-A": rows}, 2026, 9
+        )
+        == 20.0
+    )
+    rows[0]["DIEN_TTHU"] = None
+    assert (
+        customer_month_energy(
+            points, {"POINT-B": [_monthly(1, THANG=9)]}, {"POINT-A": rows}, 2026, 9
+        )
+        is None
+    )
+
+
+def test_customer_month_energy_fallback_accepts_explicit_reading_register_only() -> (
+    None
+):
+    points = [{"MA_DDO": "POINT-A"}]
+    row = _monthly(5, LOAI_CHISO="KT")
+    assert customer_month_energy(points, {}, {"POINT-A": [row]}, 2026, 10) == 5.0
+    assert (
+        customer_month_energy(points, {}, {"POINT-A": [_monthly(5)]}, 2026, 10) is None
+    )
+    assert (
+        customer_month_energy(
+            points, {}, {"POINT-A": [row | {"BCS": "UNKNOWN"}]}, 2026, 10
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [_monthly(1, BCS="BT")],
+        [_monthly(5, BCS="KT"), _monthly(None, BCS="BT")],
+        [_monthly(5, BCS="KT"), _monthly(6, BCS="KT")],
+        [_monthly(5, BCS="KT", SO_CTO=None), _monthly(6, BCS="KT")],
+        [_monthly(5, BCS="KT", KY=None), _monthly(6, BCS="KT", KY=2)],
+        [
+            _monthly(5, BCS="KT", NGAY_CKY="30/10/2026"),
+            _monthly(1, BCS="BT", NGAY_CKY="31/10/2026"),
+        ],
+    ],
+)
+def test_customer_month_energy_fallback_rejects_ambiguous_or_partial_groups(
+    rows: list[dict[str, Any]],
+) -> None:
+    assert (
+        customer_month_energy([{"MA_DDO": "POINT-A"}], {}, {"POINT-A": rows}, 2026, 10)
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [_monthly(1, MA_DDO="OTHER")],
+        [_monthly(1, MA_KHANG="OTHER")],
+        [_monthly(1, MA_DVIQLY="OTHER")],
+    ],
+)
+def test_customer_month_energy_rejects_foreign_ownership(
+    rows: list[dict[str, Any]],
+) -> None:
+    points = [{"MA_DDO": "POINT-A", "MA_KHANG": "OWNER", "MA_DVIQLY": "UNIT"}]
+    assert customer_month_energy(points, {"POINT-A": rows}, {}, 2026, 10) is None
+    assert customer_month_energy(points, {}, {"POINT-A": rows}, 2026, 10) is None
+
+
+@pytest.mark.parametrize(
+    "points",
+    [
+        [],
+        None,
+        {},
+        [None],
+        [{"MA_DDO": None}],
+        [{"MA_DDO": ""}],
+        [
+            {"MA_DDO": "POINT-A", "MA_KHANG": "OWNER"},
+            {"MA_DDO": "POINT-A", "MA_KHANG": "OTHER"},
+        ],
+    ],
+)
+def test_customer_month_energy_requires_owned_points(points: Any) -> None:
+    assert (
+        customer_month_energy(points, {"POINT-A": [_monthly(1)]}, {}, 2026, 10) is None
+    )
+
+
+@pytest.mark.parametrize("year,month", [(True, 10), ("2026", 10), (2026, 13), (0, 10)])
+def test_customer_month_energy_requires_valid_month_label(
+    year: Any, month: Any
+) -> None:
+    assert (
+        customer_month_energy(
+            [{"MA_DDO": "POINT-A"}], {"POINT-A": [_monthly(1)]}, {}, year, month
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        (1, "1"),
+        (123, "123"),
+        (10**128 - 1, "9" * 128),
+        ("123", "123"),
+        ("00123", "00123"),
+        ("INVOICE-A_1.2", "INVOICE-A_1.2"),
+        ("A" * 128, "A" * 128),
+    ],
+)
+def test_month_invoice_identity_matches_api_canonical_id(
+    raw: Any, expected: str
+) -> None:
+    assert models._invoice_id(raw) == expected
+    assert models._invoice_key({"ID_HDON": raw}) == (expected, None)
+    assert models._invoice_key({"ID_HDON": raw, "ID_HDON_DC": ""}) == (expected, None)
+    assert models._invoice_key({"ID_HDON": raw, "ID_HDON_DC": 456}) == (expected, "456")
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        None,
+        True,
+        False,
+        0,
+        -1,
+        1.0,
+        10**128,
+        float("inf"),
+        float("nan"),
+        Decimal(123),
+        [],
+        {},
+        "",
+        "0",
+        "000",
+        "A" * 129,
+        " INVOICE-A",
+        "INVOICE-A ",
+        "INVOICE A",
+        "..",
+        "../file",
+        "A/file",
+        "id\n",
+        "１２３",
+    ],
+)
+def test_month_invoice_invalid_id_is_unknown_not_coerced(raw: Any) -> None:
+    assert models._invoice_id(raw) is None
+    row = _invoice_record(ID_HDON=raw)
+    assert invoice_for_month([row], [], 2026, 10) is None
+    assert invoice_for_month([], [row], 2026, 10) is None
+    if raw is not None and raw != "":
+        adjusted = _invoice_record(ID_HDON_DC=raw)
+        assert models._invoice_key(adjusted) is None
+        assert invoice_for_month([adjusted], [], 2026, 10) is None
+        assert invoice_for_month([], [adjusted], 2026, 10) is None
+
+
+def test_month_invoice_canonical_overlap_active_wins_and_keeps_distinct_paid_cycles() -> (
+    None
+):
+    active = _invoice_record(
+        ID_HDON="123", ID_HDON_DC="", TTRANG_TTOAN="CHUATT", TONG_TIEN=100, KY=2
+    )
+    paid = [
+        active
+        | {
+            "ID_HDON": 123,
+            "ID_HDON_DC": None,
+            "TTRANG_TTOAN": "DATT",
+            "TONG_TIEN": 999,
+        },
+        _invoice_record(ID_HDON=124, TTRANG_TTOAN=None, TONG_TIEN=50, KY=1),
+        _invoice_record(ID_HDON=123, ID_HDON_DC=456, TONG_TIEN=10, KY=3),
+    ]
+    original = deepcopy((active, paid))
+    assert invoice_for_month([active], paid, 2026, 10) == 160.0
+    assert invoice_for_month([active], list(reversed(paid)), 2026, 10) == 160.0
+    assert invoice_for_month([active | {"TONG_TIEN": 0}], paid, 2026, 10) == 60.0
+    assert invoice_for_month([active | {"TONG_TIEN": None}], paid, 2026, 10) is None
+    assert invoice_for_month([active | {"TTRANG_TTOAN": None}], paid, 2026, 10) is None
+    assert (active, paid) == original
+
+
+@pytest.mark.parametrize("source", ["active", "paid"])
+@pytest.mark.parametrize("adjusted", [None, "", 456, "456"])
+def test_month_invoice_same_source_canonical_duplicates_count_once(
+    source: str, adjusted: Any
+) -> None:
+    row = _invoice_record(ID_HDON=123, ID_HDON_DC=adjusted, TONG_TIEN=25)
+    normalized_adjustment = None if adjusted in (None, "") else "456"
+    duplicate = row | {"ID_HDON": "123", "ID_HDON_DC": normalized_adjustment}
+    rows = [row, deepcopy(row), duplicate]
+    if normalized_adjustment is None:
+        rows.append(
+            {key: value for key, value in duplicate.items() if key != "ID_HDON_DC"}
+        )
+    original = deepcopy(rows)
+    assert (
+        invoice_for_month(
+            rows if source == "active" else [],
+            rows if source == "paid" else [],
+            2026,
+            10,
+        )
+        == 25.0
+    )
+    assert rows == original
+
+
+@pytest.mark.parametrize("source", ["active", "paid"])
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"TONG_TIEN": 30},
+        {"TONG_TIEN": "25"},
+        {"TTRANG_TTOAN": "CHUATT"},
+        {"metadata": {"value": True}},
+        {"THANG": 9},
+    ],
+)
+def test_month_invoice_canonical_identity_keeps_nonidentity_conflicts_unknown(
+    source: str, changes: dict[str, Any]
+) -> None:
+    row = _invoice_record(
+        ID_HDON=123, ID_HDON_DC=None, TONG_TIEN=25, metadata={"value": 1}
+    )
+    duplicate = row | {"ID_HDON": "123", "ID_HDON_DC": ""} | changes
+    rows = [row, duplicate]
+    assert (
+        invoice_for_month(
+            rows if source == "active" else [],
+            rows if source == "paid" else [],
+            2026,
+            10,
+        )
+        is None
+    )
+    assert invoice_for_month([row], rows, 2026, 10) is None
+
+
+def test_month_invoice_canonical_adjustments_and_zero_padded_originals_stay_distinct() -> (
+    None
+):
+    row = _invoice_record(ID_HDON=123, ID_HDON_DC=456, TONG_TIEN=10)
+    active = [row | {"ID_HDON": "123", "ID_HDON_DC": "456", "TONG_TIEN": 15}]
+    paid = [
+        row,
+        row | {"ID_HDON_DC": 789, "TONG_TIEN": 20},
+        row | {"ID_HDON_DC": None, "TONG_TIEN": 30},
+        row | {"ID_HDON": "00123", "TONG_TIEN": 40},
+        row | {"ID_HDON": 321, "TONG_TIEN": 50},
+    ]
+    assert invoice_for_month(active, paid, 2026, 10) == 155.0
+    assert models._invoice_key(row) != models._invoice_key(row | {"ID_HDON_DC": "0456"})
+    assert (
+        invoice_for_month(active, paid + [_invoice_record(ID_HDON=None)], 2026, 10)
+        is None
+    )
+
+
+def test_month_invoice_canonical_overlap_uses_active_month_label() -> None:
+    active = _invoice_record(ID_HDON="123", ID_HDON_DC="", TONG_TIEN=20)
+    paid = active | {"ID_HDON": 123, "ID_HDON_DC": None, "THANG": 9, "TONG_TIEN": 10}
+    assert invoice_for_month([active], [paid], 2026, 9) is None
+    assert invoice_for_month([active], [paid], 2026, 10) == 20.0
+
+
+@pytest.mark.parametrize(
+    "closing",
+    ["30/09/2026", "30/09/2026 23:45", "30/09/2026 23:45:12"],
+)
+def test_monthly_reading_closing_precision_and_date_only_display_are_preserved(
+    closing: str,
+) -> None:
+    row = _reading(
+        NAM=2026,
+        THANG=9,
+        NGAY_DKY="01/09/2026 08:00:01",
+        NGAY_CKY=closing,
+        THOI_DIEM="07/10/2026 12:00",
+    )
+    original = deepcopy(row)
+    result = latest_reading([row])
+    assert result is not None and result["period"] == closing
+    assert result["new"] == 150.0
+    assert latest_cycle_index([row], as_of=date(2026, 10, 7)) == 150.0
+    assert models._reading_period(row) == models._reading_stamp({"THOI_DIEM": closing})
+    assert row == original
+
+
+@pytest.mark.parametrize("closing", ["30/09/2026 08:31", "30/09/2026 08:30:01"])
+def test_monthly_same_day_later_closing_selects_lower_replacement_counter(
+    closing: str,
+) -> None:
+    old = _cycle_record(
+        9,
+        9000,
+        NGAY_DKY="01/09/2026 08:00",
+        NGAY_CKY="30/09/2026 08:30",
+        SO_CTO="OLD",
+        BCS="KT",
+    )
+    new = _cycle_record(
+        9, 10, NGAY_DKY="30/09/2026 08:30:00", NGAY_CKY=closing, SO_CTO="NEW", BCS="KT"
+    )
+    rows = [old, new, deepcopy(new)]
+    for ordered in (rows, list(reversed(rows))):
+        assert latest_cycle_index(ordered, as_of=date(2026, 10, 7)) == 10.0
+        result = latest_reading(ordered)
+        assert result is not None and result["new"] == 10.0
+        assert result["period"] == closing
+
+
+def test_monthly_closing_times_sort_chronologically_across_years() -> None:
+    rows = [
+        _cycle_record(
+            12,
+            9000,
+            NAM=2025,
+            NGAY_DKY="01/12/2025 08:00",
+            NGAY_CKY="31/12/2025 23:59:59",
+        ),
+        _cycle_record(
+            1,
+            20,
+            NAM=2026,
+            NGAY_DKY="31/12/2025 23:59:59",
+            NGAY_CKY="01/01/2026 00:00:01",
+        ),
+    ]
+    result = latest_reading(rows)
+    assert result is not None and result["new"] == 20.0
+    assert result["period"] == "01/01/2026 00:00:01"
+    assert latest_cycle_index(rows, as_of=date(2026, 2, 1)) == 20.0
+    assert latest_cycle_index(rows, 1, as_of=date(2026, 2, 1)) == 9000.0
+    assert latest_cycle_index(rows, as_of=date(2026, 1, 1)) == 9000.0
+
+
+def test_monthly_as_of_is_inclusive_of_whole_vietnam_day_not_midnight() -> None:
+    row = _cycle_record(9, 9000, NGAY_CKY="07/10/2026 00:00:00")
+    rows = [
+        row,
+        row | {"CHISO_MOI": 10, "NGAY_CKY": "07/10/2026 23:59:59"},
+        row | {"CHISO_MOI": 20, "NGAY_CKY": "08/10/2026 00:00:00"},
+        row | {"THANG": 10, "CHISO_MOI": 30, "NGAY_CKY": "07/10/2026 23:59:59"},
+    ]
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 7)) == 10.0
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 8)) == 20.0
+    assert latest_cycle_index(rows, as_of=date(2026, 10, 6)) is None
+
+
+@pytest.mark.parametrize(
+    "changes", [{"BCS": "BT"}, {"SO_CTO": "OTHER"}, {"CHISO_MOI": 9000}]
+)
+def test_monthly_exact_timestamp_ties_remain_ambiguous(changes: dict[str, Any]) -> None:
+    row = _cycle_record(9, 10, BCS="KT", NGAY_CKY="30/09/2026 08:30:01")
+    assert latest_cycle_index([row, deepcopy(row)]) == 10.0
+    assert latest_reading([row, deepcopy(row)])["new"] == 10.0
+    assert latest_cycle_index([row, row | changes]) is None
+    assert latest_reading([row, row | changes]) is None
+
+
+@pytest.mark.parametrize(
+    "stamp",
+    [
+        True,
+        20260930,
+        {},
+        [],
+        "bad",
+        "31/02/2026 08:30",
+        "29/02/2025 08:30:01",
+        "30/09/2026 24:00",
+        "30/09/2026 08:60",
+        "30/09/2026 08:30:60",
+        "30/09/26 08:30",
+        "3/09/2026 08:30",
+        "30/9/2026 08:30",
+        "30/09/2026 8:30",
+        "30/09/2026 08:3",
+        "30/09/2026 08:30:1",
+        "30/09/2026 08:30:00.1",
+        "30/09/2026 08:30Z",
+        "30/09/2026 08:30+07:00",
+        "2026-09-30T08:30:00+07:00",
+        "30/09/2026  08:30",
+        "30/09/2026\t08:30",
+        " 30/09/2026 08:30",
+        "30/09/2026 08:30 ",
+        "30/09/2026 08:30\n",
+        "30/09/2026 - 01/10/2026",
+    ],
+)
+def test_monthly_and_daily_timestamp_validation_is_shared_and_strict(
+    stamp: Any,
+) -> None:
+    row = _cycle_record(9, NGAY_DKY="01/09/2026", NGAY_CKY=stamp)
+    assert latest_reading([row]) is None
+    assert latest_cycle_index([row], as_of=date(2026, 10, 7)) is None
+    assert models._reading_stamp({"THOI_DIEM": stamp}) is None
+    assert models._date_time(stamp) is None
+    assert (
+        latest_reading([row | {"NGAY_DKY": stamp, "NGAY_CKY": "30/09/2026 12:00"}])
+        is None
+    )
+    assert (
+        latest_cycle_index([row | {"NGAY_DKY": stamp, "NGAY_CKY": "30/09/2026 12:00"}])
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "opening,closing",
+    [
+        ("30/09/2026 08:30:01", "30/09/2026 08:30"),
+        ("30/09/2026 08:31", "30/09/2026 08:30:59"),
+        ("01/10/2026 00:00:00", "30/09/2026 23:59:59"),
+        ("01/01/2026", "31/12/2025 23:59:59"),
+        ("01/01/2026 00:00:01", "31/12/2025"),
+    ],
+)
+def test_monthly_reversed_datetime_bounds_are_unknown(
+    opening: str, closing: str
+) -> None:
+    row = _cycle_record(9, NGAY_DKY=opening, NGAY_CKY=closing)
+    assert latest_reading([row]) is None
+    assert latest_cycle_index([row]) is None
+    assert (
+        customer_month_energy(
+            [{"MA_DDO": "POINT-A"}],
+            {},
+            {"POINT-A": [row | {"DIEN_TTHU": 1, "BCS": "KT"}]},
+            2026,
+            9,
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "opening,closing",
+    [
+        ("30/09/2026 08:30", "30/09/2026 08:30:00"),
+        ("30/09/2026", "30/09/2026 08:30:01"),
+        ("30/09/2026 08:30:01", "30/09/2026"),
+        ("29/02/2024 08:30", "29/02/2024 08:31:01"),
+    ],
+)
+def test_monthly_date_and_time_bounds_keep_available_precision(
+    opening: str, closing: str
+) -> None:
+    row = _cycle_record(9, NGAY_DKY=opening, NGAY_CKY=closing)
+    result = latest_reading([row])
+    assert result is not None and result["period"] == closing
+    assert latest_cycle_index([row]) == 1050.0
+    assert (
+        customer_month_energy(
+            [{"MA_DDO": "POINT-A"}],
+            {},
+            {"POINT-A": [row | {"DIEN_TTHU": 1, "BCS": "KT"}]},
+            2026,
+            9,
+        )
+        == 1.0
+    )
+
+
+def test_monthly_reading_time_only_closing_does_not_borrow_an_arbitrary_date() -> None:
+    row = _cycle_record(
+        9, NGAY="30/09/2026", NGAY_DKY="01/09/2026", NGAY_CKY="08:30:01"
+    )
+    assert latest_reading([row]) is None
+    assert latest_cycle_index([row]) is None
+    assert models._reading_stamp({"NGAY": "30/09/2026", "THOI_DIEM": "08:30:01"}) == (
+        datetime(2026, 9, 30, 8, 30, 1, tzinfo=LOCAL),
+        "08:30:01",
+    )

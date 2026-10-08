@@ -9,14 +9,16 @@ và không phát hành kèm.
 
 ## Trạng thái
 
-- **v0.3.0 thử nghiệm.** Đã **đăng nhập, refresh token, đọc dữ liệu và tải hóa
-  đơn PDF thật thành công** trên tài khoản EVNSPC (miền Nam). v0.3.0: **đơn nợ
-  dùng đúng endpoint `hoadon`** (v0.2.0 dùng `hoadon-thanhtoan` nên hiện 0 sai),
-  thêm **chỉ số công tơ, hợp đồng, thông tin KH, lịch sử thanh toán, ngân hàng**
-  và **button cập nhật**.
-- Qua **1.589 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **47 kiểm thử giao diện Playwright** trên mock loopback.
-- **Chưa đối chiếu từng số liệu với app** và **chưa chạy trên HA production**.
+- **v0.4.0:** thêm sensor theo ngày/kỳ và biểu đồ so sánh điện năng, tiền hóa
+  đơn, diễn biến chỉ số công tơ ngay trong panel.
+- Đã xác minh đăng nhập, refresh, đọc lịch sử và tải PDF thật trên EVNSPC.
+  Dữ liệu kiểm tra mới: những ngày/tháng chưa công bố được giữ **unknown**, không
+  đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
+  đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
+- Qua **2.137 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
+  **198 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+- Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
+  giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
 ## Tính năng
 
@@ -28,6 +30,11 @@ và không phát hành kèm.
 - **Sensors mỗi khách hàng:** tiền & số hóa đơn chưa thanh toán (đúng `hoadon`),
   hóa đơn gần nhất (số tiền + trạng thái), số hóa đơn đã trả, lịch ngừng cấp
   điện kế tiếp, lần cập nhật gần nhất (kèm thông tin KH ở attributes).
+- **Sensor mới theo yêu cầu:** Chỉ số tạm chốt, Chỉ số cuối kỳ trước,
+  Tiêu thụ hôm nay/hôm qua/hôm kia, Chi tiết kỳ này, Hóa đơn năm nay, tiền và
+  điện năng kỳ này/kỳ trước/kỳ trước nữa, mốc Cập nhật lúc.
+- **Lịch cắt điện** dạng binary sensor: có lịch dự kiến trong tương lai,
+  kèm thuộc tính bắt đầu/kết thúc. Không phải cảm biến đo mất điện thực tế.
 - **Button** `Cập nhật dữ liệu` cho mỗi khách hàng (force refresh).
 - **Panel EVN** (sidebar, chỉ admin): 6 tab — **Tổng quan** (metric + biểu đồ +
   thẻ ngừng điện), **Điện năng** (lọc khoảng, biểu đồ/bảng tháng/ngày),
@@ -35,8 +42,31 @@ và không phát hành kèm.
   + lọc trạng thái, chi tiết + tải **PDF/bảng kê/thông báo**, lịch sử thanh
   toán), **Lịch ngừng điện**, **Thông tin** (KH, hợp đồng, điểm đo, ngân hàng).
   Theo theme sáng/tối HA, responsive tới 375px, điều hướng bàn phím.
+- **Biểu đồ mới:** cột ba ngày gần nhất tại Tổng quan/Điện năng; cột ba kỳ
+  điện năng theo tổng khách hàng; cột tiền hóa đơn ba kỳ tại Hóa đơn; đường
+  chỉ số gốc ở Công tơ, chọn từng công tơ/bộ chỉ số. Có số và bảng đi kèm,
+  xem bằng bàn phím; đường bị ngắt khi thiếu kỳ hoặc đổi công tơ.
 - Không dùng `total_increasing` hay Energy Dashboard vì kỳ tháng không phải bộ
   đếm suốt đời và dữ liệu ngày có thể gộp nhiều ngày.
+
+### Cách đọc sensor và biểu đồ
+
+- “Kỳ này/trước/trước nữa” tương ứng nhãn tháng `NAM/THANG` do EVN trả,
+  cộng các kỳ ghi điện cùng tháng; không khẳng định ngày đầu/cuối đúng tháng lịch.
+- Ba ngày theo `Asia/Ho_Chi_Minh`; lấy `DIEN_TTHU` trực tiếp. Không chia một
+  khoảng nhiều ngày thành các ngày giả và không suy điện năng từ hai chỉ số
+  đọc tại giờ tùy ý. Hôm nay có thể chưa có dữ liệu hoặc chỉ là tạm tính.
+- Chỉ số tạm chốt/cuối kỳ trước là **chỉ số gốc**; không tự nhân hệ số hay
+  gắn kWh khi chưa xác minh ngữ nghĩa bộ chỉ số. Nếu không phân biệt được công
+  tơ/bộ chỉ số, để unknown thay vì lấy số lớn nhất.
+- Hóa đơn chưa có của tháng hiện tại là **unknown**, không phải hóa đơn 0 đồng.
+  Hóa đơn trùng từ lịch sử/danh sách hiện tại được khử trùng theo ID; trạng thái
+  đã thanh toán không bị tô thành chưa trả chỉ vì trường nợ thô còn giá trị.
+- “Cập nhật lúc” là timestamp lịch polling thật; HA tự hiển thị tương đối như
+  “sau … phút”. Không cố định thành 2 phút. Lịch cũng cập nhật khi lỗi mạng
+  liên tiếp; xác thực thất bại có thể dừng lịch và yêu cầu reauth.
+- Với 1 khách hàng/1 điểm đo: **29 sensors + 1 button + 1 binary sensor**.
+  Một số sensor chẩn đoán nằm trong nhóm Diagnostics; giữ nguyên ID của bản trước.
 
 ## Kiến trúc
 
@@ -44,7 +74,7 @@ và không phát hành kèm.
   danh sách khách hàng, chuyển ngữ cảnh token, các endpoint đọc (`diemdo`,
   `customers/info`, `diennangngay/thang`, `chisongay/thang`, `hoadon`,
   `lichsu-hoadon`, `thanhtoan/danhsach-nganhang`, `ngungcapdien`), tải PDF.
-- `custom_components/evn_cskh/{sensor,button}.py`: sensors đầy đủ + button refresh.
+- `custom_components/evn_cskh/{sensor,button,binary_sensor}.py`: sensors, button refresh, lịch cắt điện.
 - `custom_components/evn_cskh/panel.py`: WebSocket (`evn_cskh/list_entries`,
   `overview`, `details`) và route tải PDF có xác thực (`requires_auth`), cache
   hóa đơn bằng key ngẫu nhiên, giới hạn kích thước/timeout.
@@ -62,9 +92,11 @@ và không phát hành kèm.
 3. Cài **EVN CSKH**, restart Home Assistant.
 4. Settings → Devices & services → Add integration → **EVN CSKH**; nhập tài
    khoản. Sau đó chọn khách hàng và chu kỳ cập nhật trong Options.
-5. Mở panel **EVN CSKH** ở sidebar (chỉ tài khoản admin).
+5. Mở panel **EVN CSKH** ở sidebar (chỉ tài khoản admin). Khi nâng cấp, restart
+   HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
+   integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.3.0.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.4.0.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).
@@ -99,8 +131,18 @@ soi schema và tạo file riêng quyền `600`.
 .venv/bin/python -m pytest -q
 ruff check custom_components poc tests build_release.py
 .venv/bin/python -m mypy
+node --check custom_components/evn_cskh/frontend/evn-cskh-panel.js
 node tests/frontend-panel.mjs
 .venv/bin/python build_release.py
 ```
 
-Xem thêm `analysis/REPORT.md` cho bằng chứng reverse-engineer theo file/dòng.
+Browser tests cần Playwright/Chromium đã cài; mặc định resolve `playwright` từ
+môi trường project. Nếu dùng môi trường Node dùng chung, chỉ định
+`EVN_PLAYWRIGHT_BASE=/duong-dan/toi/package.json` khi chạy script; không có
+đường dẫn máy phát triển cố định trong runner. Tests chỉ chạy mock loopback,
+không dùng tài khoản EVN thật hay HA điều khiển thiết bị.
+
+Ảnh test là dữ liệu tổng hợp trong `analysis/ui-preview/` (không publish).
+Chưa đánh giá thẩm mỹ trực tiếp từ ảnh; đã đo layout Shadow DOM tại 375/1280px,
+light/dark, focus và kiểm tra các luồng. `analysis/REPORT.md` là báo cáo riêng
+trong workspace phân tích, không nằm trong repository công khai.

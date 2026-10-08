@@ -204,6 +204,8 @@ class DetailSnapshot:
     daily_readings: list[dict[str, Any]]
     invoices: list[dict[str, Any]]
     fetched_at: datetime
+    daily_start: date | None = None
+    daily_end: date | None = None
 
 
 @dataclass(frozen=True, repr=False)
@@ -697,7 +699,7 @@ class EvnClient:
             )
             region, base = await self._select_customer_locked(customer)
             today = datetime.now(_LOCAL_TIMEZONE).date()
-            previous_month = today.replace(day=1) - timedelta(days=1)
+            monthly_start = _month_shift(today.replace(day=1), -11)
             readings_start = _month_shift(today.replace(day=1), -13)
             points = _owned_rows(
                 await self._authenticated_locked(
@@ -727,7 +729,7 @@ class EvnClient:
                             "MA_DVIQLY": customer.management_unit,
                             "MA_DDO": point,
                             "MA_KHANG": customer.code,
-                            "TU_THANG_NAM": previous_month.strftime("%m/%Y"),
+                            "TU_THANG_NAM": monthly_start.strftime("%m/%Y"),
                             "DEN_THANG_NAM": today.strftime("%m/%Y"),
                         },
                     ),
@@ -743,9 +745,7 @@ class EvnClient:
                             "MA_DVIQLY": customer.management_unit,
                             "MA_DDO": point,
                             "TU_NGAY": (today - timedelta(days=7)).strftime("%d/%m/%Y"),
-                            "DEN_NGAY": (today - timedelta(days=1)).strftime(
-                                "%d/%m/%Y"
-                            ),
+                            "DEN_NGAY": today.strftime("%d/%m/%Y"),
                         },
                     ),
                     customer,
@@ -772,9 +772,7 @@ class EvnClient:
                             "TU_NGAY": (today - timedelta(days=31)).strftime(
                                 "%d/%m/%Y"
                             ),
-                            "DEN_NGAY": (today - timedelta(days=1)).strftime(
-                                "%d/%m/%Y"
-                            ),
+                            "DEN_NGAY": today.strftime("%d/%m/%Y"),
                         },
                     ),
                     customer,
@@ -883,24 +881,21 @@ class EvnClient:
                 customer,
                 point,
             )
-            daily_end = min(end, today - timedelta(days=1))
+            daily_end = end
             daily_start = max(start, daily_end - timedelta(days=30))
-            daily: list[dict[str, Any]] = []
-            daily_readings: list[dict[str, Any]] = []
             daily_body = {
                 "MA_DVIQLY": customer.management_unit,
                 "MA_DDO": point,
                 "TU_NGAY": daily_start.strftime("%d/%m/%Y"),
                 "DEN_NGAY": daily_end.strftime("%d/%m/%Y"),
             }
-            if daily_start <= daily_end:
-                daily = _owned_rows(
-                    await self._authenticated_locked(
-                        "POST", base, "/api/evn/tracuu/diennangngay", daily_body
-                    ),
-                    customer,
-                    point,
-                )
+            daily = _owned_rows(
+                await self._authenticated_locked(
+                    "POST", base, "/api/evn/tracuu/diennangngay", daily_body
+                ),
+                customer,
+                point,
+            )
             monthly_readings = _owned_rows(
                 await self._authenticated_locked(
                     "POST", base, "/api/evn/tracuu/chisothang", monthly_body
@@ -908,22 +903,21 @@ class EvnClient:
                 customer,
                 point,
             )
-            if daily_start <= daily_end:
-                daily_readings = _owned_rows(
-                    await self._authenticated_locked(
-                        "POST",
-                        base,
-                        "/api/evn/tracuu/chisongay",
-                        daily_body
-                        | {
-                            "TU_NGAY": (daily_start - timedelta(days=1)).strftime(
-                                "%d/%m/%Y"
-                            )
-                        },
-                    ),
-                    customer,
-                    point,
-                )
+            daily_readings = _owned_rows(
+                await self._authenticated_locked(
+                    "POST",
+                    base,
+                    "/api/evn/tracuu/chisongay",
+                    daily_body
+                    | {
+                        "TU_NGAY": (daily_start - timedelta(days=1)).strftime(
+                            "%d/%m/%Y"
+                        )
+                    },
+                ),
+                customer,
+                point,
+            )
             history = _owned_rows(
                 await self._authenticated_locked(
                     "POST",
@@ -961,6 +955,8 @@ class EvnClient:
                 daily_readings=daily_readings,
                 invoices=list(invoices.values()),
                 fetched_at=datetime.now(UTC),
+                daily_start=daily_start,
+                daily_end=daily_end,
             )
             self._issued_invoices[owner] = deepcopy(invoices)
             return snapshot

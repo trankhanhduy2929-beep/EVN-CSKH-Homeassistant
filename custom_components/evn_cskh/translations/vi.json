@@ -105,6 +105,53 @@
       },
       "fetched_at": {
         "name": "Lần cập nhật thành công gần nhất"
+      },
+      "current_provisional_index": {
+        "name": "Chỉ số tạm chốt"
+      },
+      "previous_cycle_final_index": {
+        "name": "Chỉ số cuối kỳ trước"
+      },
+      "consumption_today": {
+        "name": "Tiêu thụ hôm nay"
+      },
+      "consumption_yesterday": {
+        "name": "Tiêu thụ hôm qua"
+      },
+      "consumption_two_days_ago": {
+        "name": "Tiêu thụ hôm kia"
+      },
+      "current_period_detail": {
+        "name": "Chi tiết kỳ này"
+      },
+      "invoice_year": {
+        "name": "Hóa đơn năm nay"
+      },
+      "invoice_this_period": {
+        "name": "Kỳ này"
+      },
+      "invoice_prev_period": {
+        "name": "Kỳ trước"
+      },
+      "invoice_prev_prev_period": {
+        "name": "Kỳ trước nữa"
+      },
+      "consumption_this_period": {
+        "name": "Tiêu thụ kỳ này"
+      },
+      "consumption_prev_period": {
+        "name": "Tiêu thụ kỳ trước"
+      },
+      "consumption_prev_prev_period": {
+        "name": "Tiêu thụ kỳ trước nữa"
+      },
+      "next_update": {
+        "name": "Cập nhật lúc"
+      }
+    },
+    "binary_sensor": {
+      "outage_scheduled": {
+        "name": "Lịch cắt điện"
       }
     }
   },
