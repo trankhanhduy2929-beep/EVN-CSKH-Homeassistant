@@ -103,6 +103,21 @@
       "next_outage": {
         "name": "Next scheduled outage"
       },
+      "next_outage_end": {
+        "name": "Scheduled restoration time"
+      },
+      "next_outage_duration": {
+        "name": "Outage duration (hours)"
+      },
+      "next_outage_area": {
+        "name": "Outage area"
+      },
+      "next_outage_reason": {
+        "name": "Outage reason"
+      },
+      "outage_count": {
+        "name": "Scheduled outage count"
+      },
       "fetched_at": {
         "name": "Last successful update"
       },
@@ -152,6 +167,12 @@
     "binary_sensor": {
       "outage_scheduled": {
         "name": "Outage scheduled"
+      },
+      "outage_soon": {
+        "name": "Outage soon (within 24 hours)"
+      },
+      "outage_active": {
+        "name": "Within scheduled outage window"
       }
     }
   },

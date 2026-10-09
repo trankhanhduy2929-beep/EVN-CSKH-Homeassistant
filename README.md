@@ -9,14 +9,17 @@ và không phát hành kèm.
 
 ## Trạng thái
 
-- **v0.4.0:** thêm sensor theo ngày/kỳ và biểu đồ so sánh điện năng, tiền hóa
-  đơn, diễn biến chỉ số công tơ ngay trong panel.
+- **v0.5.0:** thêm **logo/icon thương hiệu** cho integration, **icon cho mọi
+  sensor/button**, **biểu đồ kiểu sóng (spline + vùng gradient)**, animation mượt
+  (tôn trọng `prefers-reduced-motion`), bảng màu chuẩn biểu đồ theo chất EVN
+  (xanh dương/xanh ngọc/hổ phách) dùng riêng cho biểu đồ; và **sensor lịch cắt
+  điện chi tiết** phục vụ automation.
 - Đã xác minh đăng nhập, refresh, đọc lịch sử và tải PDF thật trên EVNSPC.
   Dữ liệu kiểm tra mới: những ngày/tháng chưa công bố được giữ **unknown**, không
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
-- Qua **2.137 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **198 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+- Qua **2.155 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
+  **204 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
@@ -35,6 +38,12 @@ và không phát hành kèm.
   điện năng kỳ này/kỳ trước/kỳ trước nữa, mốc Cập nhật lúc.
 - **Lịch cắt điện** dạng binary sensor: có lịch dự kiến trong tương lai,
   kèm thuộc tính bắt đầu/kết thúc. Không phải cảm biến đo mất điện thực tế.
+- **Chi tiết lịch cắt điện để làm automation** (mỗi khách hàng): `next_outage`
+  (mốc bắt đầu) nay kèm thuộc tính `end/area/reason/duration_hours/count`; thêm
+  sensor `next_outage_end`, `next_outage_duration` (giờ), `next_outage_area`,
+  `next_outage_reason`, `outage_count`, và các binary sensor `outage_scheduled`,
+  `outage_soon` (bắt đầu trong ≤24 giờ, kèm `seconds_until`), `outage_active`
+  (đang trong khung cắt điện theo lịch công bố).
 - **Button** `Cập nhật dữ liệu` cho mỗi khách hàng (force refresh).
 - **Panel EVN** (sidebar, chỉ admin): 6 tab — **Tổng quan** (metric + biểu đồ +
   thẻ ngừng điện), **Điện năng** (lọc khoảng, biểu đồ/bảng tháng/ngày),
@@ -65,7 +74,7 @@ và không phát hành kèm.
 - “Cập nhật lúc” là timestamp lịch polling thật; HA tự hiển thị tương đối như
   “sau … phút”. Không cố định thành 2 phút. Lịch cũng cập nhật khi lỗi mạng
   liên tiếp; xác thực thất bại có thể dừng lịch và yêu cầu reauth.
-- Với 1 khách hàng/1 điểm đo: **29 sensors + 1 button + 1 binary sensor**.
+- Với 1 khách hàng/1 điểm đo: **34 sensors + 1 button + 3 binary sensor**.
   Một số sensor chẩn đoán nằm trong nhóm Diagnostics; giữ nguyên ID của bản trước.
 
 ## Kiến trúc
@@ -75,6 +84,7 @@ và không phát hành kèm.
   `customers/info`, `diennangngay/thang`, `chisongay/thang`, `hoadon`,
   `lichsu-hoadon`, `thanhtoan/danhsach-nganhang`, `ngungcapdien`), tải PDF.
 - `custom_components/evn_cskh/{sensor,button,binary_sensor}.py`: sensors, button refresh, lịch cắt điện.
+- `custom_components/evn_cskh/brand/`: `icon.png`, `icon@2x.png`, `logo.png`, `logo@2x.png` (thương hiệu integration; không chứa thông tin riêng tư).
 - `custom_components/evn_cskh/panel.py`: WebSocket (`evn_cskh/list_entries`,
   `overview`, `details`) và route tải PDF có xác thực (`requires_auth`), cache
   hóa đơn bằng key ngẫu nhiên, giới hạn kích thước/timeout.
@@ -96,7 +106,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.4.0.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.5.0.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

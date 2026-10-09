@@ -103,6 +103,21 @@
       "next_outage": {
         "name": "Lịch ngừng cấp điện tiếp theo"
       },
+      "next_outage_end": {
+        "name": "Giờ cấp điện lại (dự kiến)"
+      },
+      "next_outage_duration": {
+        "name": "Thời gian cắt điện (giờ)"
+      },
+      "next_outage_area": {
+        "name": "Khu vực cắt điện"
+      },
+      "next_outage_reason": {
+        "name": "Lý do cắt điện"
+      },
+      "outage_count": {
+        "name": "Số lịch cắt điện"
+      },
       "fetched_at": {
         "name": "Lần cập nhật thành công gần nhất"
       },
@@ -152,6 +167,12 @@
     "binary_sensor": {
       "outage_scheduled": {
         "name": "Lịch cắt điện"
+      },
+      "outage_soon": {
+        "name": "Sắp cắt điện (≤24 giờ)"
+      },
+      "outage_active": {
+        "name": "Đang trong khung giờ cắt điện"
       }
     }
   },

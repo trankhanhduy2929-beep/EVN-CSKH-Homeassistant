@@ -30,6 +30,9 @@ monthly_summary = models.monthly_summary
 daily_summary = models.daily_summary
 invoice_summary = models.invoice_summary
 next_outage = models.next_outage
+outage_duration_hours = models.outage_duration_hours
+current_outage = models.current_outage
+upcoming_outage = models.upcoming_outage
 month_over_month = models.month_over_month
 trailing_average = models.trailing_average
 latest_reading = models.latest_reading
@@ -784,6 +787,117 @@ def test_helpers_do_not_mutate_raw_records() -> None:
     original = deepcopy(records)
     next_outage(records, NOW)
     assert records == original
+    records = [_outage("07/10/2026 11:00", TGIAN_KTHUC="07/10/2026 13:00")]
+    original = deepcopy(records)
+    current_outage(records, NOW)
+    upcoming_outage(records, NOW)
+    assert records == original
+
+
+def test_outage_duration_hours_positive_and_unknown() -> None:
+    for hours in (0.5, 1.0, 2.25, 25.0):
+        end = datetime(2026, 10, 8, 8, tzinfo=LOCAL) + timedelta(hours=hours)
+        outage = Outage(datetime(2026, 10, 8, 8, tzinfo=LOCAL), end, "a", "r")
+        assert outage_duration_hours(outage) == pytest.approx(hours)
+
+
+def test_outage_duration_hours_missing_or_non_positive_is_unknown() -> None:
+    start = datetime(2026, 10, 8, 8, tzinfo=LOCAL)
+    assert outage_duration_hours(Outage(start, None, "a", "r")) is None
+    assert outage_duration_hours(Outage(start, start, "a", "r")) is None
+    assert (
+        outage_duration_hours(Outage(start, start - timedelta(hours=1), "a", "r"))
+        is None
+    )
+    assert outage_duration_hours(None) is None
+
+
+def test_current_outage_contains_now_inclusive_bounds() -> None:
+    inside = _outage("07/10/2026 11:00", TGIAN_KTHUC="07/10/2026 13:00")
+    result = current_outage([inside], NOW)
+    assert result is not None
+    assert result.start == datetime(2026, 10, 7, 11, tzinfo=LOCAL)
+    assert result.end == datetime(2026, 10, 7, 13, tzinfo=LOCAL)
+    starts_now = _outage("07/10/2026 12:00", TGIAN_KTHUC="07/10/2026 13:00")
+    ends_now = _outage("07/10/2026 11:00", TGIAN_KTHUC="07/10/2026 12:00")
+    assert current_outage([starts_now], NOW) is not None
+    assert current_outage([ends_now], NOW) is not None
+
+
+def test_current_outage_outside_window_is_unknown() -> None:
+    before = _outage("07/10/2026 13:00", TGIAN_KTHUC="07/10/2026 14:00")
+    after = _outage("07/10/2026 09:00", TGIAN_KTHUC="07/10/2026 11:00")
+    assert current_outage([before], NOW) is None
+    assert current_outage([after], NOW) is None
+
+
+def test_current_outage_missing_end_is_not_active_forever() -> None:
+    record = _outage("07/10/2026 09:00", TGIAN_KTHUC=None)
+    assert current_outage([record], NOW) is None
+    record.pop("TGIAN_KTHUC")
+    assert current_outage([record], NOW) is None
+
+
+def test_current_outage_ignores_invalid_rows_and_unsorted_input() -> None:
+    active = _outage("07/10/2026 11:00", TGIAN_KTHUC="07/10/2026 13:00")
+    records = [
+        _outage("bad start"),
+        _outage("07/10/2026 11:30", TGIAN_KTHUC="bad end"),
+        _outage("07/10/2026 11:00", TGIAN_KTHUC="07/10/2026 10:00"),
+        None,
+        {"TGIAN_BDAU": "07/10/2026 10:00", "TGIAN_KTHUC": "07/10/2026 10:30"},
+        active,
+    ]
+    result = current_outage(records, NOW)
+    assert result is not None
+    assert result.start == datetime(2026, 10, 7, 11, tzinfo=LOCAL)
+    assert current_outage(list(reversed(records)), NOW) == result
+
+
+def test_current_outage_selection_and_bad_input() -> None:
+    earlier = _outage("07/10/2026 10:00", TGIAN_KTHUC="07/10/2026 13:00")
+    later = _outage("07/10/2026 11:00", TGIAN_KTHUC="07/10/2026 13:00")
+    chosen = current_outage([earlier, later], NOW)
+    assert chosen is not None
+    assert chosen.start == datetime(2026, 10, 7, 11, tzinfo=LOCAL)
+    assert current_outage(None, NOW) is None
+    assert current_outage({}, NOW) is None
+    assert current_outage([_outage()], NOW.replace(tzinfo=None)) is None
+
+
+def test_upcoming_outage_within_window_selection() -> None:
+    within = _outage("07/10/2026 13:00", TGIAN_KTHUC="07/10/2026 14:00")
+    boundary = _outage("08/10/2026 12:00", TGIAN_KTHUC="08/10/2026 13:00")
+    beyond = _outage("08/10/2026 12:01", TGIAN_KTHUC="08/10/2026 13:00")
+    far = _outage("09/10/2026 08:00", TGIAN_KTHUC="09/10/2026 10:00")
+    records = [far, beyond, boundary, within]
+    result = upcoming_outage(records, NOW, 24)
+    assert result is not None
+    assert result.start == datetime(2026, 10, 7, 13, tzinfo=LOCAL)
+    assert upcoming_outage([boundary], NOW, 24) is not None
+    assert upcoming_outage([beyond], NOW, 24) is None
+    assert upcoming_outage([far], NOW, 24) is None
+    assert upcoming_outage([within], NOW, 0) is None
+    assert upcoming_outage([_outage("07/10/2026 12:00")], NOW, 0) is not None
+
+
+def test_upcoming_outage_ignores_invalid_rows_and_unsorted_input() -> None:
+    soon = _outage("07/10/2026 13:00", TGIAN_KTHUC="07/10/2026 14:00")
+    records = [None, _outage("bad"), _outage("01/10/2026 08:00"), soon]
+    assert upcoming_outage(records, NOW, 24) == next_outage([soon], NOW)
+    assert upcoming_outage(list(reversed(records)), NOW, 24) == next_outage([soon], NOW)
+
+
+@pytest.mark.parametrize("within", [True, False, 24.0, "24", None, -1])
+def test_upcoming_outage_invalid_within_hours_is_unknown(within: Any) -> None:
+    assert upcoming_outage([_outage()], NOW, within) is None
+
+
+def test_upcoming_outage_bad_records_and_naive_now() -> None:
+    assert upcoming_outage(None, NOW, 24) is None
+    assert upcoming_outage({}, NOW, 24) is None
+    assert upcoming_outage([_outage()], NOW.replace(tzinfo=None), 24) is not None
+    assert upcoming_outage([_outage()], NOW.astimezone(UTC), 24) is not None
 
 
 def _monthly_usage(

@@ -13,6 +13,7 @@ from tempfile import TemporaryDirectory
 from types import MappingProxyType
 from typing import Any, cast
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
@@ -123,6 +124,11 @@ NAMES = {
         "latest_invoice_status": "Latest invoice status",
         "paid_invoice_count": "Paid invoice count",
         "next_outage": "Next scheduled outage",
+        "next_outage_end": "Scheduled restoration time",
+        "next_outage_duration": "Outage duration (hours)",
+        "next_outage_area": "Outage area",
+        "next_outage_reason": "Outage reason",
+        "outage_count": "Scheduled outage count",
         "fetched_at": "Last successful update",
         "current_provisional_index": "Provisional index",
         "previous_cycle_final_index": "Previous cycle final index",
@@ -154,6 +160,11 @@ NAMES = {
         "latest_invoice_status": "Trạng thái hóa đơn gần nhất",
         "paid_invoice_count": "Số hóa đơn đã thanh toán",
         "next_outage": "Lịch ngừng cấp điện tiếp theo",
+        "next_outage_end": "Giờ cấp điện lại (dự kiến)",
+        "next_outage_duration": "Thời gian cắt điện (giờ)",
+        "next_outage_area": "Khu vực cắt điện",
+        "next_outage_reason": "Lý do cắt điện",
+        "outage_count": "Số lịch cắt điện",
         "fetched_at": "Lần cập nhật thành công gần nhất",
         "current_provisional_index": "Chỉ số tạm chốt",
         "previous_cycle_final_index": "Chỉ số cuối kỳ trước",
@@ -186,6 +197,7 @@ MEASUREMENT_KEYS = (
 )
 PUBLIC_ATTRIBUTES = {
     "friendly_name",
+    "icon",
     "device_class",
     "unit_of_measurement",
     "state_class",
@@ -201,7 +213,13 @@ PUBLIC_ATTRIBUTES = {
     "provisional",
     "period",
     "measurement_point",
+    "schedule_start",
     "schedule_end",
+    "start",
+    "end",
+    "duration_hours",
+    "count",
+    "seconds_until",
     "area",
     "reason",
     "current",
@@ -548,9 +566,13 @@ def binary_rows(
         for row in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
         if row.domain == "binary_sensor"
     ]
-    assert len(rows) == 1
-    assert rows[0].translation_key == "outage_scheduled"
-    return {"outage_scheduled": rows[0]}
+    assert len(rows) == 3
+    assert {row.translation_key for row in rows} == {
+        "outage_scheduled",
+        "outage_soon",
+        "outage_active",
+    }
+    return {cast(str, row.translation_key): row for row in rows}
 
 
 def sensor_states(hass: HomeAssistant, entry: EvnConfigEntry) -> dict[str, State]:
@@ -648,9 +670,9 @@ async def test_installed_loader_setup_and_sensor_states(
     binary_platform = next(
         platform for platform in platforms if platform.domain == "binary_sensor"
     )
-    assert len(binary_platform.entities) == 1
+    assert len(binary_platform.entities) == 3
     assert tuple(entry.runtime_data.async_contexts()) == (customer_key(CUSTOMER),) * (
-        len(NAMES["en"]) + 2
+        len(NAMES["en"]) + 4
     )
     assert offline_evn.clients[0].login_calls == 0
     assert offline_evn.clients[0].fetch_calls == [CUSTOMER]
@@ -697,11 +719,21 @@ async def test_installed_loader_setup_and_sensor_states(
     assert states["outstanding_count"].state == "1"
     assert "unit_of_measurement" not in states["outstanding_count"].attributes
     assert states["next_outage"].state == "2099-10-08T01:00:00+00:00"
-    assert (
-        states["next_outage"].attributes["schedule_end"] == "2099-10-08T10:00:00+07:00"
-    )
+    assert states["next_outage"].attributes["start"] == "2099-10-08T08:00:00+07:00"
+    assert states["next_outage"].attributes["end"] == "2099-10-08T10:00:00+07:00"
     assert states["next_outage"].attributes["area"] == "Synthetic public area"
     assert states["next_outage"].attributes["reason"] == "Scheduled maintenance"
+    assert states["next_outage"].attributes["duration_hours"] == 2.0
+    assert states["next_outage"].attributes["count"] == 1
+    assert states["next_outage_end"].state == "2099-10-08T03:00:00+00:00"
+    assert float(states["next_outage_duration"].state) == 2.0
+    assert states["next_outage_duration"].attributes["unit_of_measurement"] == "h"
+    assert states["next_outage_area"].state == "Synthetic public area"
+    assert states["next_outage_reason"].state == "Scheduled maintenance"
+    assert states["outage_count"].state == "1"
+    assert rows["outage_count"].entity_category is EntityCategory.DIAGNOSTIC
+    assert rows["next_outage_area"].entity_category is None
+    assert rows["next_outage_reason"].entity_category is None
     assert states["fetched_at"].state == FETCHED_AT.isoformat(timespec="seconds")
     assert rows["fetched_at"].entity_category is EntityCategory.DIAGNOSTIC
     assert states["prev_month_energy"].state == "900.0"
@@ -770,7 +802,7 @@ async def test_installed_loader_setup_and_sensor_states(
     assert button_state.attributes["friendly_name"] == (
         f"{device.name} {BUTTON_NAMES[language]}"
     )
-    assert len(NAMES["en"]) == 29
+    assert len(NAMES["en"]) == 34
     expected_new = {
         "current_provisional_index": "1012.5",
         "previous_cycle_final_index": STATE_UNKNOWN,
@@ -798,11 +830,15 @@ async def test_installed_loader_setup_and_sensor_states(
     assert scheduled.tzinfo is UTC
     assert abs((scheduled - entry.runtime_data.next_iteration).total_seconds()) < 2
     assert scheduled > datetime.now(UTC)
-    outage_row = binary_rows(hass, entry)["outage_scheduled"]
+    binary = binary_rows(hass, entry)
+    outage_row = binary["outage_scheduled"]
     outage_state = hass.states.get(outage_row.entity_id)
     assert outage_state is not None and outage_state.state == "on"
-    assert outage_state.attributes["start"] == "2099-10-08T08:00:00+07:00"
-    assert outage_state.attributes["end"] == "2099-10-08T10:00:00+07:00"
+    assert outage_state.attributes["schedule_start"] == "2099-10-08T08:00:00+07:00"
+    assert outage_state.attributes["schedule_end"] == "2099-10-08T10:00:00+07:00"
+    assert outage_state.attributes["area"] == "Synthetic public area"
+    assert outage_state.attributes["reason"] == "Scheduled maintenance"
+    assert outage_state.attributes["count"] == 1
     assert outage_row.entity_category is EntityCategory.DIAGNOSTIC
     assert outage_row.device_id == device.id
     assert (
@@ -810,6 +846,25 @@ async def test_installed_loader_setup_and_sensor_states(
         == {"en": "Outage scheduled", "vi": "Lịch cắt điện"}[language]
     )
     assert "device_class" not in outage_state.attributes
+    for key in ("outage_soon", "outage_active"):
+        row = binary[key]
+        state = hass.states.get(row.entity_id)
+        assert state is not None and state.state == "off"
+        assert row.entity_category is None
+        assert (
+            row.original_name
+            == {
+                "outage_soon": {
+                    "en": "Outage soon (within 24 hours)",
+                    "vi": "Sắp cắt điện (≤24 giờ)",
+                },
+                "outage_active": {
+                    "en": "Within scheduled outage window",
+                    "vi": "Đang trong khung giờ cắt điện",
+                },
+            }[key][language]
+        )
+        assert "device_class" not in state.attributes
     assert not [record for record in caplog.records if record.levelno >= 40]
 
 
@@ -895,12 +950,19 @@ async def test_runtime_unknown_unavailable_and_recovery(
             "next_update",
             "current_period_detail",
             "invoice_year",
+            "outage_count",
         )
     )
     assert states["paid_invoice_count"].state == "0"
+    assert states["outage_count"].state == "0"
     assert all("period" not in state.attributes for state in states.values())
-    assert "schedule_end" not in states["next_outage"].attributes
+    assert "end" not in states["next_outage"].attributes
     assert "area" not in states["next_outage"].attributes
+    assert states["next_outage"].attributes["count"] == 0
+    assert states["next_outage_end"].state == STATE_UNKNOWN
+    assert states["next_outage_duration"].state == STATE_UNKNOWN
+    assert states["next_outage_area"].state == STATE_UNKNOWN
+    assert states["next_outage_reason"].state == STATE_UNKNOWN
     assert "customer_name" not in states["fetched_at"].attributes
     assert states["fetched_at"].attributes["contracts"] == 0
     assert states["fetched_at"].attributes["banks"] == 0
@@ -925,6 +987,7 @@ async def test_runtime_unknown_unavailable_and_recovery(
             assert state.state == STATE_UNAVAILABLE
             assert set(state.attributes) <= {
                 "friendly_name",
+                "icon",
                 "device_class",
                 "unit_of_measurement",
                 "state_class",
@@ -959,6 +1022,69 @@ async def test_runtime_unknown_unavailable_and_recovery(
     assert states["outstanding_count"].state == "1"
     assert registry_identity(hass, entry) == identity
     assert len(offline_evn.clients) == 1 and offline_evn.clients[0].login_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_runtime_rich_scheduled_outage_entities(
+    runtime_hass: HomeAssistant, offline_evn: OfflineEvn
+) -> None:
+    hass = runtime_hass
+    entry = await add_entry(hass)
+    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+
+    def stamp(moment: datetime) -> str:
+        return moment.strftime("%d/%m/%Y %H:%M")
+
+    offline_evn.snapshot = replace(
+        make_snapshot(),
+        outages=[
+            {
+                "TGIAN_BDAU": stamp(now - timedelta(minutes=15)),
+                "TGIAN_KTHUC": stamp(now + timedelta(minutes=45)),
+                "KHUVUCMATDIEN": "Active area",
+                "LY_DO": "Active reason",
+            },
+            {
+                "TGIAN_BDAU": stamp(now + timedelta(hours=1)),
+                "TGIAN_KTHUC": stamp(now + timedelta(hours=4)),
+                "KHUVUCMATDIEN": "Soon area",
+                "LY_DO": "Soon reason",
+            },
+            {
+                "TGIAN_BDAU": stamp(now + timedelta(days=20)),
+                "TGIAN_KTHUC": stamp(now + timedelta(days=20, hours=2)),
+            },
+            {
+                "TGIAN_BDAU": stamp(now - timedelta(days=3)),
+                "TGIAN_KTHUC": stamp(now - timedelta(days=3) + timedelta(hours=2)),
+            },
+        ],
+    )
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    states = sensor_states(hass, entry)
+    assert states["outage_count"].state == "4"
+    assert "device_class" not in states["outage_count"].attributes
+    assert states["next_outage"].state != STATE_UNKNOWN
+    assert states["next_outage"].attributes["count"] == 4
+    assert states["next_outage_area"].state == "Soon area"
+    assert states["next_outage_reason"].state == "Soon reason"
+    assert float(states["next_outage_duration"].state) == pytest.approx(3.0, abs=0.1)
+    assert states["next_outage_end"].state != STATE_UNKNOWN
+    binary = binary_rows(hass, entry)
+    assert hass.states.get(binary["outage_scheduled"].entity_id).state == "on"
+    assert hass.states.get(binary["outage_soon"].entity_id).state == "on"
+    assert hass.states.get(binary["outage_active"].entity_id).state == "on"
+    assert binary["outage_scheduled"].entity_category is EntityCategory.DIAGNOSTIC
+    assert binary["outage_soon"].entity_category is None
+    assert binary["outage_active"].entity_category is None
+    soon_attrs = hass.states.get(binary["outage_soon"].entity_id).attributes
+    assert 0 <= soon_attrs["seconds_until"] <= 3 * 3600
+    active_attrs = hass.states.get(binary["outage_active"].entity_id).attributes
+    assert active_attrs["area"] == "Active area"
+    assert active_attrs["reason"] == "Active reason"
+    active_day = (now - timedelta(minutes=15)).strftime("%Y-%m-%d")
+    assert active_attrs["start"].startswith(active_day)
 
 
 @pytest.mark.asyncio
@@ -1418,7 +1544,7 @@ async def test_runtime_actual_daily_schema_unknown_zero_and_month_gap(
     assert states["invoice_this_period"].state == "0.0"
     assert states["current_provisional_index"].state == "100.0"
     identity = registry_identity(hass, entry)
-    assert len({values[1] for values in identity.values()}) == 31
+    assert len({values[1] for values in identity.values()}) == 38
 
 
 @pytest.mark.asyncio

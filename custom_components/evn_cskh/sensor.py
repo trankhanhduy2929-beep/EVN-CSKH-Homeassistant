@@ -33,6 +33,7 @@ from .models import (
     month_over_month,
     monthly_summary,
     next_outage,
+    outage_duration_hours,
     outstanding_from_active,
     previous_months,
     trailing_average,
@@ -66,71 +67,84 @@ POINT_SENSORS = (
         translation_key="monthly_energy",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:flash",
     ),
     SensorEntityDescription(
         key="prev_month_energy",
         translation_key="prev_month_energy",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:flash",
     ),
     SensorEntityDescription(
         key="average_12m_energy",
         translation_key="average_12m_energy",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:flash",
     ),
     SensorEntityDescription(
         key="month_over_month",
         translation_key="month_over_month",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:chart-line",
     ),
     SensorEntityDescription(
         key="daily_energy",
         translation_key="daily_energy",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:flash-outline",
     ),
     SensorEntityDescription(
         key="meter_reading",
         translation_key="meter_reading",
+        icon="mdi:gauge",
     ),
     SensorEntityDescription(
         key="meter_multiplier",
         translation_key="meter_multiplier",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:multiplication",
     ),
     SensorEntityDescription(
         key="meter_read_date",
         translation_key="meter_read_date",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:calendar-check",
     ),
     SensorEntityDescription(
         key="current_provisional_index",
         translation_key="current_provisional_index",
         state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:counter",
     ),
     SensorEntityDescription(
         key="previous_cycle_final_index",
         translation_key="previous_cycle_final_index",
+        icon="mdi:counter",
     ),
     SensorEntityDescription(
         key="consumption_today",
         translation_key="consumption_today",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:flash",
     ),
     SensorEntityDescription(
         key="consumption_yesterday",
         translation_key="consumption_yesterday",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:flash",
     ),
     SensorEntityDescription(
         key="consumption_two_days_ago",
         translation_key="consumption_two_days_ago",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:flash",
     ),
 )
 
@@ -140,86 +154,131 @@ CUSTOMER_SENSORS = (
         translation_key="outstanding_amount",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="VND",
+        icon="mdi:cash",
     ),
     SensorEntityDescription(
         key="outstanding_count",
         translation_key="outstanding_count",
+        icon="mdi:file-document-alert",
     ),
     SensorEntityDescription(
         key="latest_invoice_amount",
         translation_key="latest_invoice_amount",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="VND",
+        icon="mdi:receipt-text",
     ),
     SensorEntityDescription(
         key="latest_invoice_status",
         translation_key="latest_invoice_status",
+        icon="mdi:check-decagram",
     ),
     SensorEntityDescription(
         key="paid_invoice_count",
         translation_key="paid_invoice_count",
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:file-document-check",
     ),
     SensorEntityDescription(
         key="next_outage",
         translation_key="next_outage",
         device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:transmission-tower-off",
+    ),
+    SensorEntityDescription(
+        key="next_outage_end",
+        translation_key="next_outage_end",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:calendar-end",
+    ),
+    SensorEntityDescription(
+        key="next_outage_duration",
+        translation_key="next_outage_duration",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement="h",
+        icon="mdi:timer-outline",
+    ),
+    SensorEntityDescription(
+        key="next_outage_area",
+        translation_key="next_outage_area",
+        icon="mdi:map-marker-outline",
+    ),
+    SensorEntityDescription(
+        key="next_outage_reason",
+        translation_key="next_outage_reason",
+        icon="mdi:text-box-outline",
+    ),
+    SensorEntityDescription(
+        key="outage_count",
+        translation_key="outage_count",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:counter",
     ),
     SensorEntityDescription(
         key="fetched_at",
         translation_key="fetched_at",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:update",
     ),
     SensorEntityDescription(
         key="current_period_detail",
         translation_key="current_period_detail",
+        icon="mdi:calendar-month",
     ),
     SensorEntityDescription(
         key="invoice_year",
         translation_key="invoice_year",
+        icon="mdi:calendar",
     ),
     SensorEntityDescription(
         key="invoice_this_period",
         translation_key="invoice_this_period",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="VND",
+        icon="mdi:cash-multiple",
     ),
     SensorEntityDescription(
         key="invoice_prev_period",
         translation_key="invoice_prev_period",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="VND",
+        icon="mdi:cash-multiple",
     ),
     SensorEntityDescription(
         key="invoice_prev_prev_period",
         translation_key="invoice_prev_prev_period",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="VND",
+        icon="mdi:cash-multiple",
     ),
     SensorEntityDescription(
         key="consumption_this_period",
         translation_key="consumption_this_period",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:chart-bar",
     ),
     SensorEntityDescription(
         key="consumption_prev_period",
         translation_key="consumption_prev_period",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:chart-bar",
     ),
     SensorEntityDescription(
         key="consumption_prev_prev_period",
         translation_key="consumption_prev_prev_period",
         device_class=SensorDeviceClass.ENERGY,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:chart-bar",
     ),
     SensorEntityDescription(
         key="next_update",
         translation_key="next_update",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:timer-sync",
     ),
 )
 
@@ -503,6 +562,23 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
             case "next_outage":
                 outage = next_outage(snapshot.outages)
                 return outage.start if outage is not None else None
+            case "next_outage_end":
+                outage = next_outage(snapshot.outages)
+                return outage.end if outage is not None else None
+            case "next_outage_duration":
+                return outage_duration_hours(next_outage(snapshot.outages))
+            case "next_outage_area":
+                outage = next_outage(snapshot.outages)
+                return (outage.area or None) if outage is not None else None
+            case "next_outage_reason":
+                outage = next_outage(snapshot.outages)
+                return (outage.reason or None) if outage is not None else None
+            case "outage_count":
+                return (
+                    len(snapshot.outages)
+                    if isinstance(snapshot.outages, list)
+                    else None
+                )
             case "fetched_at":
                 return snapshot.fetched_at
             case "current_provisional_index":
@@ -737,12 +813,19 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
         elif key == "next_outage":
             outage = next_outage(snapshot.outages)
             if outage is not None:
+                attributes["start"] = outage.start.isoformat()
                 if outage.end is not None:
-                    attributes["schedule_end"] = outage.end.isoformat()
+                    attributes["end"] = outage.end.isoformat()
                 if outage.area:
                     attributes["area"] = outage.area
                 if outage.reason:
                     attributes["reason"] = outage.reason
+                duration = outage_duration_hours(outage)
+                if duration is not None:
+                    attributes["duration_hours"] = duration
+            attributes["count"] = (
+                len(snapshot.outages) if isinstance(snapshot.outages, list) else 0
+            )
         elif key == "latest_invoice_amount":
             attributes.update(self._invoice_attributes(snapshot))
         elif key == "fetched_at":

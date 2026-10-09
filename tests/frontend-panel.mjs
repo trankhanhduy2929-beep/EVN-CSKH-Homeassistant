@@ -385,6 +385,10 @@ async function main() {
     check("daily comparison labels dates values", dailyChart.columns.map(column => column.label).join() === "Hôm kia,Hôm qua,Hôm nay" && dailyChart.columns[0].value === "34,76" && dailyChart.columns[1].value === "0" && dailyChart.columns[2].value === "Chưa có");
     check("comparison null no bar zero height bar", dailyChart.columns[2].height === null && dailyChart.columns[1].height === "0%" && parseFloat(dailyChart.columns[0].height) > 0);
     check("daily chart aria full date and unit", dailyChart.role === "img" && dailyChart.field === "kwh" && dailyChart.unit === "kWh" && dailyChart.aria.includes("2026-10-05") && dailyChart.aria.includes("34,76 kWh") && dailyChart.aria.includes("Hôm nay"));
+    check("comparison bars rounded top", await page.evaluate(() => {
+      const bars = [...document.getElementById("p").shadowRoot.querySelectorAll(".comparison-chart .bar")];
+      return bars.length > 0 && bars.every(bar => parseFloat(getComputedStyle(bar).borderTopLeftRadius) > 0 && parseFloat(getComputedStyle(bar).borderTopRightRadius) > 0);
+    }));
     check("monthly comparison customer allpoint scope", monthlyChart.text.includes("Tổng khách hàng · tất cả điểm đo · kỳ theo tháng EVN") && monthlyChart.columns[1].value === "1.025,5");
     check("current month provisional lighter caption", monthlyChart.columns[2].provisional && monthlyChart.columns[2].title.includes("Tạm tính/chưa chốt") && await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
@@ -428,6 +432,32 @@ async function main() {
     }));
     await page.evaluate(() => [...document.getElementById("p").shadowRoot.querySelectorAll("[data-action=period]")].find(node => node.dataset.value === "monthly").click());
 
+    const smoothHistory = await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const saved = panel._details;
+      panel._details = { ...saved, monthly: [{ period: "2026-05", kwh: 700 }, { period: "2026-06", kwh: 701.5 }, { period: "2026-07", kwh: null }, { period: "2026-08", kwh: 0 }, { period: "2026-09", kwh: 873 }] };
+      panel._render();
+      const card = panel.shadowRoot.querySelector('[data-chart="energy-history"]');
+      const svg = card?.querySelector("svg.history-overlay");
+      const lines = svg ? [...svg.querySelectorAll(".history-line")] : [];
+      const snapshot = {
+        curve: lines.length > 0 && lines.every(path => /[CQ]/.test(path.getAttribute("d"))),
+        segments: lines.length,
+        gradient: Boolean(svg?.querySelector("linearGradient")),
+        area: (svg?.querySelector(".history-area")?.getAttribute("fill") || "").startsWith("url("),
+        points: card ? card.querySelectorAll(".history-dot").length : 0,
+        zero: card ? [...card.querySelectorAll(".history-dot")].some(dot => dot.getAttribute("aria-label").includes("(2026-08): 0 kWh")) : false,
+        grid: svg ? svg.querySelectorAll(".history-grid").length : 0,
+        bounded: card ? card.scrollWidth <= card.clientWidth + 1 : false,
+      };
+      panel._details = saved;
+      panel._render();
+      return snapshot;
+    });
+    check("energy history smooth spline path", smoothHistory.curve);
+    check("energy history gradient area fill", smoothHistory.gradient && smoothHistory.area);
+    check("energy history null gap zero keeps point", smoothHistory.segments === 2 && smoothHistory.points === 4 && smoothHistory.zero && smoothHistory.bounded && smoothHistory.grid === 3);
+
     await clickTab(page, 2);
     await page.waitForFunction(() => document.getElementById("p").shadowRoot.textContent.includes("Lịch sử chỉ số công tơ"));
     text = await shadowText();
@@ -440,6 +470,11 @@ async function main() {
       const card = root.querySelector('[data-chart="meter-index-history"]');
       const svg = card.querySelector("svg.index-chart");
       return svg?.getAttribute("viewBox") === "0 0 720 260" && svg.getAttribute("role") === "img" && svg.querySelector("title") && svg.dataset.min === "750" && svg.dataset.max === "1873" && svg.getBoundingClientRect().width > 20 && card.textContent.includes("Chỉ số gốc") && svg.querySelectorAll(".index-grid").length === 3 && svg.querySelectorAll(".index-point").length === 3;
+    }));
+    check("meter smooth spline line and gradient", await page.evaluate(() => {
+      const svg = document.getElementById("p").shadowRoot.querySelector(".index-chart");
+      const curves = [...svg.querySelectorAll(".index-curve")];
+      return curves.length > 0 && curves.every(path => /[CQ]/.test(path.getAttribute("d"))) && Boolean(svg.querySelector("linearGradient")) && (svg.querySelector(".index-area")?.getAttribute("fill") || "").startsWith("url(");
     }));
     check("meter date-only metadata no fabricated time", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
@@ -700,7 +735,7 @@ async function main() {
       panel.shadowRoot.getElementById("invoice-0").click();
       panel.shadowRoot.getElementById("pdf-invoice").click();
     });
-    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("pdf-status").textContent.includes("hết hạn"));
+    await page.waitForFunction(() => (document.getElementById("p").shadowRoot.getElementById("pdf-status")?.textContent || "").includes("hết hạn"));
     check("stale PDF error cache invalidated retry visible", await page.evaluate(() => {
       const panel = document.getElementById("p");
       return panel.shadowRoot.getElementById("pdf-status").getAttribute("role") === "alert" && !panel.shadowRoot.getElementById("pdf-retry").hidden && !panel._detailsCache.has(panel._detailKey());
@@ -941,6 +976,10 @@ async function main() {
     }));
     await page.emulateMedia({ reducedMotion: "reduce" });
     check("reduced motion charts no animation", await page.evaluate(() => [...document.getElementById("p").shadowRoot.querySelectorAll(".bar")].every(bar => getComputedStyle(bar).animationName === "none" && getComputedStyle(bar).transitionDuration === "0s")));
+    check("reduced motion smooth line animation off", await page.evaluate(() => {
+      const line = document.getElementById("p").shadowRoot.querySelector(".history-line");
+      return Boolean(line) && getComputedStyle(line).animationName === "none" && getComputedStyle(line).transitionDuration === "0s";
+    }));
 
     const callsBefore = await page.evaluate(() => window.__wsCalls);
     await attach(page, { admin: false });

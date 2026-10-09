@@ -1,7 +1,7 @@
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from math import fsum, isfinite
 from numbers import Real
@@ -384,6 +384,77 @@ def next_outage(
                 _attribute(record.get("LY_DO")),
             )
     return nearest
+
+
+def _local_datetime(value: Any) -> datetime | None:
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=_LOCAL_TIMEZONE)
+    return value.astimezone(_LOCAL_TIMEZONE)
+
+
+def outage_duration_hours(outage: Outage | None) -> float | None:
+    if not isinstance(outage, Outage):
+        return None
+    start, end = outage.start, outage.end
+    if not isinstance(start, datetime) or not isinstance(end, datetime):
+        return None
+    try:
+        seconds = (end - start).total_seconds()
+    except (ArithmeticError, OverflowError, TypeError, ValueError):
+        return None
+    if not isfinite(seconds):
+        return None
+    hours = seconds / 3600
+    return hours if hours > 0 else None
+
+
+def current_outage(records: Any, now: datetime) -> Outage | None:
+    if not isinstance(records, list):
+        return None
+    moment = _local_datetime(now)
+    if moment is None:
+        return None
+    active: Outage | None = None
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        start = _outage_time(record.get("TGIAN_BDAU"))
+        if start is None or start > moment:
+            continue
+        end = _outage_time(record.get("TGIAN_KTHUC"))
+        if end is None or end < start or moment > end:
+            continue
+        candidate = Outage(
+            start,
+            end,
+            _attribute(record.get("KHUVUCMATDIEN")),
+            _attribute(record.get("LY_DO")),
+        )
+        if active is None or candidate.start > active.start:
+            active = candidate
+    return active
+
+
+def upcoming_outage(
+    records: Any, now: datetime, within_hours: int = 24
+) -> Outage | None:
+    if type(within_hours) is not int or within_hours < 0:
+        return None
+    if not isinstance(records, list):
+        return None
+    moment = _local_datetime(now)
+    if moment is None:
+        return None
+    candidate = next_outage(records, moment)
+    if candidate is None:
+        return None
+    try:
+        deadline = moment + timedelta(hours=within_hours)
+    except (OverflowError, ValueError):
+        return None
+    return candidate if candidate.start <= deadline else None
 
 
 _INVOICE_STATUS_LABELS = {

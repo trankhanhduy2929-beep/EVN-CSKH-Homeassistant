@@ -8,7 +8,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 DOMAIN = "evn_cskh"
 NAME = "EVN CSKH"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 MIN_HA_VERSION = "2025.12"
 PLATFORMS = (Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR)
 

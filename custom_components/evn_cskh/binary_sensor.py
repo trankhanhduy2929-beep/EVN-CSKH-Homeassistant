@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -14,17 +16,33 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .api import Customer, Snapshot
 from .const import PLATFORMS, customer_device_info, scope_id
 from .coordinator import EvnConfigEntry, EvnCoordinator, customer_key
-from .models import next_outage
+from .models import current_outage, next_outage, upcoming_outage
 
 PARALLEL_UPDATES = 0
+_LOCAL_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 
 BINARY_SENSORS = (
     BinarySensorEntityDescription(
         key="outage_scheduled",
         translation_key="outage_scheduled",
+        icon="mdi:calendar-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    BinarySensorEntityDescription(
+        key="outage_soon",
+        translation_key="outage_soon",
+        icon="mdi:clock-alert-outline",
+    ),
+    BinarySensorEntityDescription(
+        key="outage_active",
+        translation_key="outage_active",
+        icon="mdi:power-plug-off",
+    ),
 )
+
+
+def _now() -> datetime:
+    return datetime.now(_LOCAL_TIMEZONE)
 
 
 async def async_setup_entry(
@@ -81,6 +99,11 @@ class EvnBinarySensor(CoordinatorEntity[EvnCoordinator], BinarySensorEntity):
         snapshot = self._snapshot
         if snapshot is None:
             return None
+        key = self.entity_description.key
+        if key == "outage_soon":
+            return upcoming_outage(snapshot.outages, _now(), 24) is not None
+        if key == "outage_active":
+            return current_outage(snapshot.outages, _now()) is not None
         return bool(next_outage(snapshot.outages))
 
     @property
@@ -91,9 +114,36 @@ class EvnBinarySensor(CoordinatorEntity[EvnCoordinator], BinarySensorEntity):
         attributes: dict[str, Any] = {
             "last_update": snapshot.fetched_at.isoformat(),
         }
-        outage = next_outage(snapshot.outages)
-        if outage is not None:
-            attributes["start"] = outage.start.isoformat()
-            if outage.end is not None:
-                attributes["end"] = outage.end.isoformat()
+        key = self.entity_description.key
+        if key == "outage_soon":
+            outage = upcoming_outage(snapshot.outages, _now(), 24)
+            if outage is not None:
+                attributes["start"] = outage.start.isoformat()
+                if outage.end is not None:
+                    attributes["end"] = outage.end.isoformat()
+                seconds = int((outage.start - _now()).total_seconds())
+                attributes["seconds_until"] = max(seconds, 0)
+        elif key == "outage_active":
+            outage = current_outage(snapshot.outages, _now())
+            if outage is not None:
+                attributes["start"] = outage.start.isoformat()
+                if outage.end is not None:
+                    attributes["end"] = outage.end.isoformat()
+                if outage.area:
+                    attributes["area"] = outage.area
+                if outage.reason:
+                    attributes["reason"] = outage.reason
+        elif key == "outage_scheduled":
+            outage = next_outage(snapshot.outages)
+            if outage is not None:
+                attributes["schedule_start"] = outage.start.isoformat()
+                if outage.end is not None:
+                    attributes["schedule_end"] = outage.end.isoformat()
+                if outage.area:
+                    attributes["area"] = outage.area
+                if outage.reason:
+                    attributes["reason"] = outage.reason
+            attributes["count"] = (
+                len(snapshot.outages) if isinstance(snapshot.outages, list) else 0
+            )
         return attributes

@@ -404,7 +404,7 @@ def test_real_homeassistant_types_and_identity() -> None:
     )
     assert DOMAIN == "evn_cskh"
     assert NAME == "EVN CSKH"
-    assert VERSION == "0.4.0"
+    assert VERSION == "0.5.0"
     assert MIN_HA_VERSION == "2025.12"
     assert PLATFORMS == (Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR)
     assert binary_sensor.PLATFORMS is PLATFORMS
@@ -448,7 +448,11 @@ def test_complete_translations() -> None:
     sensor_keys = point_keys | {description.key for description in CUSTOMER_SENSORS}
     assert set(english["entity"]["sensor"]) == sensor_keys
     assert set(vietnamese["entity"]["sensor"]) == sensor_keys
-    assert set(english["entity"]["binary_sensor"]) == {"outage_scheduled"}
+    assert set(english["entity"]["binary_sensor"]) == {
+        "outage_scheduled",
+        "outage_soon",
+        "outage_active",
+    }
     assert (
         english["entity"]["binary_sensor"]["outage_scheduled"]["name"]
         == "Outage scheduled"
@@ -456,6 +460,22 @@ def test_complete_translations() -> None:
     assert (
         vietnamese["entity"]["binary_sensor"]["outage_scheduled"]["name"]
         == "Lịch cắt điện"
+    )
+    assert (
+        english["entity"]["binary_sensor"]["outage_soon"]["name"]
+        == "Outage soon (within 24 hours)"
+    )
+    assert (
+        english["entity"]["binary_sensor"]["outage_active"]["name"]
+        == "Within scheduled outage window"
+    )
+    assert (
+        vietnamese["entity"]["binary_sensor"]["outage_soon"]["name"]
+        == "Sắp cắt điện (≤24 giờ)"
+    )
+    assert (
+        vietnamese["entity"]["binary_sensor"]["outage_active"]["name"]
+        == "Đang trong khung giờ cắt điện"
     )
     assert set(english["entity"]["button"]) == {"refresh"}
     assert set(vietnamese["entity"]["button"]) == {"refresh"}
@@ -1173,10 +1193,10 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
     await sensor.async_setup_entry(hass, entry, add)
     add.assert_called_once()
     entities: list[EvnSensor] = add.call_args.args[0]
-    assert len(entities) == 84
-    assert len({entity.unique_id for entity in entities}) == 84
+    assert len(entities) == 94
+    assert len({entity.unique_id for entity in entities}) == 94
     assert len(POINT_SENSORS) == 13
-    assert len(CUSTOMER_SENSORS) == 16
+    assert len(CUSTOMER_SENSORS) == 21
     assert (
         len(
             {
@@ -1210,6 +1230,11 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         ("latest_invoice_status", None): "Chưa thanh toán",
         ("paid_invoice_count", None): 1,
         ("next_outage", None): datetime(2099, 10, 8, 8, tzinfo=LOCAL),
+        ("next_outage_end", None): datetime(2099, 10, 8, 10, tzinfo=LOCAL),
+        ("next_outage_duration", None): 2.0,
+        ("next_outage_area", None): "Synthetic public area",
+        ("next_outage_reason", None): "Scheduled maintenance",
+        ("outage_count", None): 1,
         ("fetched_at", None): FETCHED_AT,
         ("current_provisional_index", "POINT-A"): 1012.5,
         ("current_provisional_index", "POINT-B"): None,
@@ -1239,6 +1264,8 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         assert entity.has_entity_name
         assert not entity.should_poll
         assert entity.available
+        assert entity.icon == entity.entity_description.icon
+        assert entity.icon is not None and entity.icon.startswith("mdi:")
         attributes = entity.extra_state_attributes
         key = entity.entity_description.key
         point = attributes.get("measurement_point")
@@ -1261,6 +1288,10 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "source",
             "provisional",
             "schedule_end",
+            "start",
+            "end",
+            "duration_hours",
+            "count",
             "area",
             "reason",
             "current",
@@ -1358,7 +1389,7 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
                 assert attributes["payment_channel_label"] == "Synthetic Bank"
                 assert attributes["paid_date"] is None
                 assert attributes["due_date"] is None
-        elif key in ("next_outage", "fetched_at"):
+        elif key in ("next_outage", "next_outage_end", "fetched_at"):
             assert entity.device_class is SensorDeviceClass.TIMESTAMP
             assert entity.native_unit_of_measurement is None
             assert isinstance(entity.native_value, datetime)
@@ -1366,23 +1397,32 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         if key in ("paid_invoice_count", "outstanding_count", "latest_invoice_status"):
             assert entity.device_class is None
             assert entity.native_unit_of_measurement is None
+        if key == "next_outage_duration":
+            assert entity.device_class is SensorDeviceClass.DURATION
+            assert entity.native_unit_of_measurement == "h"
         if key in (
             "fetched_at",
             "meter_multiplier",
             "meter_read_date",
             "paid_invoice_count",
             "next_update",
+            "outage_count",
         ):
             assert entity.entity_category is EntityCategory.DIAGNOSTIC
         else:
             assert entity.entity_category is None
         if key == "next_outage":
             assert (
-                attributes["schedule_end"]
-                == datetime(2099, 10, 8, 10, tzinfo=LOCAL).isoformat()
+                attributes["start"]
+                == datetime(2099, 10, 8, 8, tzinfo=LOCAL).isoformat()
+            )
+            assert (
+                attributes["end"] == datetime(2099, 10, 8, 10, tzinfo=LOCAL).isoformat()
             )
             assert attributes["area"] == "Synthetic public area"
             assert attributes["reason"] == "Scheduled maintenance"
+            assert attributes["duration_hours"] == pytest.approx(2.0)
+            assert attributes["count"] == 1
         if key == "fetched_at":
             assert attributes["customer_name"] == INFO["tenKhang"]
             assert attributes["address"] == INFO["diaChi"]
@@ -1462,7 +1502,8 @@ async def test_empty_and_uncertain_data_not_fabricated(
         entity for entity in entities if entity.entity_description.key == "next_outage"
     )
     assert outage_entity.native_value is None and outage_entity.available
-    assert set(outage_entity.extra_state_attributes) == {"last_update"}
+    assert set(outage_entity.extra_state_attributes) == {"last_update", "count"}
+    assert outage_entity.extra_state_attributes["count"] == 1
     snapshot.invoices = []
     snapshot.paid_invoices = [dict(row) for row in PAID_INVOICES]
     invoice_amount = next(
@@ -1868,32 +1909,55 @@ async def test_binary_platform_states_identity_and_unavailability(
     entities = add.call_args.args[0]
     sensors = collect_sensor(coordinator, entry)
     buttons = collect_button(coordinator, entry)
-    assert len(sensors) == 84
-    assert len(buttons) == len(entities) == 2
-    assert len({entity.unique_id for entity in [*sensors, *buttons, *entities]}) == 88
-    for entity, customer in zip(entities, customers, strict=True):
-        assert isinstance(entity, BinarySensorEntity)
-        assert entity.available and entity.is_on is True
-        assert entity.translation_key == "outage_scheduled"
-        assert entity.entity_category is EntityCategory.DIAGNOSTIC
-        assert entity.device_class is None
-        assert entity.device_info == EvnButton(coordinator, entry, customer).device_info
-        assert entity.extra_state_attributes == {
+    assert len(sensors) == 94
+    assert len(buttons) == 2
+    assert len(entities) == 6
+    assert len({entity.unique_id for entity in [*sensors, *buttons, *entities]}) == 102
+    for index, customer in enumerate(customers):
+        scheduled, soon, active = entities[index * 3 : index * 3 + 3]
+        for entity in (scheduled, soon, active):
+            assert isinstance(entity, BinarySensorEntity)
+            assert entity.available
+            assert entity.device_class is None
+            assert (
+                entity.device_info
+                == EvnButton(coordinator, entry, customer).device_info
+            )
+            assert entity.icon == entity.entity_description.icon
+            assert entity.icon is not None and entity.icon.startswith("mdi:")
+        assert scheduled.translation_key == "outage_scheduled"
+        assert scheduled.is_on is True
+        assert scheduled.entity_category is EntityCategory.DIAGNOSTIC
+        assert scheduled.extra_state_attributes == {
             "last_update": FETCHED_AT.isoformat(),
-            "start": "2099-10-08T08:00:00+07:00",
-            "end": "2099-10-08T10:00:00+07:00",
+            "schedule_start": "2099-10-08T08:00:00+07:00",
+            "schedule_end": "2099-10-08T10:00:00+07:00",
+            "area": "Synthetic public area",
+            "reason": "Scheduled maintenance",
+            "count": 1,
         }
+        assert soon.translation_key == "outage_soon"
+        assert soon.is_on is False
+        assert soon.entity_category is None
+        assert soon.extra_state_attributes == {"last_update": FETCHED_AT.isoformat()}
+        assert active.translation_key == "outage_active"
+        assert active.is_on is False
+        assert active.entity_category is None
+        assert active.extra_state_attributes == {"last_update": FETCHED_AT.isoformat()}
     coordinator.data[customer_key(customers[0])].outages = []
-    assert entities[0].is_on is False and entities[1].is_on is True
-    assert entities[0].extra_state_attributes == {"last_update": FETCHED_AT.isoformat()}
+    assert entities[0].is_on is False and entities[3].is_on is True
+    assert entities[0].extra_state_attributes == {
+        "last_update": FETCHED_AT.isoformat(),
+        "count": 0,
+    }
     coordinator.data[customer_key(customers[1])].outages[0].pop("TGIAN_KTHUC")
-    assert "end" not in entities[1].extra_state_attributes
+    assert "schedule_end" not in entities[3].extra_state_attributes
     coordinator.last_update_success = False
     assert all(not entity.available and entity.is_on is None for entity in entities)
     assert all(entity.extra_state_attributes == {} for entity in entities)
     coordinator.last_update_success = True
     coordinator.data.pop(customer_key(customers[0]))
-    assert not entities[0].available and entities[1].available
+    assert not entities[0].available and entities[3].available
     restored = make_entry(hass, customers, tokens)
     other_account = make_entry(hass, customers, tokens, username="another-offline-user")
     description = binary_sensor.BINARY_SENSORS[0]
@@ -1901,14 +1965,102 @@ async def test_binary_platform_states_identity_and_unavailability(
         binary_sensor.EvnBinarySensor(
             coordinator, restored, customers[1], description
         ).unique_id
-        == entities[1].unique_id
+        == entities[3].unique_id
     )
     assert (
         binary_sensor.EvnBinarySensor(
             coordinator, other_account, customers[1], description
         ).unique_id
-        != entities[1].unique_id
+        != entities[3].unique_id
     )
+
+
+@pytest.mark.asyncio
+async def test_rich_scheduled_outage_entities_for_automation(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    coordinator = entry.runtime_data
+    now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+
+    def stamp(moment: datetime) -> str:
+        return moment.strftime("%d/%m/%Y %H:%M")
+
+    snapshot = coordinator.data[customer_key(customers[0])]
+    snapshot.outages = [
+        {
+            "TGIAN_BDAU": stamp(now - timedelta(minutes=30)),
+            "TGIAN_KTHUC": stamp(now + timedelta(minutes=30)),
+            "KHUVUCMATDIEN": "Active area",
+            "LY_DO": "Active reason",
+        },
+        {
+            "TGIAN_BDAU": stamp(now + timedelta(hours=2)),
+            "TGIAN_KTHUC": stamp(now + timedelta(hours=3)),
+            "KHUVUCMATDIEN": "Soon area",
+            "LY_DO": "Soon reason",
+        },
+        {
+            "TGIAN_BDAU": stamp(now + timedelta(days=30)),
+            "TGIAN_KTHUC": stamp(now + timedelta(days=30, hours=2)),
+            "KHUVUCMATDIEN": "Far area",
+            "LY_DO": "Far reason",
+        },
+        {
+            "TGIAN_BDAU": stamp(now - timedelta(days=2)),
+            "TGIAN_KTHUC": stamp(now - timedelta(days=2) + timedelta(hours=1)),
+            "KHUVUCMATDIEN": "Past area",
+            "LY_DO": "Past reason",
+        },
+    ]
+    add = Mock()
+    await binary_sensor.async_setup_entry(hass, entry, add)
+    alerts = {entity.entity_description.key: entity for entity in add.call_args.args[0]}
+    assert alerts["outage_active"].is_on is True
+    active = alerts["outage_active"].extra_state_attributes
+    assert active["area"] == "Active area"
+    assert active["reason"] == "Active reason"
+    assert alerts["outage_soon"].is_on is True
+    soon = alerts["outage_soon"].extra_state_attributes
+    assert datetime.fromisoformat(soon["start"]).tzinfo is not None
+    assert datetime.fromisoformat(soon["end"]).tzinfo is not None
+    assert soon["seconds_until"] >= 0
+    assert soon["seconds_until"] <= 3 * 3600
+    assert alerts["outage_scheduled"].is_on is True
+    assert alerts["outage_scheduled"].extra_state_attributes["count"] == 4
+    assert alerts["outage_active"].entity_category is None
+    assert alerts["outage_soon"].entity_category is None
+    assert alerts["outage_scheduled"].entity_category is EntityCategory.DIAGNOSTIC
+
+    sensor_add = Mock()
+    await sensor.async_setup_entry(hass, entry, sensor_add)
+    sensors = {
+        entity.entity_description.key: entity
+        for entity in sensor_add.call_args.args[0]
+        if entity._point is None
+    }
+    assert sensors["outage_count"].native_value == 4
+    assert sensors["outage_count"].entity_category is EntityCategory.DIAGNOSTIC
+    assert sensors["next_outage_area"].native_value == "Soon area"
+    assert sensors["next_outage_reason"].native_value == "Soon reason"
+    assert sensors["next_outage_duration"].native_value == pytest.approx(1.0)
+    end_value = sensors["next_outage_end"].native_value
+    assert isinstance(end_value, datetime) and end_value.tzinfo is not None
+    assert sensors["next_outage_area"].entity_category is None
+
+    snapshot.outages = []
+    assert sensors["next_outage_duration"].native_value is None
+    assert sensors["next_outage_area"].native_value is None
+    assert sensors["next_outage_reason"].native_value is None
+    assert sensors["next_outage_end"].native_value is None
+    assert sensors["outage_count"].native_value == 0
+    assert alerts["outage_active"].is_on is False
+    assert alerts["outage_soon"].is_on is False
+    assert alerts["outage_scheduled"].is_on is False
 
 
 @pytest.mark.asyncio

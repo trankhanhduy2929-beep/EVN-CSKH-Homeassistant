@@ -17,13 +17,17 @@ def build() -> None:
         path
         for path in PACKAGE.rglob("*")
         if path.is_file()
-        and path.suffix in {".py", ".json", ".js"}
+        and path.suffix in {".py", ".json", ".js", ".png"}
         and "__pycache__" not in path.parts
     )
     required = {
         "__init__.py",
         "api.py",
         "binary_sensor.py",
+        "brand/icon.png",
+        "brand/icon@2x.png",
+        "brand/logo.png",
+        "brand/logo@2x.png",
         "button.py",
         "config_flow.py",
         "const.py",
