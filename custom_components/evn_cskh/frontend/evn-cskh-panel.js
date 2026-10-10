@@ -1,7 +1,7 @@
 const STYLE = `
 :host{display:block;min-width:0;color:var(--primary-text-color,#212121);background:var(--primary-background-color,#f4f5f7);font-family:var(--primary-font-family,inherit);font-size:14px;line-height:1.5;color-scheme:light;--evn-surface:var(--card-background-color,#fff);--evn-line:var(--divider-color,#dce0e4);--evn-muted:var(--secondary-text-color,#61666d);--evn-accent:var(--primary-color,#0b74b8);--evn-chart-1:#0b74b8;--evn-chart-2:#12a19a;--evn-chart-3:#f4a300;--evn-chart-4:#7c5cff;--evn-track-h:164px;--evn-error:var(--error-color,#db4437);--evn-success:var(--success-color,#168039);--evn-warning:var(--warning-color,#9b6511);--evn-hover:color-mix(in srgb,var(--primary-text-color,#212121) 6%,var(--evn-surface))}
 :host([dark]){color-scheme:dark;--evn-chart-1:#4aa3dd;--evn-chart-2:#3cc7bf;--evn-chart-3:#f6b733;--evn-chart-4:#a08cff}*{box-sizing:border-box;min-width:0}h1,h2,h3,p,dl,dd,figure,ul{margin:0}ul{padding:0;list-style:none}h1{font-size:20px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:16px;font-weight:600}p,dd,h2,h3{overflow-wrap:anywhere}button,input,select{font:inherit;color:inherit;max-width:100%}button,input,select{border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);min-height:40px;padding:8px 12px}button{cursor:pointer;font-weight:500;line-height:1.4}button:hover:not(:disabled):not([aria-disabled=true]){background:var(--evn-hover)}button:disabled,button[aria-disabled=true]{cursor:not-allowed;opacity:.6}button[aria-busy=true]{cursor:progress;opacity:1}button.primary{background:var(--evn-accent);border-color:transparent;color:var(--text-primary-color,#fff)}button.primary:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--evn-accent) 85%,var(--primary-text-color,#212121))}button.quiet{background:transparent;border-color:transparent}button.link{border-color:transparent;color:var(--evn-accent);background:transparent;text-align:left}button.link:hover{text-decoration:underline}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--evn-accent);outline-offset:3px}input,select{width:100%;height:40px}input[aria-invalid=true]{border-color:var(--evn-error)}label{display:block;width:fit-content;font-size:12px;font-weight:500;color:var(--evn-muted);margin-bottom:6px}svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}button.icon{display:inline-flex;align-items:center;justify-content:center;width:40px;padding:8px;flex:none;color:var(--evn-muted)}.topbar{background:var(--evn-surface);border-bottom:1px solid var(--evn-line)}.top-inner{max-width:1328px;margin:auto;padding:16px 24px;display:flex;align-items:center;gap:24px}.brand{display:flex;align-items:center;gap:12px;flex:1}.account-tools{display:flex;align-items:end;gap:12px}.account-field{width:320px}.account-tools>button{min-width:106px}#menu{display:none}:host([narrow]) #menu{display:inline-flex}.shell{max-width:1328px;margin:auto;padding:24px;display:grid;gap:20px}.intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.intro h2{font-size:20px}.intro p{margin-top:4px}.muted,.meta{color:var(--evn-muted)}.meta{font-size:12px}.freshness{text-align:right;max-width:300px}.tabs{display:flex;gap:24px;border-bottom:1px solid var(--evn-line);padding:4px 4px 0}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;min-height:48px;padding:10px 4px;color:var(--evn-muted);white-space:nowrap;flex:none}.tabs button[aria-selected=true]{border-bottom-color:var(--evn-accent);color:var(--evn-accent);font-weight:600}.stack{display:grid;gap:16px}.card{background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:14px;padding:20px;animation:evn-fade .28s ease-out both}.card-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:16px}.card-head p{margin-top:4px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{min-height:134px;display:flex;flex-direction:column;gap:8px}.metric-label{color:var(--evn-muted);font-size:13px}.metric-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric-value.compact{font-size:18px}.metric .meta{margin-top:auto}.overview-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px;align-items:start}.chart-card{min-height:340px}
-.chart{display:grid;gap:6px;margin-top:32px;position:relative}.chart-column{text-align:center;min-width:0}.track{height:var(--evn-track-h,164px);position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-chart-1);border-radius:6px 6px 0 0;transform-origin:bottom;animation:evn-bar .36s ease-out both}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.smooth-chart{column-gap:0}.smooth-chart .bar{display:none}.history-overlay{position:absolute;left:0;right:0;top:0;height:var(--evn-track-h,164px);width:100%;pointer-events:none;overflow:visible}.history-line{fill:none;stroke:var(--evn-chart-1);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1400;animation:evn-draw .6s ease-out both}.history-area{stroke:none}.history-grid{stroke:var(--evn-line);stroke-opacity:.7;stroke-width:1}.history-dot{position:absolute;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--evn-surface);border:2px solid var(--evn-chart-1);pointer-events:auto}.history-dot:hover,.history-dot:focus{background:var(--evn-chart-1)}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted);display:flex;align-items:center;gap:10px}.loading::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--evn-chart-1);opacity:.85}.loading::after{content:"";height:8px;flex:1;max-width:220px;border-radius:999px;background:linear-gradient(90deg,var(--evn-hover),color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-surface)),var(--evn-hover));background-size:200% 100%;animation:evn-shimmer 1.4s ease-out 1}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:620px}.invoice-table tbody tr{cursor:pointer}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes evn-fade{from{opacity:0}to{opacity:1}}@keyframes evn-bar{from{transform:scaleY(.02)}to{transform:scaleY(1)}}@keyframes evn-bar-x{from{transform:translateX(-50%) scaleY(.02)}to{transform:translateX(-50%) scaleY(1)}}@keyframes evn-draw{from{stroke-dashoffset:1400}to{stroke-dashoffset:0}}@keyframes evn-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.chart{display:grid;gap:6px;margin-top:32px;position:relative}.chart-column{text-align:center;min-width:0}.track{height:var(--evn-track-h,164px);position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-chart-1);border-radius:6px 6px 0 0;transform-origin:bottom;animation:evn-bar .36s ease-out both}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.smooth-chart{column-gap:0}.smooth-chart .bar{display:none}.history-overlay{position:absolute;left:0;right:0;top:0;height:var(--evn-track-h,164px);width:100%;pointer-events:none;overflow:visible}.history-line{fill:none;stroke:var(--evn-chart-1);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1400;animation:evn-draw .6s ease-out both}.history-area{stroke:none}.history-grid{stroke:var(--evn-line);stroke-opacity:.7;stroke-width:1}.history-dot{position:absolute;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--evn-surface);border:2px solid var(--evn-chart-1);pointer-events:auto}.history-dot:hover,.history-dot:focus{background:var(--evn-chart-1)}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted);display:flex;align-items:center;gap:10px}.loading::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--evn-chart-1);opacity:.85}.loading::after{content:"";height:8px;flex:1;max-width:220px;border-radius:999px;background:linear-gradient(90deg,var(--evn-hover),color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-surface)),var(--evn-hover));background-size:200% 100%;animation:evn-shimmer 1.4s ease-out 1}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:720px}.invoice-table tbody tr{cursor:pointer}.pdf-cell{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.invoice-table .pdf-cell button{min-height:34px;padding:6px 10px;font-size:13px}button.pdf-mini{min-height:34px;padding:6px 10px;font-size:13px}.invoice-pdf-head{display:grid;gap:8px;margin-bottom:16px}.invoice-pdf-head h2{font-size:16px}.invoice-pdf-head .pdf-status{min-height:20px}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes evn-fade{from{opacity:0}to{opacity:1}}@keyframes evn-bar{from{transform:scaleY(.02)}to{transform:scaleY(1)}}@keyframes evn-bar-x{from{transform:translateX(-50%) scaleY(.02)}to{transform:translateX(-50%) scaleY(1)}}@keyframes evn-draw{from{stroke-dashoffset:1400}to{stroke-dashoffset:0}}@keyframes evn-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 .comparison-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.comparison-card{display:flex;flex-direction:column;gap:12px}.comparison-card h2{font-size:16px}.comparison-card .chart{margin:8px 0 0;gap:12px;align-items:start}.comparison-chart .track{position:relative;height:132px;max-width:none;margin:0 0 12px}.comparison-chart .bar{max-width:32px;min-height:0;left:50%;width:40%;transform:translateX(-50%);transform-origin:bottom;animation:evn-bar-x .36s ease-out both}.comparison-chart .bar.negative{transform-origin:top}.comparison-chart .bar.current{opacity:1;background:color-mix(in srgb,var(--evn-accent) 35%,var(--evn-surface))}.bar.negative{border-radius:0 0 6px 6px}.zero-axis{position:absolute;left:0;right:0;border-top:1px solid var(--evn-line)}.chart-column{position:relative}.comparison-chart .chart-label{font-size:12px;overflow-wrap:anywhere;white-space:normal;text-align:center;border-top:0;padding-top:0;margin-top:0}.slot-value{display:block;text-align:center;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-top:4px}.slot-date,.slot-state{display:block;color:var(--evn-muted);font-size:12px;text-align:center;overflow-wrap:anywhere;margin-top:4px}.comparison-values table{table-layout:fixed;width:100%;min-width:0}.comparison-values th,.comparison-values td{white-space:normal;overflow-wrap:anywhere}.comparison-values th:first-child{width:32%}.comparison-values td{font-variant-numeric:tabular-nums}.comparison-values .slot-state{text-align:left}.index-card{display:flex;flex-direction:column;gap:16px}.index-card svg.index-chart{width:100%;height:auto;max-height:300px;stroke:none;overflow:visible}.index-chart .index-grid{stroke:var(--evn-line);stroke-width:1;vector-effect:non-scaling-stroke}.index-chart .index-line{display:none}.index-chart .index-curve{stroke:var(--evn-chart-1);stroke-width:2;fill:none;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2400;animation:evn-draw .6s ease-out both}.index-chart .index-area{stroke:none}.index-chart .index-point{fill:var(--evn-surface);stroke:var(--evn-chart-1);stroke-width:2;vector-effect:non-scaling-stroke;cursor:pointer}.index-chart .index-point:hover,.index-chart .index-point:focus{fill:var(--evn-accent)}.index-chart text{fill:var(--evn-muted);stroke:none;font-size:12px;font-variant-numeric:tabular-nums}.index-tooltip{min-height:42px;font-variant-numeric:tabular-nums}.index-values{max-height:220px;overflow:auto}.index-values table{min-width:0;width:100%}.index-values th,.index-values td{white-space:normal;overflow-wrap:anywhere}.index-values td{font-variant-numeric:tabular-nums}.index-empty{padding:24px 0}.index-series-field{max-width:100%}
 @media(max-width:1100px){.overview-grid{grid-template-columns:1fr}}
 @media(max-width:767px){.comparison-grid{grid-template-columns:1fr;gap:16px}.comparison-card .chart{gap:8px}.index-card svg.index-chart{min-height:180px}}
@@ -244,7 +244,7 @@ export class EvnCskhPanel extends HTMLElement {
     for (const type of ["click", "change", "input", "submit", "keydown", "focusin", "pointerover"]) {
       this.shadowRoot.addEventListener(type, event => this._event(event), { signal: this._events.signal });
     }
-    this._dialog.addEventListener("close", () => this._closeInvoice(), { signal: this._events.signal });
+    this._dialog.addEventListener("close", () => { if (!this._dialog.open) this._closeInvoice(); }, { signal: this._events.signal });
     this._ready();
   }
 
@@ -519,6 +519,8 @@ export class EvnCskhPanel extends HTMLElement {
     if (action === "invoice") this._openInvoice(Number(control.dataset.index));
     if (action === "close-invoice") this._dialog.close();
     if (action === "pdf") void this._download(control.dataset.kind);
+    if (action === "pdf-row") void this._downloadRow(Number(control.dataset.index), control.dataset.kind);
+    if (action === "pdf-row-retry") this._retryRowDownload();
   }
 
   _button(label, action, id, className = "", unavailable = false) {
@@ -1161,7 +1163,7 @@ export class EvnCskhPanel extends HTMLElement {
     table.append(node("caption", "Hóa đơn trong khoảng đã chọn · Chọn kỳ để xem chi tiết và tải PDF"));
     const head = node("thead");
     const line = node("tr");
-    for (const label of ["Kỳ hóa đơn", "Tổng tiền", "Còn phải trả", "Trạng thái", "Hạn thanh toán"]) {
+    for (const label of ["Kỳ hóa đơn", "Tổng tiền", "Còn phải trả", "Trạng thái", "Hạn thanh toán", "Tải hóa đơn"]) {
       const cell = node("th", label);
       cell.scope = "col";
       if (label.includes("tiền") || label.includes("trả")) cell.classList.add("number");
@@ -1179,17 +1181,30 @@ export class EvnCskhPanel extends HTMLElement {
       if (invoice.cycle != null) first.append(node("p", `Kỳ thu ${text(invoice.cycle)}`, "meta"));
       const status = node("td");
       status.append(this._badge(invoice));
-      row.append(first, node("td", money(invoice.amount), "number"), node("td", money(payableAmount(invoice)), "number"), status, node("td", text(invoice.due_date), "nowrap"));
+      const pdfCell = node("td", null, "pdf-cell");
+      pdfCell.append(this._pdfRowControls(invoice, index, false));
+      row.append(first, node("td", money(invoice.amount), "number"), node("td", money(payableAmount(invoice)), "number"), status, node("td", text(invoice.due_date), "nowrap"), pdfCell);
       body.append(row);
       const card = node("article", null, "invoice-card");
       const top = node("div", null, "row");
       top.append(this._invoiceButton(invoice, index, true), this._badge(invoice));
-      card.append(top, node("strong", money(invoice.amount)), node("p", `Còn phải trả: ${money(payableAmount(invoice))}`, "meta"), node("p", `Hạn thanh toán: ${text(invoice.due_date)}`, "meta"));
+      const cardActions = node("div", null, "pdf-cell");
+      cardActions.append(this._pdfRowControls(invoice, index, true));
+      card.append(top, node("strong", money(invoice.amount)), node("p", `Còn phải trả: ${money(payableAmount(invoice))}`, "meta"), node("p", `Hạn thanh toán: ${text(invoice.due_date)}`, "meta"), cardActions);
       cards.append(card);
     }
     table.append(head, body);
     wrap.append(table);
-    results.append(wrap, cards, this._pagination(invoices.length, this._invoicePage, 12, "invoice-page"));
+    const downloadHead = node("section", null, "invoice-pdf-head");
+    downloadHead.append(node("h2", "Tải hóa đơn"), node("p", "PDF tải qua phiên Home Assistant có xác thực; chỉ hóa đơn đã đồng bộ mới có tệp.", "meta"));
+    const downloadStatus = node("p", "", "pdf-status");
+    downloadStatus.id = "invoice-pdf-status";
+    downloadStatus.setAttribute("role", "status");
+    downloadStatus.setAttribute("aria-live", "polite");
+    const downloadRetry = this._button("Tải lại dữ liệu", "pdf-row-retry", "invoice-pdf-retry");
+    downloadRetry.hidden = true;
+    downloadHead.append(downloadStatus, downloadRetry);
+    results.append(downloadHead, wrap, cards, this._pagination(invoices.length, this._invoicePage, 12, "invoice-page"));
     return results;
   }
 
@@ -1199,6 +1214,61 @@ export class EvnCskhPanel extends HTMLElement {
     button.setAttribute("aria-label", `Xem hóa đơn ${text(invoice.period)}${invoice.cycle != null ? `, kỳ thu ${invoice.cycle}` : ""}`);
     button.setAttribute("aria-haspopup", "dialog");
     return button;
+  }
+
+  _pdfRowButton(invoice, index, kind, mobile) {
+    const label = kind === "invoice" ? "Tải PDF" : kind === "statement" ? "Bảng kê" : "Thông báo";
+    const button = this._button(label, "pdf-row", `pdf-row-${index}-${kind}${mobile ? "-mobile" : ""}`, kind === "invoice" ? "primary" : "pdf-mini");
+    button.dataset.kind = kind;
+    button.dataset.index = String(index);
+    button.setAttribute("aria-label", kind === "invoice" ? `Tải hóa đơn PDF kỳ ${text(invoice.period)}` : `${DOCUMENTS[kind]} kỳ ${text(invoice.period)}`);
+    return button;
+  }
+
+  _pdfRowControls(invoice, index, mobile) {
+    const fragment = document.createDocumentFragment();
+    const documents = array(invoice.documents);
+    if (documents.includes("invoice")) fragment.append(this._pdfRowButton(invoice, index, "invoice", mobile));
+    else fragment.append(node("span", "—", "muted"));
+    for (const kind of ["statement", "notice"]) if (documents.includes(kind)) fragment.append(this._pdfRowButton(invoice, index, kind, mobile));
+    return fragment;
+  }
+
+  _setRowButtons(index, kind) {
+    for (const button of this.shadowRoot.querySelectorAll('[data-action="pdf-row"]')) {
+      if (index === null || index === undefined) {
+        button.disabled = false;
+        button.classList.remove("working");
+        button.removeAttribute("aria-disabled");
+        button.removeAttribute("aria-busy");
+        continue;
+      }
+      const busy = button.dataset.index === String(index) && button.dataset.kind === kind;
+      button.disabled = !busy;
+      button.classList.toggle("working", busy);
+      button.setAttribute("aria-disabled", "true");
+      if (busy) button.setAttribute("aria-busy", "true");
+      else button.removeAttribute("aria-busy");
+    }
+  }
+
+  _rowPdfStatus(message, error) {
+    const status = this.shadowRoot.getElementById("invoice-pdf-status");
+    if (status) {
+      status.textContent = message;
+      status.setAttribute("role", error ? "alert" : "status");
+      status.setAttribute("aria-live", error ? "assertive" : "polite");
+    }
+    const retry = this.shadowRoot.getElementById("invoice-pdf-retry");
+    if (retry) retry.hidden = !error;
+  }
+
+  _retryRowDownload() {
+    this._staleRow = null;
+    const retry = this.shadowRoot.getElementById("invoice-pdf-retry");
+    if (retry) retry.hidden = true;
+    this._detailsCache.delete(this._detailKey());
+    void this._loadDetails(true);
   }
 
   _badge(invoice) { return node("span", text(invoice.status_label), `badge ${paymentState(invoice)}`); }
@@ -1421,8 +1491,11 @@ export class EvnCskhPanel extends HTMLElement {
     this._pdfBusy = false;
     this._invoice = null;
     this._invoiceFocus = null;
+    this._invoiceBusy = null;
+    this._staleRow = null;
     if (this._dialog?.open) this._dialog.close();
     this._dialog?.replaceChildren();
+    this._setRowButtons(null);
     for (const [url, timer] of this._urls || []) {
       clearTimeout(timer);
       URL.revokeObjectURL(url);
@@ -1444,6 +1517,66 @@ export class EvnCskhPanel extends HTMLElement {
     }
   }
 
+  _deliver(blob, invoice, kind) {
+    const url = URL.createObjectURL(blob);
+    const period = /^\d{2}\/\d{4}$/.test(invoice.period) ? invoice.period.replace("/", "-") : "tai-lieu";
+    const anchor = node("a");
+    anchor.href = url;
+    anchor.download = `evn-${kind}-${period}.pdf`;
+    this.shadowRoot.append(anchor);
+    anchor.click();
+    anchor.remove();
+    this._urls.set(url, setTimeout(() => {
+      URL.revokeObjectURL(url);
+      this._urls.delete(url);
+    }, 1500));
+  }
+
+  async _fetchDocument(invoice, kind, current) {
+    const path = `/api/evn_cskh/invoice/${encodeURIComponent(this._choice.entry.entry_id)}/${encodeURIComponent(invoice.key)}/${kind}`;
+    const response = await this._hass.fetchWithAuth(path, { method: "GET", signal: this._pdfAbort.signal });
+    if (!current()) return null;
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 410) {
+        this._detailsCache.delete(this._detailKey());
+        throw { stale: true };
+      }
+      throw { code: response.status };
+    }
+    if ((response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase() !== "application/pdf") throw { pdf: "Máy chủ không trả về tệp PDF hợp lệ." };
+    if (Number(response.headers.get("content-length")) > MAX_PDF) throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
+    const reader = response.body?.getReader();
+    let blob;
+    if (reader) {
+      let size = 0;
+      const chunks = [];
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (!current()) {
+            await reader.cancel();
+            return null;
+          }
+          if (done) break;
+          size += value.byteLength;
+          if (size > MAX_PDF) {
+            await reader.cancel();
+            throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
+          }
+          chunks.push(value);
+        }
+        blob = new Blob(chunks, { type: "application/pdf" });
+      } finally {
+        reader.releaseLock();
+      }
+    } else blob = await response.blob();
+    if (!current()) return null;
+    if (blob.size > MAX_PDF) throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
+    const signature = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+    if (signature.length !== 5 || ![37, 80, 68, 70, 45].every((byte, index) => signature[index] === byte)) throw { pdf: "Nội dung tệp không có chữ ký PDF hợp lệ." };
+    return blob;
+  }
+
   async _download(kind) {
     const invoice = this._invoice;
     if (!this._admin() || !invoice || this._pdfBusy || this._cooling() || !Object.hasOwn(DOCUMENTS, kind) || !array(invoice.documents).includes(kind)) return;
@@ -1458,69 +1591,55 @@ export class EvnCskhPanel extends HTMLElement {
     this._pdfBusy = true;
     this._pdfStatus("Đang tải PDF…", false, kind);
     try {
-      const path = `/api/evn_cskh/invoice/${encodeURIComponent(this._choice.entry.entry_id)}/${encodeURIComponent(invoice.key)}/${kind}`;
-      const response = await this._hass.fetchWithAuth(path, { method: "GET", signal: this._pdfAbort.signal });
-      if (!current()) return;
-      if (!response.ok) {
-        if (response.status === 404 || response.status === 410) {
-          this._stalePdf = true;
-          this._detailsCache.delete(this._detailKey());
-          throw { pdf: "Liên kết tải đã hết hạn. Hãy đóng hộp thoại, dữ liệu hóa đơn sẽ được tải lại rồi mở lại để lấy liên kết mới." };
-        }
-        throw { code: response.status };
-      }
-      if ((response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase() !== "application/pdf") throw { pdf: "Máy chủ không trả về tệp PDF hợp lệ." };
-      if (Number(response.headers.get("content-length")) > MAX_PDF) throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
-      const reader = response.body?.getReader();
-      let blob;
-      if (reader) {
-        let size = 0;
-        const chunks = [];
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (!current()) {
-              await reader.cancel();
-              return;
-            }
-            if (done) break;
-            size += value.byteLength;
-            if (size > MAX_PDF) {
-              await reader.cancel();
-              throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
-            }
-            chunks.push(value);
-          }
-          blob = new Blob(chunks, { type: "application/pdf" });
-        } finally {
-          reader.releaseLock();
-        }
-      } else blob = await response.blob();
-      if (!current()) return;
-      if (blob.size > MAX_PDF) throw { pdf: "Tệp PDF vượt giới hạn 16 MB." };
-      const signature = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
-      if (signature.length !== 5 || ![37, 80, 68, 70, 45].every((byte, index) => signature[index] === byte)) throw { pdf: "Nội dung tệp không có chữ ký PDF hợp lệ." };
-      if (!current()) return;
-      const url = URL.createObjectURL(blob);
-      const period = /^\d{2}\/\d{4}$/.test(invoice.period) ? invoice.period.replace("/", "-") : "tai-lieu";
-      const anchor = node("a");
-      anchor.href = url;
-      anchor.download = `evn-${kind}-${period}.pdf`;
-      this.shadowRoot.append(anchor);
-      anchor.click();
-      anchor.remove();
-      this._urls.set(url, setTimeout(() => {
-        URL.revokeObjectURL(url);
-        this._urls.delete(url);
-      }, 1500));
+      const blob = await this._fetchDocument(invoice, kind, current);
+      if (!blob) return;
+      this._deliver(blob, invoice, kind);
       this._pdfBusy = false;
       this._pdfStatus("Đã gửi tệp PDF đến trình tải xuống của trình duyệt.", false, kind);
     } catch (error) {
       if (!current()) return;
       this._pdfBusy = false;
-      const message = error?.pdf || this._error(error);
+      if (error?.stale) this._stalePdf = true;
+      const message = error?.stale ? "Liên kết tải đã hết hạn. Hãy đóng hộp thoại, dữ liệu hóa đơn sẽ được tải lại rồi mở lại để lấy liên kết mới." : error?.pdf || this._error(error);
       if (this._authError) this._render();
       else this._pdfStatus(message, true, kind);
+    }
+  }
+
+  async _downloadRow(index, kind) {
+    const invoice = this._details?.invoices[index];
+    if (!this._admin() || !invoice || this._pdfBusy || this._cooling() || !Object.hasOwn(DOCUMENTS, kind) || !array(invoice.documents).includes(kind)) return;
+    if (typeof this._hass.fetchWithAuth !== "function") {
+      this._rowPdfStatus("Phiên Home Assistant này không hỗ trợ tải tệp xác thực (fetchWithAuth). Hãy cập nhật giao diện Home Assistant rồi thử lại.", true);
+      return;
+    }
+    const generation = this._generation;
+    const request = ++this._pdfRequest;
+    this._invoice = invoice;
+    this._invoiceBusy = index;
+    this._staleRow = null;
+    const current = () => this._current(generation) && request === this._pdfRequest && this._invoice === invoice;
+    this._pdfAbort = new AbortController();
+    this._pdfBusy = true;
+    this._setRowButtons(index, kind);
+    this._rowPdfStatus("Đang tải PDF…", false);
+    try {
+      const blob = await this._fetchDocument(invoice, kind, current);
+      if (!blob) return;
+      this._deliver(blob, invoice, kind);
+      this._rowPdfStatus("Đã gửi tệp PDF đến trình tải xuống của trình duyệt.", false);
+    } catch (error) {
+      if (!current()) return;
+      if (error?.stale) this._staleRow = { index, kind };
+      const message = error?.stale ? "Liên kết tải đã hết hạn. Bấm “Tải lại dữ liệu” để làm mới hóa đơn rồi thử lại." : error?.pdf || this._error(error);
+      if (this._authError) this._render();
+      else this._rowPdfStatus(message, true);
+    } finally {
+      if (request === this._pdfRequest) {
+        this._pdfBusy = false;
+        this._invoiceBusy = null;
+        this._setRowButtons(null);
+      }
     }
   }
 }

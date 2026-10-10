@@ -636,6 +636,73 @@ async function main() {
     await page.selectOption("#paid-select", "unpaid");
     check("invoice search status filters not comparisons", (await chartSnapshot(page, "invoice-comparison")).aria === invoiceChart.aria && (await shadowText()).includes("Không có hóa đơn khớp"));
     await page.locator("#clear-search").click();
+    const originalFetchWithAuth = await page.evaluateHandle(() => document.getElementById("p").hass.fetchWithAuth);
+    check("invoice download header per-row buttons no paid-history download", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const headers = [...root.querySelectorAll(".invoice-table thead th")].map(cell => cell.textContent);
+      const rows = [...root.querySelectorAll(".invoice-table tbody tr")];
+      const first = rows[0]?.querySelector('button[data-action="pdf-row"][data-kind="invoice"]');
+      const paidCard = [...root.querySelectorAll(".card")].find(card => card.querySelector("h2")?.textContent === "Lịch sử thanh toán");
+      return headers.includes("Tải hóa đơn") && Boolean(first) && first.getAttribute("aria-label").includes("09/2026") && Boolean(rows[1]?.querySelector('button[data-action="pdf-row"][data-kind="invoice"]')) && Boolean(paidCard) && !paidCard.querySelector('[data-action="pdf-row"]');
+    }));
+    check("invoice row secondary statement notice buttons", await page.evaluate(() => {
+      const cells = [...document.getElementById("p").shadowRoot.querySelectorAll(".invoice-table tbody .pdf-cell")];
+      return cells[0].querySelectorAll('[data-action="pdf-row"]').length === 3 && Boolean(cells[0].querySelector('[data-kind="statement"]')) && Boolean(cells[0].querySelector('[data-kind="notice"]')) && !cells[1].querySelector('[data-kind="statement"]');
+    }));
+    check("invoice row without invoice document shows dash no button", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const saved = panel._details.invoices.map(invoice => invoice.documents);
+      panel._details = { ...panel._details, invoices: panel._details.invoices.map((invoice, index) => index ? invoice : ({ ...invoice, documents: ["statement"] })) };
+      panel._render();
+      const cell = panel.shadowRoot.querySelectorAll(".invoice-table tbody .pdf-cell")[0];
+      const result = !cell.querySelector('[data-kind="invoice"]') && cell.textContent.includes("—") && Boolean(cell.querySelector('[data-kind="statement"]'));
+      panel._details = { ...panel._details, invoices: panel._details.invoices.map((invoice, index) => index ? invoice : ({ ...invoice, documents: saved[index] })) };
+      panel._render();
+      return result;
+    }));
+    check("invoice download buttons no key leak", await page.evaluate(() => !/pdf-key|request_token|raw_file_id/.test(document.getElementById("p").shadowRoot.querySelector(".invoice-table").outerHTML)));
+    const rowDownload = page.waitForEvent("download");
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("pdf-row-0-invoice").click());
+    const rowFile = await rowDownload;
+    check("row download filename route no dialog", /^evn-invoice-09-2026\.pdf$/.test(rowFile.suggestedFilename()) && await page.evaluate(() => window.__fetchLog.includes("/api/evn_cskh/invoice/entry-1/pdf-key-1/invoice") && !document.getElementById("p").shadowRoot.querySelector("dialog[open]") && !document.getElementById("p")._pdfBusy));
+    await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      window.__rowResolve = null;
+      panel.hass.fetchWithAuth = () => new Promise(resolve => { window.__rowResolve = resolve; });
+      panel.shadowRoot.getElementById("pdf-row-0-invoice").click();
+    });
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("pdf-row-0-invoice").getAttribute("aria-busy") === "true");
+    check("row download busy disables siblings", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const clicked = root.getElementById("pdf-row-0-invoice");
+      const sibling = root.getElementById("pdf-row-1-invoice");
+      return clicked.classList.contains("working") && sibling.disabled === true && sibling.getAttribute("aria-disabled") === "true" && root.getElementById("pdf-row-1-invoice-mobile").disabled === true;
+    }));
+    const busyDownload = page.waitForEvent("download");
+    await page.evaluate(() => window.__rowResolve(new Response(new TextEncoder().encode("%PDF-1.7\nmock\n%%EOF\n"), { status: 200, headers: { "content-type": "application/pdf" } })));
+    await busyDownload;
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("pdf-row-0-invoice").getAttribute("aria-busy") !== "true");
+    check("row download busy cleared no dialog", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const root = panel.shadowRoot;
+      return panel._pdfBusy === false && panel._invoiceBusy === null && !root.querySelector("dialog[open]") && !root.getElementById("pdf-row-1-invoice").disabled;
+    }));
+    await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      panel.hass.fetchWithAuth = async () => new Response("", { status: 410 });
+      panel.shadowRoot.getElementById("pdf-row-0-invoice").click();
+    });
+    await page.waitForFunction(() => (document.getElementById("p").shadowRoot.getElementById("invoice-pdf-status")?.textContent || "").includes("hết hạn"));
+    check("row stale 410 guidance retry cache invalidated", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const root = panel.shadowRoot;
+      return root.getElementById("invoice-pdf-status").getAttribute("role") === "alert" && !root.getElementById("invoice-pdf-retry").hidden && !panel._detailsCache.has(panel._detailKey()) && panel._staleRow?.index === 0 && panel._staleRow?.kind === "invoice";
+    }));
+    const rowStaleCalls = await page.evaluate(() => window.__wsLog.filter(message => message.type === "evn_cskh/details").length);
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("invoice-pdf-retry").click());
+    await page.waitForFunction(previous => window.__wsLog.filter(message => message.type === "evn_cskh/details").length > previous, rowStaleCalls);
+    check("row stale retry force refetches details", await page.evaluate(() => window.__wsLog.filter(message => message.type === "evn_cskh/details").at(-1).force === true));
+    await page.evaluate(fn => { document.getElementById("p").hass.fetchWithAuth = fn; }, originalFetchWithAuth);
     const paymentFixtures = [
       invoice("private-paid", "09/2026", 9, 1520000, 138000, 1520000, "DATT", "Đã thanh toán", "20/09/2026", "25/09/2026", 873, "VCB", "Quầy VCB", ["invoice"]),
       invoice("private-unknown", "08/2026", 8, 999000, 0, 999000, "UNKNOWN", "Chưa rõ trạng thái", "20/08/2026", "25/08/2026", 100, "VCB", "", []),
