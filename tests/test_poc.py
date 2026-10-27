@@ -1573,6 +1573,7 @@ def test_standalone_client_session_runtime_without_ha_or_outbound(
         )
     bootstrap = (
         "import asyncio, importlib.abc, importlib.util, socket, sys\n"
+        "import aiohttp\n"
         "class Guard(importlib.abc.MetaPathFinder):\n"
         "    def find_spec(self, fullname, *args, **kwargs):\n"
         "        if fullname == 'homeassistant' or fullname.startswith(('homeassistant.', 'custom_components.')):\n"
@@ -1589,7 +1590,8 @@ def test_standalone_client_session_runtime_without_ha_or_outbound(
         "sys.modules[spec.name] = module\n"
         "spec.loader.exec_module(module)\n"
         "async def smoke():\n"
-        "    async with module.ClientSession(trust_env=False) as session:\n"
+        "    connector = aiohttp.TCPConnector(resolver=aiohttp.resolver.ThreadedResolver())\n"
+        "    async with module.ClientSession(trust_env=False, connector=connector) as session:\n"
         "        client = module.EvnClient(session, '', '', '0123456789abcdef')\n"
         "        assert client.tokens is None\n"
         "asyncio.run(smoke())\n"
@@ -1605,7 +1607,11 @@ def test_standalone_client_session_runtime_without_ha_or_outbound(
         text=True,
         timeout=30,
         check=False,
-        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        env={
+            **os.environ,
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "AIOHTTP_NO_EXTENSIONS": "1",
+        },
     )
     assert result.returncode == 0, result.stderr
     assert "--credentials" in result.stdout

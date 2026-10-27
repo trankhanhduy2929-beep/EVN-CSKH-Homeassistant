@@ -867,6 +867,7 @@ class _PanelManager:
                 "fetched_at": _timestamp(details.fetched_at),
                 "monthly": _monthly(details.monthly),
                 "daily": _daily(details.daily),
+                "daily_unavailable": details.daily_unavailable,
                 "readings": readings,
                 "invoices": invoices,
             }

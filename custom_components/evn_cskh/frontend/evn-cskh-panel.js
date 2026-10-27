@@ -945,6 +945,12 @@ export class EvnCskhPanel extends HTMLElement {
     parent.append(this._filters(), this._comparisonGrid());
     const content = node("section", null, "stack");
     this._detailState(content);
+    if (this._details?.daily_unavailable) {
+      const notice = node("div", null, "notice");
+      notice.setAttribute("role", "status");
+      notice.append(node("p", "EVN tạm thời không cung cấp dữ liệu điện năng theo ngày. Hệ thống sẽ tự thử lại khi làm mới; dữ liệu tháng và hóa đơn vẫn đầy đủ.", "meta"));
+      content.append(notice);
+    }
     if (this._details) {
       const tools = node("div", null, "section-tools");
       tools.append(node("h2", this._period === "monthly" ? "Điện năng theo tháng" : "Điện năng theo ngày"), this._segments([["monthly", "Tháng"], ["daily", "Ngày"]], this._period, "period", "Kỳ điện năng"));

@@ -321,7 +321,9 @@ async def test_details_contract_and_trusted_regional_routing(region: str) -> Non
         "fetched_at",
         "daily_start",
         "daily_end",
+        "daily_unavailable",
     ]
+    assert result.daily_unavailable is False
     assert result.customer == PERSON
     assert result.region == region
     assert result.point == POINT
@@ -695,9 +697,11 @@ async def test_all_point_data_are_owned(stage: int, point: Any) -> None:
     session.done()
 
 
-@pytest.mark.parametrize("stage", range(6))
+@pytest.mark.parametrize("stage", [0, 4, 5])
 @pytest.mark.parametrize("status", [302, 417, 503])
-async def test_any_endpoint_failure_is_not_empty_data(stage: int, status: int) -> None:
+async def test_any_required_endpoint_failure_is_not_empty_data(
+    stage: int, status: int
+) -> None:
     replies = details_replies()
     failed = Reply(
         status=status, payload={"success": False, "message": "synthetic-private"}
@@ -711,6 +715,45 @@ async def test_any_endpoint_failure_is_not_empty_data(stage: int, status: int) -
     assert "synthetic-private" not in "".join(traceback.format_exception(caught.value))
     assert not client._issued_invoices
     assert failed.consumed == 0
+    session.done()
+
+
+@pytest.mark.parametrize("stage", [1, 2, 3])
+@pytest.mark.parametrize("status", [302, 417, 503])
+async def test_optional_daily_failure_degrades_without_inventing_data(
+    stage: int, status: int, caplog: pytest.LogCaptureFixture
+) -> None:
+    replies = details_replies(history=[invoice_row(PERSON)], current=[])
+    replies[stage + 2] = Reply(
+        status=status, payload={"success": False, "message": "synthetic-private"}
+    )
+    session = Session(contracts(PERSON), config(), *replies)
+    client = client_for(session)
+    with caplog.at_level("WARNING", logger="custom_components.evn_cskh.api"):
+        result = await client.details(PERSON, POINT, START, TODAY)
+    assert result.monthly
+    assert (result.daily, result.monthly_readings, result.daily_readings)[
+        stage - 1
+    ] == []
+    assert result.invoices
+    assert "unavailable" in caplog.text
+    assert "synthetic-private" not in caplog.text
+    session.done()
+
+
+async def test_optional_daily_html_gateway_page_degrades(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    replies = details_replies(history=[invoice_row(PERSON)], current=[])
+    replies[3] = Reply(raw=b"<!DOCTYPE html><html><body>Error</body></html>")
+    session = Session(contracts(PERSON), config(), *replies)
+    client = client_for(session)
+    with caplog.at_level("WARNING", logger="custom_components.evn_cskh.api"):
+        result = await client.details(PERSON, POINT, START, TODAY)
+    assert result.daily == []
+    assert result.monthly_readings and result.daily_readings
+    assert result.invoices
+    assert "unavailable" in caplog.text
     session.done()
 
 
@@ -2079,7 +2122,7 @@ async def test_snapshot_every_required_section_is_ownership_checked(
 
 @pytest.mark.parametrize(
     "index",
-    [3, 4, 5, 6, 7, 8, 9, 10, 12],
+    [3, 4, 8, 9, 10, 12],
 )
 @pytest.mark.parametrize("status", [403, 503, 302, 417])
 async def test_snapshot_required_section_failure_aborts(
@@ -2092,6 +2135,42 @@ async def test_snapshot_required_section_failure_aborts(
     client = client_for(session)
     with pytest.raises(api.EvnError):
         await client.fetch_snapshot(PERSON)
+    session.done()
+
+
+@pytest.mark.parametrize("index", [5, 6, 7])
+@pytest.mark.parametrize("status", [302, 417, 503])
+async def test_snapshot_optional_daily_failure_degrades(
+    index: int, status: int, caplog: pytest.LogCaptureFixture
+) -> None:
+    replies = snapshot_replies(PERSON)
+    replies[index - 2] = Reply(status=status)
+    session = Session(contracts(PERSON), config(), *replies)
+    client = client_for(session)
+    with caplog.at_level("WARNING", logger="custom_components.evn_cskh.api"):
+        snapshot = await client.fetch_snapshot(PERSON)
+    point_data = (snapshot.daily, snapshot.monthly_readings, snapshot.daily_readings)
+    assert point_data[index - 5][POINT] == []
+    assert snapshot.monthly[POINT]
+    assert snapshot.invoices
+    assert "unavailable" in caplog.text
+    session.done()
+
+
+async def test_snapshot_daily_html_gateway_page_degrades(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    replies = snapshot_replies(PERSON)
+    replies[3] = Reply(raw=b"<!DOCTYPE html><html><body>Error</body></html>")
+    session = Session(contracts(PERSON), config(), *replies)
+    client = client_for(session)
+    with caplog.at_level("WARNING", logger="custom_components.evn_cskh.api"):
+        snapshot = await client.fetch_snapshot(PERSON)
+    assert snapshot.daily[POINT] == []
+    assert snapshot.monthly_readings[POINT] and snapshot.daily_readings[POINT]
+    assert snapshot.monthly[POINT]
+    assert snapshot.invoices
+    assert "unavailable" in caplog.text
     session.done()
 
 

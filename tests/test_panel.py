@@ -815,10 +815,12 @@ async def test_details_contract_aggregation_and_redaction(
         "fetched_at",
         "monthly",
         "daily",
+        "daily_unavailable",
         "readings",
         "invoices",
     }
     assert result["daily_window"] == {"start": None, "end": None}
+    assert result["daily_unavailable"] is False
     assert result["monthly"] == [
         {"period": "2026-01", "kwh": 4},
         {"period": "2026-09", "kwh": 12.5},

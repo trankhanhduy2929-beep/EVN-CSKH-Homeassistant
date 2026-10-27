@@ -1264,8 +1264,8 @@ async def test_measurement_point_mismatches_fail(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("stage", [1, 2, 3, 4, 5])
-async def test_any_regional_failure_aborts_snapshot(
+@pytest.mark.parametrize("stage", [1, 2, 6, 7, 8, 10])
+async def test_any_required_regional_failure_aborts_snapshot(
     identity: dict[str, str], tokens: Any, stage: int
 ) -> None:
     replies = snapshot_replies(customer(), secrets.token_urlsafe(24))
@@ -1273,6 +1273,33 @@ async def test_any_regional_failure_aborts_snapshot(
     session = Session(Reply([contract()]), config(), *replies[: stage + 1])
     with pytest.raises(api.EvnConnectionError):
         await make_client(session, identity, tokens=tokens).fetch_snapshot(customer())
+    session.done()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("stage", [3, 4, 5])
+async def test_optional_daily_regional_failure_degrades(
+    identity: dict[str, str],
+    tokens: Any,
+    stage: int,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    replies = snapshot_replies(customer(), secrets.token_urlsafe(24))
+    replies[stage] = Reply(status=503)
+    session = Session(Reply([contract()]), config(), *replies)
+    with caplog.at_level("WARNING", logger=api.__name__):
+        snapshot = await make_client(session, identity, tokens=tokens).fetch_snapshot(
+            customer()
+        )
+    point_data = (
+        snapshot.daily,
+        snapshot.monthly_readings,
+        snapshot.daily_readings,
+    )
+    assert point_data[stage - 3]["POINT-1"] == []
+    assert snapshot.monthly["POINT-1"]
+    assert snapshot.invoices
+    assert "unavailable" in caplog.text
     session.done()
 
 

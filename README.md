@@ -9,17 +9,21 @@ và không phát hành kèm.
 
 ## Trạng thái
 
-- **v0.5.1:** **thêm lại khu vực Tải hóa đơn** ngay trong danh sách hóa đơn (nút tải từng dòng + bảng kê/thông báo, có trạng thái/retry), không cần mở hộp thoại. v0.5.0 đã thêm **logo/icon thương hiệu** cho integration, **icon cho mọi
-  sensor/button**, **biểu đồ kiểu sóng (spline + vùng gradient)**, animation mượt
-  (tôn trọng `prefers-reduced-motion`), bảng màu chuẩn biểu đồ theo chất EVN
-  (xanh dương/xanh ngọc/hổ phách) dùng riêng cho biểu đồ; và **sensor lịch cắt
-  điện chi tiết** phục vụ automation.
+- **v0.5.2:** sửa lỗi **setup thất bại** khi endpoint ngày của EVN trả trang lỗi
+  gateway (HTML) hoặc 5xx. Integration giữ nguyên dữ liệu tháng, hóa đơn, PDF và
+  lịch ngừng điện; dữ liệu ngày/chỉ số ngày để **unknown** (không đổi thành 0),
+  ghi cảnh báo, tự thử lại ở lần làm mới sau và hiện thông báo trong tab Điện năng.
+  v0.5.1: **thêm lại khu vực Tải hóa đơn** ngay trong danh sách (nút tải từng dòng
+  + bảng kê/thông báo, có trạng thái/retry), không cần mở hộp thoại. v0.5.0: logo/
+  icon thương hiệu, icon cho mọi sensor/button, **biểu đồ kiểu sóng (spline + vùng
+  gradient)**, animation mượt (tôn trọng `prefers-reduced-motion`), bảng màu biểu
+  đồ theo chất EVN; và **sensor lịch cắt điện chi tiết** phục vụ automation.
 - Đã xác minh đăng nhập, refresh, đọc lịch sử và tải PDF thật trên EVNSPC.
   Dữ liệu kiểm tra mới: những ngày/tháng chưa công bố được giữ **unknown**, không
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
-- Qua **2.155 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **213 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+- Qua **2.158 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
+  **214 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
@@ -106,7 +110,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.5.1.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.5.2.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

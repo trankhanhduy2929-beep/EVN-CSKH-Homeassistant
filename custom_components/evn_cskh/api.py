@@ -4,6 +4,7 @@ import asyncio
 import base64
 import binascii
 import json
+import logging
 import re
 from collections.abc import Callable, Mapping
 from contextlib import suppress
@@ -15,6 +16,8 @@ from urllib.parse import quote, unquote, urlsplit
 from zoneinfo import ZoneInfo
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
+
+_LOGGER = logging.getLogger(__name__)
 
 CENTRAL_BASE = "https://cskh.evn.com.vn/cskh/v1"
 
@@ -206,6 +209,7 @@ class DetailSnapshot:
     fetched_at: datetime
     daily_start: date | None = None
     daily_end: date | None = None
+    daily_unavailable: bool = False
 
 
 @dataclass(frozen=True, repr=False)
@@ -363,6 +367,7 @@ class EvnClient:
         self._issued_invoices: dict[
             tuple[str, str], dict[tuple[str, str | None], dict[str, Any]]
         ] = {}
+        self._degraded: set[str] = set()
 
     @property
     def tokens(self) -> TokenState | None:
@@ -591,6 +596,30 @@ class EvnClient:
                 raise EvnAuthError() from None
         raise EvnAuthError()
 
+    async def _optional_point_rows_locked(
+        self,
+        method: str,
+        base: str,
+        path: str,
+        body: dict[str, Any] | None,
+        customer: Customer,
+        point: str | None = None,
+    ) -> list[dict[str, Any]]:
+        try:
+            data = await self._authenticated_locked(method, base, path, body)
+        except (EvnConnectionError, EvnResponseError):
+            if path not in self._degraded:
+                self._degraded.add(path)
+                _LOGGER.warning(
+                    "EVN endpoint %s is unavailable; continuing with reduced data",
+                    path,
+                )
+            return []
+        if path in self._degraded:
+            self._degraded.discard(path)
+            _LOGGER.info("EVN endpoint %s is available again", path)
+        return _owned_rows(data, customer, point)
+
     async def _optional_rows_locked(self, base: str, path: str) -> list[dict[str, Any]]:
         if self._tokens is None or self._auth_failed:
             return []
@@ -736,45 +765,37 @@ class EvnClient:
                     customer,
                     point,
                 )
-                daily[point] = _owned_rows(
-                    await self._authenticated_locked(
-                        "POST",
-                        base,
-                        "/api/evn/tracuu/diennangngay",
-                        {
-                            "MA_DVIQLY": customer.management_unit,
-                            "MA_DDO": point,
-                            "TU_NGAY": (today - timedelta(days=7)).strftime("%d/%m/%Y"),
-                            "DEN_NGAY": today.strftime("%d/%m/%Y"),
-                        },
-                    ),
+                daily[point] = await self._optional_point_rows_locked(
+                    "POST",
+                    base,
+                    "/api/evn/tracuu/diennangngay",
+                    {
+                        "MA_DVIQLY": customer.management_unit,
+                        "MA_DDO": point,
+                        "TU_NGAY": (today - timedelta(days=7)).strftime("%d/%m/%Y"),
+                        "DEN_NGAY": today.strftime("%d/%m/%Y"),
+                    },
                     customer,
                     point,
                 )
-                monthly_readings[point] = _owned_rows(
-                    await self._authenticated_locked(
-                        "POST",
-                        base,
-                        "/api/evn/tracuu/chisothang",
-                        reading_months | {"MA_DDO": point, "MA_KHANG": customer.code},
-                    ),
+                monthly_readings[point] = await self._optional_point_rows_locked(
+                    "POST",
+                    base,
+                    "/api/evn/tracuu/chisothang",
+                    reading_months | {"MA_DDO": point, "MA_KHANG": customer.code},
                     customer,
                     point,
                 )
-                daily_readings[point] = _owned_rows(
-                    await self._authenticated_locked(
-                        "POST",
-                        base,
-                        "/api/evn/tracuu/chisongay",
-                        {
-                            "MA_DVIQLY": customer.management_unit,
-                            "MA_DDO": point,
-                            "TU_NGAY": (today - timedelta(days=31)).strftime(
-                                "%d/%m/%Y"
-                            ),
-                            "DEN_NGAY": today.strftime("%d/%m/%Y"),
-                        },
-                    ),
+                daily_readings[point] = await self._optional_point_rows_locked(
+                    "POST",
+                    base,
+                    "/api/evn/tracuu/chisongay",
+                    {
+                        "MA_DVIQLY": customer.management_unit,
+                        "MA_DDO": point,
+                        "TU_NGAY": (today - timedelta(days=31)).strftime("%d/%m/%Y"),
+                        "DEN_NGAY": today.strftime("%d/%m/%Y"),
+                    },
                     customer,
                     point,
                 )
@@ -889,32 +910,28 @@ class EvnClient:
                 "TU_NGAY": daily_start.strftime("%d/%m/%Y"),
                 "DEN_NGAY": daily_end.strftime("%d/%m/%Y"),
             }
-            daily = _owned_rows(
-                await self._authenticated_locked(
-                    "POST", base, "/api/evn/tracuu/diennangngay", daily_body
-                ),
+            daily = await self._optional_point_rows_locked(
+                "POST",
+                base,
+                "/api/evn/tracuu/diennangngay",
+                daily_body,
                 customer,
                 point,
             )
-            monthly_readings = _owned_rows(
-                await self._authenticated_locked(
-                    "POST", base, "/api/evn/tracuu/chisothang", monthly_body
-                ),
+            monthly_readings = await self._optional_point_rows_locked(
+                "POST",
+                base,
+                "/api/evn/tracuu/chisothang",
+                monthly_body,
                 customer,
                 point,
             )
-            daily_readings = _owned_rows(
-                await self._authenticated_locked(
-                    "POST",
-                    base,
-                    "/api/evn/tracuu/chisongay",
-                    daily_body
-                    | {
-                        "TU_NGAY": (daily_start - timedelta(days=1)).strftime(
-                            "%d/%m/%Y"
-                        )
-                    },
-                ),
+            daily_readings = await self._optional_point_rows_locked(
+                "POST",
+                base,
+                "/api/evn/tracuu/chisongay",
+                daily_body
+                | {"TU_NGAY": (daily_start - timedelta(days=1)).strftime("%d/%m/%Y")},
                 customer,
                 point,
             )
@@ -957,6 +974,7 @@ class EvnClient:
                 fetched_at=datetime.now(UTC),
                 daily_start=daily_start,
                 daily_end=daily_end,
+                daily_unavailable="/api/evn/tracuu/diennangngay" in self._degraded,
             )
             self._issued_invoices[owner] = deepcopy(invoices)
             return snapshot

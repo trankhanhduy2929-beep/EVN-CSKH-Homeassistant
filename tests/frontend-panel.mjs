@@ -430,6 +430,16 @@ async function main() {
       const columns = [...root.querySelectorAll(".chart-card .chart-column")];
       return columns.length === 4 && columns.map(column => column.dataset.period).join() === "28/09/2026 - 30/09/2026,01/10/2026,05/10/2026,06/10/2026" && columns[0].querySelector(".chart-label").textContent === "30/09" && columns[1].querySelector(".chart-label").textContent === "01/10";
     }));
+    check("energy daily outage notice", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const saved = panel._details;
+      panel._details = { ...saved, daily_unavailable: true };
+      panel._render();
+      const shown = panel.shadowRoot.textContent.includes("EVN tạm thời không cung cấp dữ liệu điện năng theo ngày");
+      panel._details = saved;
+      panel._render();
+      return shown && !panel.shadowRoot.textContent.includes("EVN tạm thời không cung cấp dữ liệu điện năng theo ngày");
+    }));
     await page.evaluate(() => [...document.getElementById("p").shadowRoot.querySelectorAll("[data-action=period]")].find(node => node.dataset.value === "monthly").click());
 
     const smoothHistory = await page.evaluate(() => {
