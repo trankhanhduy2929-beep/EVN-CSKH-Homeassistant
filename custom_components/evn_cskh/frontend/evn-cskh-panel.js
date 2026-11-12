@@ -7,6 +7,18 @@ const STYLE = `
 @media(max-width:767px){.comparison-grid{grid-template-columns:1fr;gap:16px}.comparison-card .chart{gap:8px}.index-card svg.index-chart{min-height:180px}}
 @media(max-width:1000px){.metrics{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.freshness{max-width:220px}}
 @media(max-width:767px){.top-inner{padding:12px 16px;gap:12px;flex-wrap:wrap}.brand{width:100%}#menu{display:inline-flex}.account-tools{width:100%;gap:8px}.account-field{flex:1;width:auto}.shell{padding:16px;gap:16px}.intro{display:block;margin-bottom:4px}.freshness{text-align:left;max-width:none;margin-top:12px}.tabs{gap:16px;justify-content:flex-start;overflow-x:auto;scrollbar-color:transparent transparent}.tabs button{font-size:13px}.card{padding:16px}.metric{min-height:126px}.metric-value{font-size:20px}.metric-value.compact{font-size:16px}.metric-label{font-size:12px}.metrics>.metric:last-child{grid-column:1/-1}.card-head{gap:12px}.filters{gap:12px}.filters>.point-field{grid-column:1/-1}.filters>button{grid-column:1/-1}input,select{font-size:16px;height:44px}.filters button,.account-tools>button{min-height:44px}.segmented button{min-height:36px}.bar-number{display:none}.chart-label{font-size:12px}:host{--evn-track-h:148px}.track{height:var(--evn-track-h,148px)}.chart-card{min-height:320px}.invoice-filters{grid-template-columns:1fr}.invoice-table-wrap{display:none}.invoice-cards{display:block}.banner{align-items:start;flex-direction:column}.pagination{align-items:start;flex-direction:column}.pagination nav{width:100%;justify-content:space-between}.outage-time{grid-template-columns:1fr;gap:12px}.dialog-head,.dialog-body{padding:16px}.pdf-actions{display:grid;grid-template-columns:1fr;width:100%}.dialog-info>div,.stat-list>div{grid-template-columns:1fr 1.2fr;gap:12px}.point-grid{grid-template-columns:1fr}.intro h2{font-size:18px}}
+:host{--evn-line-soft:color-mix(in srgb,var(--evn-line) 55%,var(--evn-surface));--evn-accent-ink:#0a6aa6;--evn-error-ink:#b3261e;--evn-warning-ink:#8a5a0f;--evn-success-ink:#12702f}
+:host([dark]){--evn-accent-ink:#8cc7e8;--evn-error-ink:#ffb4ab;--evn-warning-ink:#f0c77a;--evn-success-ink:#8fd9a8}
+.card,.table-wrap,.point-card,.kpi-strip{border-color:var(--evn-line-soft)}.tabs{border-bottom-color:var(--evn-line-soft)}.chart-label{border-top-color:var(--evn-line-soft)}.badge.paid{color:var(--evn-success-ink)}.badge.unpaid{color:var(--evn-warning-ink)}
+.overview-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:stretch}.overview-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+.hero-card{display:flex;flex-direction:column;gap:10px;padding:24px}.hero-eyebrow{font-size:13px;color:var(--evn-muted)}.hero-value{font-size:40px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hero-unit{font-size:18px;font-weight:500;color:var(--evn-muted)}.hero-delta{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-weight:600;font-variant-numeric:tabular-nums}.hero-delta svg{width:16px;height:16px;flex:none;color:var(--evn-muted)}.hero-delta .meta{font-weight:400}
+.action-card{padding:0;overflow:hidden;display:flex;flex-direction:column}.action-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 0;margin-bottom:12px}.action-item{padding:16px 20px;border-top:1px solid var(--evn-line-soft)}.action-label{font-size:13px;color:var(--evn-muted)}.action-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.action-value.compact{font-size:18px}.action-value.warn{color:var(--evn-warning-ink)}.action-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;overflow-wrap:anywhere}.action-empty{padding:16px 20px 20px;color:var(--evn-muted);font-size:13px}button.action-link{margin-top:8px;padding:5px 0;min-height:32px;border-color:transparent;background:transparent;color:var(--evn-accent-ink);font-weight:500;text-align:left}button.action-link:hover{background:transparent;text-decoration:underline}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--evn-surface);border:1px solid var(--evn-line-soft);border-radius:14px;overflow:hidden}.kpi{padding:16px 20px;border-right:1px solid var(--evn-line-soft);min-width:0}.kpi:last-child{border-right:0}.kpi-label{font-size:13px;color:var(--evn-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font-size:20px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.kpi-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.overview-compare .card-head{align-items:center}.overview-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--evn-line-soft) transparent}.overview-chart-scroll .chart{margin-top:24px}
+.point-summary-cards{display:none}.point-summary-row{display:grid;gap:4px;padding:12px 0;border-top:1px solid var(--evn-line-soft)}.point-summary-row:first-child{border-top:0;padding-top:0}.point-summary-row strong{font-size:14px}.point-summary-row span{font-size:13px;color:var(--evn-muted)}
+@media(max-width:1100px){.overview-top,.overview-bottom{grid-template-columns:1fr}}
+@media(max-width:1000px){.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(2),.kpi:nth-child(4){border-right:0}.kpi:nth-child(n+3){border-top:1px solid var(--evn-line-soft)}}
+@media(max-width:767px){.hero-card{padding:16px}.hero-value{font-size:32px}.action-head{padding:16px 16px 0}.action-item{padding:14px 16px}.action-value{font-size:20px}.action-value.compact{font-size:16px}.kpi{padding:14px 16px}.kpi-value{font-size:18px}.overview-compare .card-head{flex-wrap:wrap}.overview-point-table{display:none}.point-summary-cards{display:grid}.overview-chart-scroll{margin-right:-16px;padding-right:16px}.overview-chart-scroll .chart{min-width:560px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 `;
 
@@ -19,12 +31,12 @@ const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 3 }
 const percentFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 });
 const moneyFormat = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 const timeFormat = new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" });
+const timeOnlyFormat = new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hour12: false });
 const finite = value => typeof value === "number" && Number.isFinite(value);
 const numeric = value => finite(value) ? numberFormat.format(value) : "Chưa có dữ liệu";
 const money = value => finite(value) ? moneyFormat.format(value) : "Chưa xác định";
 const text = value => value == null || value === "" ? "Chưa có thông tin" : String(value);
 const array = value => Array.isArray(value) ? value : [];
-const signed = value => finite(value) ? `${value > 0 ? "+" : value < 0 ? "−" : ""}${percentFormat.format(Math.abs(value))}%` : "";
 const node = (tag, content, className) => {
   const element = document.createElement(tag);
   if (content != null) element.textContent = String(content);
@@ -35,6 +47,11 @@ const time = value => {
   if (!value) return "Chưa có thời gian";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "Chưa có thời gian" : timeFormat.format(date);
+};
+const clock = value => {
+  if (!value) return "Chưa có giờ";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Chưa có giờ" : timeOnlyFormat.format(date);
 };
 const today = () => {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -47,6 +64,7 @@ const defaultRange = () => {
 };
 const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const displayDate = value => validDate(value) ? `${value.slice(8, 10)}/${value.slice(5, 7)}/${value.slice(0, 4)}` : "Chưa có ngày";
+const displayMonth = value => typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? `${value.slice(5, 7)}/${value.slice(0, 4)}` : text(value);
 const dailyEnd = period => {
   if (validDate(period)) return period;
   if (typeof period !== "string") return null;
@@ -276,6 +294,7 @@ export class EvnCskhPanel extends HTMLElement {
     this._rangeError = "";
     this._tab = 0;
     this._period = "monthly";
+    this._overviewCompare = "daily";
     this._readingSeries = "";
     this._query = "";
     this._paid = "all";
@@ -344,6 +363,7 @@ export class EvnCskhPanel extends HTMLElement {
     this._choice = selected;
     this._point = array(selected.customer.points)[0]?.id || "";
     this._readingSeries = "";
+    this._overviewCompare = "daily";
     this._range = defaultRange();
     this._overview = null;
     this._details = null;
@@ -512,6 +532,10 @@ export class EvnCskhPanel extends HTMLElement {
       void this._loadOverview(true);
       if (DETAIL_TABS.includes(this._tab)) void this._loadDetails(true);
     }
+    if (action === "overview-compare") {
+      this._overviewCompare = control.dataset.value === "monthly" ? "monthly" : "daily";
+      this._render();
+    }
     if (action === "period") { this._period = control.dataset.value; this._readingPage = 0; this._render(); }
     if (action === "invoice-page") { this._invoicePage += Number(control.dataset.step); this._render(); this.shadowRoot.getElementById("invoice-results")?.focus({ preventScroll: true }); }
     if (action === "reading-page") { this._readingPage += Number(control.dataset.step); this._render(); this.shadowRoot.getElementById("reading-results")?.focus({ preventScroll: true }); }
@@ -649,92 +673,206 @@ export class EvnCskhPanel extends HTMLElement {
     }
   }
 
-  _metric(label, value, detail, compact = false) {
-    const card = node("section", null, "card metric");
-    card.append(node("h3", label, "metric-label"), node("p", value, `metric-value${compact ? " compact" : ""}`), node("p", detail, "meta"));
-    return card;
+  _kpi(label, value, detail) {
+    const item = node("div", null, "kpi");
+    item.append(node("p", label, "kpi-label"), node("p", value, "kpi-value"), node("p", detail, "kpi-meta"));
+    return item;
   }
 
-  _metricState(label, value, detail, compact = false) {
-    if (this._overviewBusy && !this._overview) return this._metric(label, "Đang tải…", "Vui lòng chờ trong giây lát", compact);
-    return this._metric(label, value, detail, compact);
+  _latestInvoice(overview = this._overview) {
+    const ordinal = value => {
+      const match = /^(0[1-9]|1[0-2])\/(\d{4})$/.exec(String(value));
+      return match ? Number(match[2]) * 12 + Number(match[1]) - 1 : -1;
+    };
+    return [...array(overview?.invoices)].sort((a, b) => ordinal(b?.period) - ordinal(a?.period))[0] || null;
   }
 
   _usageFor(pointId) {
     return array(this._overview?.usage).find(item => item.point_id === pointId) || null;
   }
 
-  _renderOverview(parent) {
-    const overview = this._overview;
-    const usage = this._usageFor(this._point);
-    const metrics = node("div", null, "metrics");
+  _overviewHero(usage) {
     const monthly = usage?.monthly;
     const mom = usage?.mom;
     const reading = usage?.reading;
-    const deltaDetail = mom && finite(mom.percent) ? `${signed(mom.percent)} so với kỳ trước` : monthly?.period ? `Kỳ ${monthly.period} · Chưa có kỳ trước` : "Chưa có kỳ ghi nhận";
-    metrics.append(
-      this._metricState("Điện năng tháng gần nhất", finite(monthly?.kwh) ? `${numeric(monthly.kwh)} kWh` : "Chưa có dữ liệu", deltaDetail, !finite(monthly?.kwh)),
-      this._metricState("TB 12 tháng", finite(usage?.average_12m) ? `${numeric(usage.average_12m)} kWh` : "Chưa có dữ liệu", "Trung bình mỗi tháng của điểm đo", !finite(usage?.average_12m)),
-      this._metricState("Chỉ số mới nhất", finite(reading?.new) ? numeric(reading.new) : "Chưa có dữ liệu", reading?.period ? `Kỳ ${reading.period} · ${KINDS[reading.kind] || text(reading.kind)}` : "Chưa có chỉ số", true),
-      this._metricState("Tiền còn nợ", money(overview?.outstanding?.amount), finite(overview?.outstanding?.count) ? `${numeric(overview.outstanding.count)} hóa đơn chưa trả` : "Chưa xác định số hóa đơn", !finite(overview?.outstanding?.amount)),
-      this._metricState("Ngừng điện kế tiếp", overview?.next_outage?.start ? time(overview.next_outage.start) : overview ? "Chưa có lịch" : "Chưa có dữ liệu", overview?.next_outage?.area ? text(overview.next_outage.area) : "Theo kế hoạch của điện lực", true)
+    const card = node("section", null, "card hero-card");
+    card.setAttribute("aria-label", "Điện năng tháng gần nhất");
+    card.append(node("p", monthly?.period ? `Điện năng tháng ${displayMonth(monthly.period)}` : "Điện năng tháng gần nhất", "hero-eyebrow"));
+    const value = node("p", null, "hero-value");
+    if (finite(monthly?.kwh)) value.append(document.createTextNode(`${numeric(monthly.kwh)} `), node("span", "kWh", "hero-unit"));
+    else value.textContent = this._overviewBusy && !this._overview ? "Đang tải…" : "Chưa có dữ liệu";
+    card.append(value);
+    const delta = node("p", null, "hero-delta");
+    if (finite(mom?.percent)) {
+      const direction = mom.percent > 0 ? "Tăng" : mom.percent < 0 ? "Giảm" : "Không đổi";
+      const icon = svgNode("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
+      icon.append(svgNode("path", { d: mom.percent > 0 ? "M12 19V5M5 12l7-7 7 7" : mom.percent < 0 ? "M12 5v14M19 12l-7 7-7-7" : "M5 12h14" }));
+      delta.append(icon, document.createTextNode(direction === "Không đổi" ? direction : `${direction} ${percentFormat.format(Math.abs(mom.percent))}%`));
+      delta.append(node("span", finite(mom.previous) ? `so với ${numeric(mom.previous)} kWh kỳ trước` : "so với kỳ trước", "meta"));
+    } else delta.append(node("span", monthly?.period ? "Chưa có kỳ trước" : "Chưa có kỳ ghi nhận", "meta"));
+    card.append(delta);
+    const facts = [];
+    if (this._point) facts.push(`Điểm đo ${text(this._point)}`);
+    if (finite(reading?.new)) facts.push(`Chỉ số mới nhất ${numeric(reading.new)}`);
+    if (finite(usage?.average_12m)) facts.push(`TB 12 tháng ${numeric(usage.average_12m)} kWh`);
+    if (facts.length) card.append(node("p", facts.join(" · "), "meta"));
+    return card;
+  }
+
+  _overviewActions(overview) {
+    const card = node("section", null, "card action-card");
+    card.setAttribute("aria-label", "Cần xử lý");
+    const outstanding = overview?.outstanding;
+    const next = overview?.next_outage;
+    const hasDebt = (finite(outstanding?.amount) && outstanding.amount > 0) || (finite(outstanding?.count) && outstanding.count > 0);
+    const hasOutage = Boolean(next?.start);
+    const count = Number(hasDebt) + Number(hasOutage);
+    const head = node("div", null, "action-head");
+    head.append(node("h3", "Cần xử lý"), node("span", overview ? `${count} mục` : "—", "badge"));
+    card.append(head);
+    if (!overview) {
+      card.append(node("p", this._overviewBusy ? "Đang tải…" : "Chưa có dữ liệu.", "action-empty"));
+      return card;
+    }
+    if (!count) {
+      card.append(node("p", "Không có việc cần xử lý.", "action-empty"));
+      return card;
+    }
+    if (hasDebt) {
+      const item = node("div", null, "action-item");
+      item.append(node("p", "Còn nợ", "action-label"), node("p", money(outstanding.amount), "action-value warn"));
+      const due = array(overview?.invoices)
+        .filter(invoice => paymentState(invoice) !== "paid" && dailyEnd(invoice?.due_date))
+        .sort((a, b) => dailyEnd(a.due_date).localeCompare(dailyEnd(b.due_date)))[0]?.due_date;
+      const meta = [finite(outstanding?.count) ? `${numeric(outstanding.count)} hóa đơn chưa trả` : null, due ? `hạn gần nhất ${text(due)}` : null].filter(Boolean).join(" · ");
+      item.append(node("p", meta || "Chưa xác định hạn thanh toán", "action-meta"));
+      const link = this._button("Xem hóa đơn", "tab", "overview-invoices", "link action-link");
+      link.dataset.tab = "3";
+      item.append(link);
+      card.append(item);
+    }
+    if (hasOutage) {
+      const item = node("div", null, "action-item");
+      const day = validDate(String(next.start).slice(0, 10)) ? displayDate(String(next.start).slice(0, 10)) : "";
+      const window = day ? `${day} · ${clock(next.start)}${next.end ? `–${clock(next.end)}` : ""}` : time(next.start);
+      item.append(node("p", "Ngừng điện kế tiếp", "action-label"), node("p", window, "action-value compact"));
+      const meta = [next.area ? text(next.area) : null, next.reason ? text(next.reason) : null].filter(Boolean).join(" · ");
+      item.append(node("p", meta || "Theo kế hoạch của điện lực", "action-meta"));
+      const link = this._button("Xem lịch ngừng điện", "tab", "overview-outages", "link action-link");
+      link.dataset.tab = "4";
+      item.append(link);
+      card.append(item);
+    }
+    return card;
+  }
+
+  _overviewKpis(overview, usage) {
+    const strip = node("section", null, "kpi-strip");
+    strip.setAttribute("aria-label", "Chỉ số nhanh");
+    const reading = usage?.reading;
+    const daily = usage?.daily;
+    const latest = this._latestInvoice(overview);
+    const waiting = this._overviewBusy && !overview;
+    const point = this._point ? `Điểm đo ${text(this._point)}` : "Chưa có điểm đo";
+    strip.append(
+      this._kpi("Chỉ số mới nhất", finite(reading?.new) ? numeric(reading.new) : waiting ? "Đang tải…" : "Chưa có dữ liệu", reading?.period ? `Kỳ ${reading.period} · ${KINDS[reading.kind] || text(reading.kind)}` : point),
+      this._kpi("Trung bình 12 tháng", finite(usage?.average_12m) ? `${numeric(usage.average_12m)} kWh` : waiting ? "Đang tải…" : "Chưa có dữ liệu", point),
+      this._kpi("Hôm qua", finite(daily?.kwh) ? `${numeric(daily.kwh)} kWh` : waiting ? "Đang tải…" : "Chưa có dữ liệu", daily?.period ? `Kỳ ${text(daily.period)}` : "Chưa có dữ liệu ngày"),
+      this._kpi("Hóa đơn gần nhất", latest ? money(latest.amount) : waiting ? "Đang tải…" : overview ? "Chưa có hóa đơn" : "Chưa có dữ liệu", latest ? `${text(latest.period)} · ${text(latest.status_label)}` : overview ? "Chưa có hóa đơn" : "Chưa có dữ liệu")
     );
-    parent.append(metrics, this._comparisonGrid());
-    const layout = node("div", null, "overview-grid");
-    const chart = node("section", null, "card chart-card");
+    return strip;
+  }
+
+  _overviewComparisonCard() {
+    const daily = this._overviewCompare !== "monthly";
+    const card = node("section", null, "card overview-compare");
+    card.dataset.chart = "overview-comparison";
     const head = node("header", null, "card-head");
     const title = node("div");
-    title.append(node("h2", "Điện năng theo tháng"), node("p", `Điểm đo ${text(this._point)} · kWh`, "meta"));
+    title.append(node("h2", "So sánh sản lượng"), node("p", daily ? `Điểm đo ${text(this._point)} · kWh` : "Tổng khách hàng · tất cả điểm đo · kỳ theo tháng EVN · kWh", "meta"));
+    head.append(title, this._segments([["daily", "Ngày"], ["monthly", "Tháng"]], this._overviewCompare, "overview-compare", "Kiểu so sánh"));
+    card.append(head);
+    const comparisons = this._overview?.comparisons;
+    const records = comparisonSlots(comparisons, this._point, this._overviewCompare);
+    card.setAttribute("aria-busy", String(this._overviewBusy));
+    if (records) {
+      card.dataset.asOf = comparisons.as_of;
+      this._renderColumns(card, records, { field: "kwh", unit: "kWh", period: this._overviewCompare, title: "So sánh sản lượng", comparison: true, footer: false });
+      const note = daily ? "Có thể tạm tính; ngày chưa công bố để trống. " : "";
+      card.append(node("p", `${note}Mốc dữ liệu ${comparisons.as_of} · So sánh cố định, không theo bộ lọc lịch sử.`, "meta"));
+      if (!records.some(item => finite(item.kwh))) card.append(node("p", "Chưa có số liệu cho ba mốc này.", "meta"));
+    } else card.append(this._overviewBusy ? this._status("Đang tải số liệu so sánh…") : node("p", this._overview ? "Máy chủ chưa cung cấp dữ liệu so sánh ba kỳ. Không thay bằng kỳ ghi nhận gần nhất." : "Chưa có dữ liệu so sánh.", "empty"));
+    if (this._overview?.available === false || this._choice?.customer.available === false) card.append(node("p", "Kết nối EVN chưa sẵn sàng; số liệu hiển thị có thể đã cũ.", "meta"));
+    return card;
+  }
+
+  _overviewHistoryCard(monthly) {
+    const card = node("section", null, "card chart-card");
+    const full = Boolean(this._details);
+    const head = node("header", null, "card-head");
+    const title = node("div");
+    title.append(node("h2", full ? "12 tháng gần nhất" : "Điện năng theo tháng"), node("p", this._point ? `Điểm đo ${text(this._point)} · kWh` : "Khách hàng chưa có điểm đo", "meta"));
     head.append(title);
-    chart.append(head);
-    if (this._details) this._renderChart(chart, "monthly", this._monthly());
-    else {
+    card.append(head);
+    if (full) {
+      const records = this._monthly();
+      if (records.some(item => finite(item.kwh))) this._renderChart(card, "monthly", records, { scroll: true });
+      else card.append(node("p", "Chưa có số liệu điện năng trong khoảng này.", "empty"));
+    } else {
       const fallback = monthly ? [{ period: monthly.period, kwh: monthly.kwh }] : [];
-      if (fallback.length) this._renderChart(chart, "monthly", fallback);
-      else chart.append(node("p", this._overviewBusy ? "Đang tải tổng quan…" : "Chưa có sản lượng tháng gần nhất cho điểm đo này.", this._overviewBusy ? "loading" : "empty"));
+      if (fallback.length) this._renderChart(card, "monthly", fallback);
+      else card.append(node("p", this._overviewBusy ? "Đang tải tổng quan…" : "Chưa có sản lượng tháng gần nhất cho điểm đo này.", this._overviewBusy ? "loading" : "empty"));
       const placeholder = node("div", null, "placeholder");
       placeholder.append(node("p", "Tải lịch sử 12 tháng gần nhất để vẽ biểu đồ đầy đủ.", "muted"));
       if (this._point) placeholder.append(this._button("Tải 12 tháng gần nhất", "details", "history-load", "primary", this._detailsBusy || this._cooling()));
       else placeholder.append(node("p", "Khách hàng này chưa có điểm đo.", "meta"));
-      chart.append(placeholder);
-      if (this._detailsError) chart.append(this._banner(this._detailsError, "details", "chart-retry"));
+      card.append(placeholder);
+      if (this._detailsError) card.append(this._banner(this._detailsError, "details", "chart-retry"));
     }
-    layout.append(chart);
-    const side = node("section", null, "card");
-    side.append(node("h2", "Ngừng điện kế tiếp"));
-    const next = overview?.next_outage;
-    if (next) {
-      const list = node("dl", null, "stat-list");
-      for (const [label, value] of [["Bắt đầu", time(next.start)], ["Kết thúc dự kiến", next.end ? time(next.end) : "Chưa xác định"], ["Khu vực", text(next.area)]]) {
-        const row = node("div");
-        row.append(node("dt", label), node("dd", value));
-        list.append(row);
-      }
-      side.append(list);
-      if (next.reason) side.append(node("p", text(next.reason), "muted"));
-    } else {
-      side.append(node("p", overview ? "Chưa có kế hoạch ngừng điện cho khách hàng này." : "Chưa có dữ liệu ngừng điện.", "empty"));
-    }
-    const link = this._button("Xem lịch ngừng điện", "tab", "open-outages", "link");
-    link.dataset.tab = "4";
-    const notice = node("div", null, "notice");
-    notice.append(link);
-    side.append(notice);
-    layout.append(side);
-    parent.append(layout);
+    return card;
+  }
+
+  _renderOverview(parent) {
+    const overview = this._overview;
+    const usage = this._usageFor(this._point);
+    const top = node("div", null, "overview-top");
+    top.append(this._overviewHero(usage), this._overviewActions(overview));
+    const bottom = node("div", null, "overview-bottom");
+    bottom.append(this._overviewComparisonCard(), this._overviewHistoryCard(usage?.monthly));
+    parent.append(top, this._overviewKpis(overview, usage), bottom);
     if (array(overview?.usage).length > 1) parent.append(this._pointSummary());
   }
 
   _pointSummary() {
     const card = node("section", null, "card");
-    card.append(node("h2", "Tóm tắt theo điểm đo"), node("p", "Mỗi điểm đo một kỳ ghi nhận gần nhất.", "meta"));
-    const rows = array(this._overview.usage).map(item => [
-      text(item.point_id),
-      finite(item.monthly?.kwh) ? `${numeric(item.monthly.kwh)} kWh` : "—",
-      finite(item.average_12m) ? `${numeric(item.average_12m)} kWh` : "—",
-      finite(item.reading?.new) ? numeric(item.reading.new) : "—"
-    ]);
-    card.append(this._table(["Điểm đo", "Tháng gần nhất", "TB 12 tháng", "Chỉ số mới"], rows, "Tóm tắt điện năng theo từng điểm đo", "", "scroll-table"));
+    const head = node("header", null, "card-head");
+    const title = node("div");
+    title.append(node("h2", "Tóm tắt theo điểm đo"), node("p", "Kỳ gần nhất · kWh", "meta"));
+    head.append(title);
+    card.append(head);
+    const rows = array(this._overview.usage).map(item => {
+      const point = array(this._choice?.customer.points).find(row => row.id === item.point_id);
+      return [
+        point?.address ? `${text(item.point_id)} · ${text(point.address)}` : text(item.point_id),
+        finite(item.monthly?.kwh) ? `${numeric(item.monthly.kwh)} kWh` : "—",
+        finite(item.average_12m) ? `${numeric(item.average_12m)} kWh` : "—",
+        finite(item.reading?.new) ? numeric(item.reading.new) : "—"
+      ];
+    });
+    card.append(this._table(["Điểm đo", "Kỳ này", "TB 12 tháng", "Chỉ số mới nhất"], rows, "Tóm tắt điện năng theo từng điểm đo", "overview-point-table", "scroll-table"));
+    const cards = node("div", null, "point-summary-cards");
+    array(this._overview.usage).forEach(item => {
+      const point = array(this._choice?.customer.points).find(row => row.id === item.point_id);
+      const row = node("div", null, "point-summary-row");
+      row.append(node("strong", point?.address ? `${text(item.point_id)} · ${text(point.address)}` : text(item.point_id)));
+      row.append(node("span", finite(item.monthly?.kwh) ? `Kỳ này ${numeric(item.monthly.kwh)} kWh` : "Kỳ này chưa có dữ liệu"));
+      const facts = [];
+      if (finite(item.average_12m)) facts.push(`TB 12 tháng ${numeric(item.average_12m)} kWh`);
+      if (finite(item.reading?.new)) facts.push(`Chỉ số mới nhất ${numeric(item.reading.new)}`);
+      row.append(node("span", facts.length ? facts.join(" · ") : "Chưa có chỉ số mới nhất"));
+      cards.append(row);
+    });
+    card.append(cards);
     return card;
   }
 
@@ -794,10 +932,10 @@ export class EvnCskhPanel extends HTMLElement {
 
   _renderChart(parent, period, records, options = {}) {
     const values = records.map(item => ({ ...item, provisional: item.provisional === true || (period === "monthly" && array(this._overview?.comparisons?.monthly).some(row => row.period === item.period && row.provisional === true)) }));
-    this._renderColumns(parent, values, { period, title: `Điện năng ${period === "monthly" ? "theo tháng" : "theo ngày"}`, smooth: options.smooth === true });
+    this._renderColumns(parent, values, { period, title: `Điện năng ${period === "monthly" ? "theo tháng" : "theo ngày"}`, smooth: options.smooth === true, scroll: options.scroll === true });
   }
 
-  _renderColumns(parent, records, { field = "kwh", unit = "kWh", period = "monthly", title, comparison = false, smooth = false } = {}) {
+  _renderColumns(parent, records, { field = "kwh", unit = "kWh", period = "monthly", title, comparison = false, smooth = false, footer = true, scroll = false } = {}) {
     if (!records.length || (!comparison && !records.some(item => finite(item?.[field])))) {
       parent.append(node("p", "Chưa có số liệu điện năng trong khoảng này.", "empty"));
       return;
@@ -805,6 +943,7 @@ export class EvnCskhPanel extends HTMLElement {
     const scale = columnScale(records.map(item => item?.[field]));
     const format = value => field === "vnd" ? money(value) : numeric(value);
     const fullValue = value => finite(value) ? field === "vnd" ? money(value) : `${numeric(value)} ${unit}` : "Chưa có dữ liệu";
+    const target = scroll ? node("div", null, "overview-chart-scroll") : parent;
     const chart = node("div", null, `chart ${period}${comparison ? " comparison-chart" : ""}${smooth ? " smooth-chart" : ""}`);
     chart.dataset.unit = unit;
     chart.dataset.field = field;
@@ -858,13 +997,14 @@ export class EvnCskhPanel extends HTMLElement {
       chart.append(column);
     });
     if (smooth) this._renderSmooth(chart, records, { field, unit, scale });
-    parent.append(chart);
+    target.append(chart);
+    if (scroll) parent.append(target);
     if (comparison && field === "vnd") {
       const rows = records.map(item => [item.label, finite(item.vnd) ? money(item.vnd) : "Chưa có"]);
-      parent.append(this._table(["Kỳ", "Tiền hóa đơn (VNĐ)"], rows, "Giá trị ba kỳ · chưa có khác với 0", "comparison-values"));
+      target.append(this._table(["Kỳ", "Tiền hóa đơn (VNĐ)"], rows, "Giá trị ba kỳ · chưa có khác với 0", "comparison-values"));
     }
-    if (!comparison) parent.append(node("div", null, "chart-footer"));
-    parent.append(node("p", `${records[0].period} → ${records.at(-1).period} · Khoảng trống là chưa có dữ liệu, không phải 0.`, "meta"));
+    if (!comparison) target.append(node("div", null, "chart-footer"));
+    if (footer) parent.append(node("p", `${records[0].period} → ${records.at(-1).period} · Khoảng trống là chưa có dữ liệu, không phải 0.`, "meta"));
   }
 
   _renderSmooth(chart, records, { field, unit, scale }) {

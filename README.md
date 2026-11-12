@@ -9,6 +9,11 @@ và không phát hành kèm.
 
 ## Trạng thái
 
+- **v0.5.4:** làm lại tab **Tổng quan** theo bố cục “việc cần làm trước”: kWh tháng
+  và mức tăng/giảm, khối **Cần xử lý** (nợ + lịch ngừng điện), KPI strip 4 mục, một
+  card so sánh **Ngày/Tháng**, biểu đồ 12 tháng và bảng tóm tắt điểm đo. Viền card
+  mềm hơn, màu chữ cảnh báo/lỗi đạt tương phản, mobile xếp 2×2 và đổi bảng điểm đo
+  thành card; vẫn giữ focus bàn phím, không đổi API/entity.
 - **v0.5.3:** sửa sensor **Tiêu thụ kỳ này** bị 0/unknown trong **tháng hiện tại**
   khi EVN chưa công bố dòng điện năng tháng. Integration tự cộng `DIEN_TTHU` các
   ngày đã có trong tháng (số **tạm tính**, cùng cách app EVN hiển thị) và mở rộng
@@ -28,7 +33,7 @@ và không phát hành kèm.
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
 - Qua **2.167 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **214 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+  **215 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
@@ -115,7 +120,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.5.3.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.5.4.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

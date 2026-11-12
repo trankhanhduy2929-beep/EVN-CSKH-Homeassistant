@@ -191,7 +191,7 @@ async function attach(page, options = {}) {
 async function settled(page) {
   await page.waitForFunction(() => {
     const root = document.getElementById("p").shadowRoot;
-    return root && root.textContent.includes("Điện năng tháng gần nhất") && root.textContent.includes("1.873");
+    return root && root.querySelector(".hero-card") && root.textContent.includes("1.873");
   });
 }
 
@@ -366,22 +366,29 @@ async function main() {
 
     let text = await shadowText();
     check("six tab labels", ["Tổng quan", "Điện năng", "Công tơ", "Hóa đơn", "Lịch ngừng điện", "Thông tin"].every(label => text.includes(label)));
-    check("overview monthly kwh", text.includes("873 kWh"));
-    check("overview mom percent", text.includes("+9,1%"));
+    check("overview monthly kwh", text.includes("Điện năng tháng 09/2026") && text.includes("873 kWh"));
+    check("overview mom percent", text.includes("Tăng 9,1%") && text.includes("so với 800 kWh kỳ trước"));
     check("overview average 12m", text.includes("654,25"));
     check("overview latest index", text.includes("1.873"));
-    check("overview outstanding", text.includes("1.640.000") && text.includes("2 hóa đơn chưa trả"));
-    check("overview next outage", text.includes(formattedOutage) && text.includes("Khu phố 3"));
+    check("overview outstanding", text.includes("Cần xử lý") && text.includes("1.640.000") && text.includes("2 hóa đơn chưa trả") && text.includes("hạn gần nhất 25/10/2026"));
+    check("overview next outage", text.includes("11/10/2026 · 07:00–17:30") && text.includes("Khu phố 3"));
     check("overview point summary", text.includes("Tóm tắt theo điểm đo") && text.includes("PD02"));
     check("xss literal only", text.includes("<img src=x onerror=alert(1)>") && (await imgCount()) === 0);
     check("no display keys leak", !text.includes("disp-"));
     check("select shows code and unit", text.includes("PC01 · PC01"));
-    const dailyChart = await chartSnapshot(page, "daily-comparison");
-    const monthlyChart = await chartSnapshot(page, "monthly-comparison");
-    check("overview two comparison cards below metrics", await page.evaluate(() => {
+    check("overview A order and kpi strip", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
-      return root.querySelectorAll("[data-chart]").length === 2 && root.querySelector(".metrics").nextElementSibling.matches(".comparison-grid");
+      const top = root.querySelector(".overview-top");
+      const kpis = root.querySelector(".kpi-strip");
+      const bottom = root.querySelector(".overview-bottom");
+      return Boolean(top && top.querySelector(".hero-card") && top.querySelector(".action-card") && kpis && top.nextElementSibling === kpis && kpis.nextElementSibling === bottom && bottom.querySelectorAll("[data-chart]").length === 1);
     }));
+    check("overview KPI four items", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const items = [...root.querySelectorAll(".kpi-strip .kpi")].map(item => item.textContent);
+      return items.length === 4 && items[0].includes("Chỉ số mới nhất") && items[1].includes("Trung bình 12 tháng") && items[2].includes("Hôm qua") && items[2].includes("18,12 kWh") && items[3].includes("Hóa đơn gần nhất") && items[3].includes("120.000") && items[3].includes("Chưa thanh toán");
+    }));
+    const dailyChart = await chartSnapshot(page, "overview-comparison");
     check("daily comparison labels dates values", dailyChart.columns.map(column => column.label).join() === "Hôm kia,Hôm qua,Hôm nay" && dailyChart.columns[0].value === "34,76" && dailyChart.columns[1].value === "0" && dailyChart.columns[2].value === "Chưa có");
     check("comparison null no bar zero height bar", dailyChart.columns[2].height === null && dailyChart.columns[1].height === "0%" && parseFloat(dailyChart.columns[0].height) > 0);
     check("daily chart aria full date and unit", dailyChart.role === "img" && dailyChart.field === "kwh" && dailyChart.unit === "kWh" && dailyChart.aria.includes("2026-10-05") && dailyChart.aria.includes("34,76 kWh") && dailyChart.aria.includes("Hôm nay"));
@@ -389,14 +396,19 @@ async function main() {
       const bars = [...document.getElementById("p").shadowRoot.querySelectorAll(".comparison-chart .bar")];
       return bars.length > 0 && bars.every(bar => parseFloat(getComputedStyle(bar).borderTopLeftRadius) > 0 && parseFloat(getComputedStyle(bar).borderTopRightRadius) > 0);
     }));
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-monthly").click());
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-monthly")?.getAttribute("aria-pressed") === "true");
+    const monthlyChart = await chartSnapshot(page, "overview-comparison");
     check("monthly comparison customer allpoint scope", monthlyChart.text.includes("Tổng khách hàng · tất cả điểm đo · kỳ theo tháng EVN") && monthlyChart.columns[1].value === "1.025,5");
     check("current month provisional lighter caption", monthlyChart.columns[2].provisional && monthlyChart.columns[2].title.includes("Tạm tính/chưa chốt") && await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
-      const bars = root.querySelectorAll('[data-chart="monthly-comparison"] .bar');
+      const bars = root.querySelectorAll('[data-chart="overview-comparison"] .bar');
       return getComputedStyle(bars[0]).backgroundColor !== getComputedStyle(bars[2]).backgroundColor;
     }));
-    check("latest usage label truthful", text.includes("Điện năng tháng gần nhất") && !text.includes("Sản lượng tháng này"));
+    check("latest usage label truthful", text.includes("Điện năng tháng 09/2026") && !text.includes("Sản lượng tháng này"));
     check("comparison as_of backend not UI clock", dailyChart.asOf === "2026-10-07" && monthlyChart.asOf === "2026-10-07");
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-daily").click());
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-daily")?.getAttribute("aria-pressed") === "true");
     await page.screenshot({ path: join(outDir, "desktop-overview.png"), fullPage: true });
 
     await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("tab-0").focus());
@@ -951,14 +963,15 @@ async function main() {
       for (let index = 0; index < 20; index++) panel.hass = { ...panel.hass, states: { "sensor.synthetic": { state: index % 2 ? "unknown" : "unavailable" } } };
     });
     check("hass setter no fetch spam", await page.evaluate(() => window.__wsCalls) === setterCalls);
+    await clickTab(page, 0);
     await page.evaluate(() => {
       const panel = document.getElementById("p");
       panel._overview = { ...window.__data.overview, comparisons: undefined };
       panel._render();
     });
     check("old backend comparison absence helper no fake values", await page.evaluate(() => {
-      const root = document.getElementById("p").shadowRoot;
-      return root.querySelector('[data-chart="daily-comparison"]').textContent.includes("Máy chủ chưa cung cấp") && root.querySelector('[data-chart="monthly-comparison"]').querySelectorAll(".chart-column").length === 0;
+      const card = document.getElementById("p").shadowRoot.querySelector('[data-chart="overview-comparison"]');
+      return card.textContent.includes("Máy chủ chưa cung cấp") && card.querySelectorAll(".chart-column").length === 0;
     }));
     await page.evaluate(() => {
       const panel = document.getElementById("p");
@@ -967,7 +980,7 @@ async function main() {
       panel._render();
     });
     check("comparison loading state", await page.evaluate(() => {
-      const card = document.getElementById("p").shadowRoot.querySelector('[data-chart="daily-comparison"]');
+      const card = document.getElementById("p").shadowRoot.querySelector('[data-chart="overview-comparison"]');
       return card.getAttribute("aria-busy") === "true" && card.querySelector('[role="status"]').textContent.includes("Đang tải");
     }));
     await page.evaluate(() => {
@@ -980,7 +993,7 @@ async function main() {
       panel._render();
     });
     await clickTab(page, 0);
-    const unavailable = await chartSnapshot(page, "daily-comparison");
+    const unavailable = await chartSnapshot(page, "overview-comparison");
     check("unavailable all null keeps three labeled slots", unavailable.columns.length === 3 && unavailable.columns.every(column => column.height === null && column.value === "Chưa có") && unavailable.text.includes("chưa sẵn sàng"));
     await clickTab(page, 3);
     const allUnknownInvoice = await chartSnapshot(page, "invoice-comparison");
