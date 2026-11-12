@@ -43,6 +43,7 @@ month_label = models.month_label
 vn_now = models.vn_now
 previous_months = models.previous_months
 daily_consumption_on = models.daily_consumption_on
+daily_month_energy = models.daily_month_energy
 latest_cycle_index = models.latest_cycle_index
 latest_daily_index = models.latest_daily_index
 invoice_for_month = models.invoice_for_month
@@ -404,6 +405,46 @@ def test_daily_incomplete_tariffs_do_not_imply_zero_for_missing_registers(
 @pytest.mark.parametrize("register", [None, "", "UNKNOWN", "kt", True, []])
 def test_daily_unknown_register_is_not_silently_dropped(register: Any) -> None:
     assert daily_summary([_daily(10), _daily(2, BCS=register)]) is None
+
+
+def test_daily_month_energy_sums_only_days_inside_month() -> None:
+    records = [
+        _daily(10, NGAY="01/10/2026", NGAY_HTHI="01/10/2026"),
+        _daily(5, NGAY="31/10/2026", NGAY_HTHI="31/10/2026"),
+        _daily(100, NGAY="01/11/2026", NGAY_HTHI="01/11/2026"),
+    ]
+    assert daily_month_energy(records, 2026, 10) == 15.0
+    assert daily_month_energy(records, 2026, 11) == 100.0
+    assert daily_month_energy(records, 2026, 9) is None
+
+
+def test_daily_month_energy_multiday_interval_must_stay_inside_month() -> None:
+    inside = _daily(12, NGAY="30/10/2026", NGAY_HTHI="30/10/2026 - 31/10/2026")
+    crossing = _daily(20, NGAY="31/10/2026", NGAY_HTHI="31/10/2026 - 02/11/2026")
+    assert daily_month_energy([inside], 2026, 10) == 12.0
+    assert daily_month_energy([inside, crossing], 2026, 10) is None
+
+
+def test_daily_month_energy_deduplicates_and_rejects_conflicts() -> None:
+    row = _daily(9, NGAY="05/10/2026", NGAY_HTHI="05/10/2026")
+    assert daily_month_energy([row, deepcopy(row)], 2026, 10) == 9.0
+    assert daily_month_energy([row, row | {"DIEN_TTHU": 10}], 2026, 10) is None
+
+
+@pytest.mark.parametrize(
+    ("records", "year", "month"),
+    [
+        ([], 2026, 10),
+        ([_daily(1)], 2026, 0),
+        ([_daily(1)], 2026, 13),
+        ([_daily(1, DIEN_TTHU=None)], 2026, 10),
+        ([_daily(1, BCS="UNKNOWN")], 2026, 10),
+    ],
+)
+def test_daily_month_energy_unknown_inputs_return_none(
+    records: list[dict[str, Any]], year: int, month: int
+) -> None:
+    assert daily_month_energy(records, year, month) is None
 
 
 def test_daily_meter_replacement_same_day_is_not_deduplicated_across_meters() -> None:

@@ -730,6 +730,7 @@ class EvnClient:
             today = datetime.now(_LOCAL_TIMEZONE).date()
             monthly_start = _month_shift(today.replace(day=1), -11)
             readings_start = _month_shift(today.replace(day=1), -13)
+            daily_start = min(today - timedelta(days=7), today.replace(day=1))
             points = _owned_rows(
                 await self._authenticated_locked(
                     "GET", base, "/api/evn/customers/diemdo"
@@ -772,7 +773,7 @@ class EvnClient:
                     {
                         "MA_DVIQLY": customer.management_unit,
                         "MA_DDO": point,
-                        "TU_NGAY": (today - timedelta(days=7)).strftime("%d/%m/%Y"),
+                        "TU_NGAY": daily_start.strftime("%d/%m/%Y"),
                         "DEN_NGAY": today.strftime("%d/%m/%Y"),
                     },
                     customer,

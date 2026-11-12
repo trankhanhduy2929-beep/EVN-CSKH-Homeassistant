@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, date, datetime, timedelta
+from math import fsum, isfinite
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -23,6 +24,7 @@ from .models import (
     PeriodUsage,
     customer_month_energy,
     daily_consumption_on,
+    daily_month_energy,
     daily_summary,
     invoice_for_month,
     latest_cycle_index,
@@ -431,6 +433,45 @@ def _customer_month_energy(snapshot: Snapshot, period: tuple[int, int]) -> float
     )
 
 
+def _customer_daily_month_energy(
+    snapshot: Snapshot, period: tuple[int, int]
+) -> float | None:
+    points = snapshot.measurement_points
+    if not isinstance(points, list) or not points:
+        return None
+    codes: list[str] = []
+    for point in points:
+        code = point.get("MA_DDO") if isinstance(point, dict) else None
+        if not isinstance(code, str) or not code:
+            return None
+        if code not in codes:
+            codes.append(code)
+    values: list[float] = []
+    for code in codes:
+        value = daily_month_energy(
+            _point_rows(snapshot.daily, code), period[0], period[1]
+        )
+        if value is None:
+            return None
+        values.append(value)
+    try:
+        total = fsum(values)
+    except (OverflowError, ValueError):
+        return None
+    return total if isfinite(total) else None
+
+
+def _customer_current_month_energy(
+    snapshot: Snapshot, period: tuple[int, int], official: float | None
+) -> float | None:
+    today = vn_now()
+    if not isinstance(today, date) or period != (today.year, today.month):
+        return None
+    if official is not None and official != 0:
+        return None
+    return _customer_daily_month_energy(snapshot, period)
+
+
 def _next_update(coordinator: EvnCoordinator) -> datetime | None:
     candidate = getattr(coordinator, "next_iteration", None)
     if (
@@ -625,7 +666,12 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                 period = self._period()
                 if period is None:
                     return None
-                return _customer_month_energy(snapshot, period)
+                value = _customer_month_energy(snapshot, period)
+                if self.entity_description.key == "consumption_this_period":
+                    fallback = _customer_current_month_energy(snapshot, period, value)
+                    if fallback is not None:
+                        return fallback
+                return value
         return None
 
     def _period(self) -> tuple[int, int] | None:
@@ -670,6 +716,7 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
             if period is None:
                 return {}
             invoice = key.startswith("invoice_")
+            period_basis = "invoice_month_label" if invoice else "energy_month_label"
             if invoice:
                 source: str | None = "hoadon+lichsu-hoadon"
             else:
@@ -689,11 +736,17 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                             sources.add(name)
                             break
                 source = "+".join(sorted(sources)) or None
+                if key == "consumption_this_period":
+                    official = _customer_month_energy(snapshot, period)
+                    if (
+                        _customer_current_month_energy(snapshot, period, official)
+                        is not None
+                    ):
+                        source = "diennangngay"
+                        period_basis = "calendar_month_label"
             return {
                 "target_month": f"{period[0]:04d}-{period[1]:02d}",
-                "period_basis": "invoice_month_label"
-                if invoice
-                else "energy_month_label",
+                "period_basis": period_basis,
                 "source": source,
                 "provisional": not invoice and period == (today.year, today.month),
             }

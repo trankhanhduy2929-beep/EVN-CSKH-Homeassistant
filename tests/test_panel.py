@@ -239,7 +239,7 @@ def expected_comparisons() -> dict[str, Any]:
         "monthly": [
             {"period": "2026-08", "kwh": 10.0, "vnd": 220.0, "provisional": False},
             {"period": "2026-09", "kwh": 12.5, "vnd": 330.0, "provisional": False},
-            {"period": "2026-10", "kwh": None, "vnd": 220.0, "provisional": True},
+            {"period": "2026-10", "kwh": 2.5, "vnd": 220.0, "provisional": True},
         ],
     }
 
@@ -2029,9 +2029,9 @@ async def test_customer_month_comparisons_match_sensors_all_points_and_invoice_m
             hass, "overview", entry_id=entry.entry_id, customer_key=customer_key(PERSON)
         )
     )["result"]["comparisons"]
-    assert [row["kwh"] for row in result["monthly"]] == [11.0, None, None]
+    assert [row["kwh"] for row in result["monthly"]] == [11.0, None, 11.0]
     assert [row["vnd"] for row in result["monthly"]] == [200.0, 0.0, 150.0]
-    assert entities["consumption_this_period"].native_value is None
+    assert entities["consumption_this_period"].native_value == 11.0
     assert entities["consumption_prev_period"].native_value is None
 
 
@@ -2063,6 +2063,7 @@ def test_comparisons_invalid_values_are_null_not_replaced_by_readings(
 @pytest.mark.parametrize("value", [0, None, -5])
 def test_monthly_comparison_units_are_independent(value: int | None) -> None:
     snapshot = make_snapshot()
+    snapshot.daily = {}
     snapshot.monthly = {POINT: [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": value}]}
     snapshot.monthly_readings = {}
     snapshot.invoices = [invoice_row(THANG=10, TONG_TIEN=value)]

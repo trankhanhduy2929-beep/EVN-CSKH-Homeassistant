@@ -1044,10 +1044,13 @@ async def test_snapshot_twelve_months_and_inclusive_days_across_rollovers(
         "DEN_THANG_NAM": today.strftime("%m/%Y"),
     }
     for index, days in ((5, 7), (7, 31)):
+        start = today - timedelta(days=days)
+        if index == 5:
+            start = min(start, today.replace(day=1))
         assert session.calls[index]["json"] == {
             "MA_DVIQLY": person.management_unit,
             "MA_DDO": "POINT-1",
-            "TU_NGAY": (today - timedelta(days=days)).strftime("%d/%m/%Y"),
+            "TU_NGAY": start.strftime("%d/%m/%Y"),
             "DEN_NGAY": today.strftime("%d/%m/%Y"),
         }
     session.done()

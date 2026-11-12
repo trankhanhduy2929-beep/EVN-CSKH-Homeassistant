@@ -9,7 +9,12 @@ và không phát hành kèm.
 
 ## Trạng thái
 
-- **v0.5.2:** sửa lỗi **setup thất bại** khi endpoint ngày của EVN trả trang lỗi
+- **v0.5.3:** sửa sensor **Tiêu thụ kỳ này** bị 0/unknown trong **tháng hiện tại**
+  khi EVN chưa công bố dòng điện năng tháng. Integration tự cộng `DIEN_TTHU` các
+  ngày đã có trong tháng (số **tạm tính**, cùng cách app EVN hiển thị) và mở rộng
+  cửa sổ tải dữ liệu ngày từ đầu tháng; chỉ áp dụng cho tháng hiện tại, tháng cũ
+  thiếu dữ liệu vẫn **unknown**, không đổi thành 0. Panel hiển thị cùng giá trị.
+  v0.5.2: sửa lỗi **setup thất bại** khi endpoint ngày của EVN trả trang lỗi
   gateway (HTML) hoặc 5xx. Integration giữ nguyên dữ liệu tháng, hóa đơn, PDF và
   lịch ngừng điện; dữ liệu ngày/chỉ số ngày để **unknown** (không đổi thành 0),
   ghi cảnh báo, tự thử lại ở lần làm mới sau và hiện thông báo trong tab Điện năng.
@@ -22,7 +27,7 @@ và không phát hành kèm.
   Dữ liệu kiểm tra mới: những ngày/tháng chưa công bố được giữ **unknown**, không
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
-- Qua **2.158 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
+- Qua **2.167 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
   **214 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
@@ -110,7 +115,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.5.2.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.5.3.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

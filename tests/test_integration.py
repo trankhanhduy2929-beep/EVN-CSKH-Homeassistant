@@ -2388,6 +2388,11 @@ async def test_customer_month_sensors_share_typed_helper_and_explicit_sources(
     assert current.extra_state_attributes["provisional"] is True
     assert entities["consumption_prev_period"].native_value is None
     snapshot.monthly["POINT-A"][0]["DIEN_TTHU"] = None
+    assert current.native_value == 3.5
+    assert current.extra_state_attributes["source"] == "diennangngay"
+    assert current.extra_state_attributes["period_basis"] == "calendar_month_label"
+    assert current.extra_state_attributes["provisional"] is True
+    snapshot.daily = {}
     assert current.native_value is None
     shared = Mock(return_value=123.25)
     monkeypatch.setattr(sensor, "customer_month_energy", shared)
@@ -2399,6 +2404,64 @@ async def test_customer_month_sensors_share_typed_helper_and_explicit_sources(
         2026,
         10,
     )
+
+
+@pytest.mark.asyncio
+async def test_current_period_uses_daily_month_when_monthly_is_zero_or_missing(
+    hass: HomeAssistant,
+    mocked_client: tuple[Mock, Mock],
+    customers: list[Customer],
+    tokens: TokenState,
+) -> None:
+    entry = make_entry(hass, customers[:1], tokens)
+    assert await integration.async_setup_entry(hass, entry)
+    snapshot = entry.runtime_data.data[customer_key(customers[0])]
+    snapshot.measurement_points = [{"MA_DDO": "POINT-A"}]
+    snapshot.monthly = {"POINT-A": [{"NAM": 2026, "THANG": 10, "DIEN_TTHU": 0}]}
+    snapshot.monthly_readings = {}
+    snapshot.daily = {
+        "POINT-A": [
+            {
+                "NGAY": day,
+                "NGAY_HTHI": day,
+                "SO_CTO": "METER-A",
+                "BCS": "KT",
+                "DIEN_TTHU": value,
+            }
+            for day, value in (
+                ("01/10/2026", 10),
+                ("06/10/2026", 2.5),
+            )
+        ]
+    }
+    entities = {
+        item.entity_description.key: item
+        for item in collect_sensor(entry.runtime_data, entry)
+    }
+    current = entities["consumption_this_period"]
+    assert current.native_value == 12.5
+    attributes = current.extra_state_attributes
+    assert attributes["source"] == "diennangngay"
+    assert attributes["period_basis"] == "calendar_month_label"
+    assert attributes["target_month"] == "2026-10"
+    assert attributes["provisional"] is True
+    snapshot.daily = {
+        "POINT-A": [
+            {
+                "NGAY": "05/09/2026",
+                "NGAY_HTHI": "05/09/2026",
+                "SO_CTO": "METER-A",
+                "BCS": "KT",
+                "DIEN_TTHU": 10,
+            }
+        ]
+    }
+    snapshot.monthly = {"POINT-A": [{"NAM": 2026, "THANG": 9, "DIEN_TTHU": 0}]}
+    assert entities["consumption_prev_period"].native_value == 0.0
+    assert entities["consumption_this_period"].native_value is None
+    snapshot.daily = {}
+    snapshot.monthly = {}
+    assert current.native_value is None
 
 
 @pytest.mark.asyncio

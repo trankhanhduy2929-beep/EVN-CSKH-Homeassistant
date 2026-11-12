@@ -782,6 +782,47 @@ def daily_consumption_on(
     return usage.value if usage is not None else None
 
 
+def daily_month_energy(
+    daily_records: list[dict[str, Any]], year: int, month: int
+) -> float | None:
+    if (
+        not isinstance(daily_records, list)
+        or not daily_records
+        or type(year) is not int
+        or type(month) is not int
+        or not (1 <= year <= 9999 and 1 <= month <= 12)
+    ):
+        return None
+    start = date(year, month, 1)
+    end = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
+    seen: dict[tuple[Any, ...], dict[str, Any]] = {}
+    for record in daily_records:
+        if not isinstance(record, dict):
+            return None
+        interval = _interval(record)
+        if interval is None:
+            return None
+        if interval[1] < start or interval[0] > end:
+            continue
+        if interval[0] < start or interval[1] > end:
+            return None
+        meter = record.get("SO_CTO")
+        register = record.get("BCS")
+        if meter is not None and not _valid_id(meter):
+            return None
+        if not isinstance(register, str) or register not in _TARIFF_REGISTERS | {"KT"}:
+            return None
+        if not _remember(seen, (meter, register, interval[0], interval[1]), record):
+            return None
+    values: list[float] = []
+    for record in seen.values():
+        value = _number(record.get("DIEN_TTHU"))
+        if value is None:
+            return None
+        values.append(value)
+    return _total(values) if values else None
+
+
 def latest_cycle_index(
     monthly_readings: list[dict[str, Any]],
     position: int = 0,

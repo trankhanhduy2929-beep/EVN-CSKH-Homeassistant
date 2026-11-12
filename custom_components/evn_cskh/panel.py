@@ -43,6 +43,7 @@ from .models import (
     _reading_stamp,
     customer_month_energy,
     daily_consumption_on,
+    daily_month_energy,
     daily_summary,
     invoice_for_month,
     latest_reading,
@@ -340,6 +341,35 @@ def _outage_dto(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _month_energy(
+    snapshot: Snapshot, year: int, month: int, as_of: date
+) -> float | None:
+    value = customer_month_energy(
+        snapshot.measurement_points,
+        snapshot.monthly,
+        snapshot.monthly_readings,
+        year,
+        month,
+    )
+    if (year, month) != (as_of.year, as_of.month):
+        return value
+    if value is not None and value != 0:
+        return value
+    codes = list(dict.fromkeys(point["id"] for point in _points(snapshot)))
+    if not codes:
+        return value
+    total = 0.0
+    for code in codes:
+        rows = snapshot.daily.get(code) if isinstance(snapshot.daily, dict) else None
+        if not isinstance(rows, list):
+            return value
+        daily = daily_month_energy(rows, year, month)
+        if daily is None:
+            return value
+        total += daily
+    return total
+
+
 def _comparisons(snapshot: Snapshot, as_of: date) -> dict[str, Any]:
     days = [as_of - timedelta(days=offset) for offset in (2, 1, 0)]
     current = as_of.year, as_of.month
@@ -367,15 +397,7 @@ def _comparisons(snapshot: Snapshot, as_of: date) -> dict[str, Any]:
         "monthly": [
             {
                 "period": f"{year:04d}-{month:02d}",
-                "kwh": _number(
-                    customer_month_energy(
-                        snapshot.measurement_points,
-                        snapshot.monthly,
-                        snapshot.monthly_readings,
-                        year,
-                        month,
-                    )
-                ),
+                "kwh": _number(_month_energy(snapshot, year, month, as_of)),
                 "vnd": _number(
                     invoice_for_month(
                         snapshot.invoices, snapshot.paid_invoices, year, month
