@@ -9,6 +9,9 @@ và không phát hành kèm.
 
 ## Trạng thái
 
+- **v0.5.5:** tinh chỉnh tab **Tổng quan** sau khi release: bỏ chỉ số mới nhất và
+  TB 12 tháng khỏi hero vì đã có trong KPI strip, chỉ giữ tên điểm đo; khối đầu
+  thấp hơn, không lặp số. Không đổi dữ liệu, API hay entity.
 - **v0.5.4:** làm lại tab **Tổng quan** theo bố cục “việc cần làm trước”: kWh tháng
   và mức tăng/giảm, khối **Cần xử lý** (nợ + lịch ngừng điện), KPI strip 4 mục, một
   card so sánh **Ngày/Tháng**, biểu đồ 12 tháng và bảng tóm tắt điểm đo. Viền card
@@ -120,7 +123,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.5.4.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.5.5.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

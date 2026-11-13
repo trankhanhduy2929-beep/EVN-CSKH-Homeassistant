@@ -694,7 +694,6 @@ export class EvnCskhPanel extends HTMLElement {
   _overviewHero(usage) {
     const monthly = usage?.monthly;
     const mom = usage?.mom;
-    const reading = usage?.reading;
     const card = node("section", null, "card hero-card");
     card.setAttribute("aria-label", "Điện năng tháng gần nhất");
     card.append(node("p", monthly?.period ? `Điện năng tháng ${displayMonth(monthly.period)}` : "Điện năng tháng gần nhất", "hero-eyebrow"));
@@ -711,11 +710,7 @@ export class EvnCskhPanel extends HTMLElement {
       delta.append(node("span", finite(mom.previous) ? `so với ${numeric(mom.previous)} kWh kỳ trước` : "so với kỳ trước", "meta"));
     } else delta.append(node("span", monthly?.period ? "Chưa có kỳ trước" : "Chưa có kỳ ghi nhận", "meta"));
     card.append(delta);
-    const facts = [];
-    if (this._point) facts.push(`Điểm đo ${text(this._point)}`);
-    if (finite(reading?.new)) facts.push(`Chỉ số mới nhất ${numeric(reading.new)}`);
-    if (finite(usage?.average_12m)) facts.push(`TB 12 tháng ${numeric(usage.average_12m)} kWh`);
-    if (facts.length) card.append(node("p", facts.join(" · "), "meta"));
+    if (this._point) card.append(node("p", `Điểm đo ${text(this._point)}`, "meta"));
     return card;
   }
 

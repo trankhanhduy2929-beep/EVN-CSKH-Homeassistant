@@ -191,7 +191,8 @@ async function attach(page, options = {}) {
 async function settled(page) {
   await page.waitForFunction(() => {
     const root = document.getElementById("p").shadowRoot;
-    return root && root.querySelector(".hero-card") && root.textContent.includes("1.873");
+    const hero = root?.querySelector(".hero-card");
+    return hero && hero.textContent.includes("873 kWh");
   });
 }
 
@@ -379,9 +380,10 @@ async function main() {
     check("overview A order and kpi strip", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const top = root.querySelector(".overview-top");
+      const hero = root.querySelector(".hero-card");
       const kpis = root.querySelector(".kpi-strip");
       const bottom = root.querySelector(".overview-bottom");
-      return Boolean(top && top.querySelector(".hero-card") && top.querySelector(".action-card") && kpis && top.nextElementSibling === kpis && kpis.nextElementSibling === bottom && bottom.querySelectorAll("[data-chart]").length === 1);
+      return Boolean(top && hero && !hero.textContent.includes("Chỉ số mới nhất") && !hero.textContent.includes("TB 12 tháng") && top.querySelector(".action-card") && kpis && top.nextElementSibling === kpis && kpis.nextElementSibling === bottom && bottom.querySelectorAll("[data-chart]").length === 1);
     }));
     check("overview KPI four items", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
