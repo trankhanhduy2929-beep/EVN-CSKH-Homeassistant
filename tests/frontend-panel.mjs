@@ -408,6 +408,15 @@ async function main() {
       return getComputedStyle(bars[0]).backgroundColor !== getComputedStyle(bars[2]).backgroundColor;
     }));
     check("latest usage label truthful", text.includes("Điện năng tháng 09/2026") && !text.includes("Sản lượng tháng này"));
+    check("overview usage three chart blocks fallback", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const cards = [...root.querySelectorAll(".overview-usage [data-chart]")];
+      const names = cards.map(card => card.dataset.chart).join();
+      const monthly = cards.find(card => card.dataset.chart === "overview-monthly");
+      const daily = cards.find(card => card.dataset.chart === "overview-daily");
+      const yearly = cards.find(card => card.dataset.chart === "overview-yearly");
+      return names === "overview-monthly,overview-daily,overview-yearly" && monthly.querySelectorAll(".chart-column").length === 3 && daily.querySelectorAll(".chart-column").length === 3 && !yearly.querySelector(".chart") && yearly.textContent.includes("Cần tải lịch sử") && root.getElementById("history-load") && root.getElementById("history-long");
+    }));
     check("comparison as_of backend not UI clock", dailyChart.asOf === "2026-10-07" && monthlyChart.asOf === "2026-10-07");
     await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-daily").click());
     await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-daily")?.getAttribute("aria-pressed") === "true");
@@ -430,6 +439,19 @@ async function main() {
     text = await shadowText();
     check("energy chart rendered", await page.evaluate(() => document.getElementById("p").shadowRoot.querySelectorAll(".chart-column").length) >= 12);
     check("energy table monthly", text.includes("Bảng số liệu") && text.includes("2026-09"));
+    await clickTab(page, 0);
+    check("overview usage full day month year charts", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const cards = [...root.querySelectorAll(".overview-usage [data-chart]")];
+      const monthly = cards.find(card => card.dataset.chart === "overview-monthly");
+      const daily = cards.find(card => card.dataset.chart === "overview-daily");
+      const yearly = cards.find(card => card.dataset.chart === "overview-yearly");
+      const monthlyColumns = monthly ? monthly.querySelectorAll(".chart-column").length : 0;
+      const dailyColumns = daily ? daily.querySelectorAll(".chart-column").length : 0;
+      const yearColumns = yearly ? [...yearly.querySelectorAll(".chart-column")].map(column => column.dataset.period).join() : "";
+      return monthlyColumns === 12 && dailyColumns === 4 && yearColumns === "2025,2026" && /Tổng 12 tháng mỗi năm/.test(yearly.textContent) && /Năm chưa đủ 12 tháng: 2025: 3\/12 tháng, 2026: 9\/12 tháng/.test(root.querySelector(".overview-usage").textContent);
+    }));
+    await clickTab(page, 1);
     check("energy comparisons once before history", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const filters = root.getElementById("history-filter");

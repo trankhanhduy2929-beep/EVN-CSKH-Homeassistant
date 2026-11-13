@@ -9,6 +9,11 @@ và không phát hành kèm.
 
 ## Trạng thái
 
+- **v0.6.0:** thêm khối **Sản lượng** trong tab **Tổng quan** với ba biểu đồ
+  **Tháng, Ngày, Năm**; **Năm** cộng dồn 12 tháng mỗi năm và ghi rõ năm thiếu
+  tháng. Nút **Tải 5 năm** mở rộng lịch sử tháng từ 366 ngày lên **5 năm** (backend
+  và kiểm tra form đổi theo); dữ liệu ngày vẫn tối đa 31 ngày. Không đổi API dữ
+  liệu hay entity.
 - **v0.5.5:** tinh chỉnh tab **Tổng quan** sau khi release: bỏ chỉ số mới nhất và
   TB 12 tháng khỏi hero vì đã có trong KPI strip, chỉ giữ tên điểm đo; khối đầu
   thấp hơn, không lặp số. Không đổi dữ liệu, API hay entity.
@@ -36,7 +41,7 @@ và không phát hành kèm.
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
 - Qua **2.167 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **215 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+  **217 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
@@ -123,7 +128,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.5.5.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.6.0.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

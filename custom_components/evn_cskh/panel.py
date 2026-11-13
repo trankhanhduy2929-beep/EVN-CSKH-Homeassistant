@@ -172,7 +172,7 @@ def _date_range(start: str, end: str) -> tuple[date, date]:
     if (
         first > last
         or last > today
-        or (last - first).days > 366
+        or (last - first).days > 5 * 366
         or first < today - timedelta(days=5 * 366)
     ):
         raise _PanelError("invalid_response")

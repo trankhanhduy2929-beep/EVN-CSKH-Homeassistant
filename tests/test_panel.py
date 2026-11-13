@@ -730,7 +730,7 @@ async def test_list_entries_rejects_unknown_fields(
         ("2026-10-06", "2026-01-01"),
         ("2026-10-01", "2099-01-01"),
         ("2020-01-01", "2020-01-02"),
-        ("2024-01-01", "2026-01-01"),
+        ("2021-10-02", "2026-10-07"),
     ],
 )
 async def test_date_ranges_before_client(

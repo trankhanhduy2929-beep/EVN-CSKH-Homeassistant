@@ -389,6 +389,12 @@ async def test_details_contract_and_trusted_regional_routing(region: str) -> Non
     [
         (TODAY - timedelta(days=365), TODAY, date(2025, 12, 2), TODAY),
         (TODAY - timedelta(days=366), TODAY, date(2025, 12, 2), TODAY),
+        (
+            date(2021, 1, 1),
+            date(2026, 1, 1),
+            date(2025, 12, 2),
+            date(2026, 1, 1),
+        ),
         (date(2025, 12, 1), date(2025, 12, 31), date(2025, 12, 1), date(2025, 12, 31)),
         (date(2025, 8, 1), date(2025, 8, 20), date(2025, 8, 1), date(2025, 8, 20)),
         (date(2024, 2, 27), date(2024, 2, 29), date(2024, 2, 27), date(2024, 2, 29)),
@@ -574,7 +580,6 @@ def test_detail_snapshot_effective_daily_bounds_default_for_existing_fixtures() 
         (START, datetime(2025, 12, 1, tzinfo=UTC)),
         (TODAY, START),
         (START, TODAY + timedelta(days=1)),
-        (TODAY - timedelta(days=367), TODAY),
         (TODAY - timedelta(days=5 * 366 + 1), TODAY - timedelta(days=5 * 366)),
         (date.min, date.min),
         (date.max, date.max),

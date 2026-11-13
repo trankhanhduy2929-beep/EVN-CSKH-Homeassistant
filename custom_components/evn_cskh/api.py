@@ -866,7 +866,7 @@ class EvnClient:
                 or type(end) is not date
                 or start > end
                 or end > today
-                or (end - start).days > 366
+                or (end - start).days > 5 * 366
                 or start < today - timedelta(days=5 * 366)
             ):
                 raise EvnResponseError()

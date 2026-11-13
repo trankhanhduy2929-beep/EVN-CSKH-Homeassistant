@@ -15,6 +15,7 @@ const STYLE = `
 .action-card{padding:0;overflow:hidden;display:flex;flex-direction:column}.action-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 0;margin-bottom:12px}.action-item{padding:16px 20px;border-top:1px solid var(--evn-line-soft)}.action-label{font-size:13px;color:var(--evn-muted)}.action-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.action-value.compact{font-size:18px}.action-value.warn{color:var(--evn-warning-ink)}.action-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;overflow-wrap:anywhere}.action-empty{padding:16px 20px 20px;color:var(--evn-muted);font-size:13px}button.action-link{margin-top:8px;padding:5px 0;min-height:32px;border-color:transparent;background:transparent;color:var(--evn-accent-ink);font-weight:500;text-align:left}button.action-link:hover{background:transparent;text-decoration:underline}
 .kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--evn-surface);border:1px solid var(--evn-line-soft);border-radius:14px;overflow:hidden}.kpi{padding:16px 20px;border-right:1px solid var(--evn-line-soft);min-width:0}.kpi:last-child{border-right:0}.kpi-label{font-size:13px;color:var(--evn-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font-size:20px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.kpi-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .overview-compare .card-head{align-items:center}.overview-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--evn-line-soft) transparent}.overview-chart-scroll .chart{margin-top:24px}
+.overview-usage{display:grid;gap:12px}.usage-head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}.usage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.usage-card{min-height:0}.usage-card.usage-wide{grid-column:1/-1}.usage-card .card-head{padding:16px 20px 0}.usage-card .chart{margin-top:20px}.usage-card .chart-footer{display:none}.usage-card .bar-number{font-size:11px}@media(max-width:900px){.usage-grid{grid-template-columns:minmax(0,1fr)}}
 .point-summary-cards{display:none}.point-summary-row{display:grid;gap:4px;padding:12px 0;border-top:1px solid var(--evn-line-soft)}.point-summary-row:first-child{border-top:0;padding-top:0}.point-summary-row strong{font-size:14px}.point-summary-row span{font-size:13px;color:var(--evn-muted)}
 @media(max-width:1100px){.overview-top,.overview-bottom{grid-template-columns:1fr}}
 @media(max-width:1000px){.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(2),.kpi:nth-child(4){border-right:0}.kpi:nth-child(n+3){border-top:1px solid var(--evn-line-soft)}}
@@ -407,7 +408,7 @@ export class EvnCskhPanel extends HTMLElement {
     if (!validDate(start) || !validDate(end)) return "Nhập đầy đủ ngày bắt đầu và ngày kết thúc hợp lệ.";
     if (start > end) return "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.";
     if (end > today()) return "Ngày kết thúc không được sau hôm nay.";
-    if ((Date.parse(end) - Date.parse(start)) / 86400000 + 1 > 366) return "Chọn khoảng thời gian không quá 366 ngày.";
+    if ((Date.parse(end) - Date.parse(start)) / 86400000 + 1 > 5 * 366) return "Chọn khoảng thời gian không quá 5 năm.";
     return "";
   }
 
@@ -528,6 +529,13 @@ export class EvnCskhPanel extends HTMLElement {
     if (action === "entries") void this._loadEntries();
     if (action === "overview") void this._loadOverview(true);
     if (action === "details") void this._loadDetails();
+    if (action === "history-long") {
+      const end = today();
+      const start = new Date(Date.parse(`${end}T00:00:00Z`) - (5 * 365 - 1) * 86400000).toISOString().slice(0, 10);
+      this._range = { start, end };
+      this._invalidateDetails();
+      void this._loadDetails();
+    }
     if (action === "refresh") {
       void this._loadOverview(true);
       if (DETAIL_TABS.includes(this._tab)) void this._loadDetails(true);
@@ -801,29 +809,51 @@ export class EvnCskhPanel extends HTMLElement {
     return card;
   }
 
-  _overviewHistoryCard(monthly) {
-    const card = node("section", null, "card chart-card");
+  _overviewUsageSection() {
+    const section = node("section", null, "overview-usage");
     const full = Boolean(this._details);
-    const head = node("header", null, "card-head");
+    const head = node("header", null, "card-head usage-head");
     const title = node("div");
-    title.append(node("h2", full ? "12 tháng gần nhất" : "Điện năng theo tháng"), node("p", this._point ? `Điểm đo ${text(this._point)} · kWh` : "Khách hàng chưa có điểm đo", "meta"));
-    head.append(title);
-    card.append(head);
+    title.append(node("h2", "Sản lượng"), node("p", this._point ? `Điểm đo ${text(this._point)} · kWh` : "Khách hàng chưa có điểm đo", "meta"));
+    head.append(title, node("p", full ? `${displayDate(this._range.start)} → ${displayDate(this._range.end)}` : "Chưa tải lịch sử", "meta usage-range"));
+    section.append(head);
+    const comparisons = this._overview?.comparisons;
+    const daily = full ? dailyRecords(this._details.daily).slice(-7) : comparisonSlots(comparisons, this._point, "daily") || [];
+    const monthly = full ? this._monthly() : comparisonSlots(comparisons, this._point, "monthly") || [];
+    const yearly = full ? this._yearly() : [];
+    const grid = node("div", null, "usage-grid");
+    grid.append(
+      this._usageChart("Tháng", full ? "12 tháng đến ngày kết thúc · kWh" : "Ba tháng gần nhất · tổng khách hàng · kWh", "overview-monthly", "monthly", monthly, { scroll: true, wide: true }),
+      this._usageChart("Ngày", full ? "7 ngày gần nhất · kWh" : "Ba ngày gần nhất · kWh", "overview-daily", "daily", daily, { scroll: true }),
+      this._usageChart("Năm", full ? "Tổng 12 tháng mỗi năm có dữ liệu · kWh" : "", "overview-yearly", "yearly", yearly, { empty: "Cần tải lịch sử tối thiểu hai năm để xem xu hướng năm." }),
+    );
+    section.append(grid);
     if (full) {
-      const records = this._monthly();
-      if (records.some(item => finite(item.kwh))) this._renderChart(card, "monthly", records, { scroll: true });
-      else card.append(node("p", "Chưa có số liệu điện năng trong khoảng này.", "empty"));
+      const partial = yearly.filter(item => item.provisional).map(item => `${item.period}: ${item.months}/12 tháng`);
+      if (partial.length) section.append(node("p", `Năm chưa đủ 12 tháng: ${partial.join(", ")}. Tải 5 năm để xem đủ năm.`, "meta"));
     } else {
-      const fallback = monthly ? [{ period: monthly.period, kwh: monthly.kwh }] : [];
-      if (fallback.length) this._renderChart(card, "monthly", fallback);
-      else card.append(node("p", this._overviewBusy ? "Đang tải tổng quan…" : "Chưa có sản lượng tháng gần nhất cho điểm đo này.", this._overviewBusy ? "loading" : "empty"));
       const placeholder = node("div", null, "placeholder");
-      placeholder.append(node("p", "Tải lịch sử 12 tháng gần nhất để vẽ biểu đồ đầy đủ.", "muted"));
-      if (this._point) placeholder.append(this._button("Tải 12 tháng gần nhất", "details", "history-load", "primary", this._detailsBusy || this._cooling()));
-      else placeholder.append(node("p", "Khách hàng này chưa có điểm đo.", "meta"));
-      card.append(placeholder);
-      if (this._detailsError) card.append(this._banner(this._detailsError, "details", "chart-retry"));
+      placeholder.append(node("p", this._overviewBusy ? "Đang tải tổng quan…" : "Tải lịch sử để vẽ biểu đồ ngày, tháng và năm đầy đủ.", this._overviewBusy ? "loading" : "muted"));
+      if (this._point) {
+        placeholder.append(this._button("Tải 12 tháng gần nhất", "details", "history-load", "primary", this._detailsBusy || this._cooling()));
+        placeholder.append(this._button("Tải 5 năm", "details", "history-long", "", this._detailsBusy || this._cooling()));
+      } else placeholder.append(node("p", "Khách hàng này chưa có điểm đo.", "meta"));
+      section.append(placeholder);
     }
+    if (this._detailsError) section.append(this._banner(this._detailsError, "details", "chart-retry"));
+    return section;
+  }
+
+  _usageChart(title, meta, chartName, period, records, { scroll = false, wide = false, empty = "Chưa có số liệu trong khoảng này." } = {}) {
+    const card = node("section", null, `card chart-card usage-card${wide ? " usage-wide" : ""}`);
+    card.dataset.chart = chartName;
+    const head = node("header", null, "card-head");
+    const wrap = node("div");
+    wrap.append(node("h3", title), node("p", meta || "\u00a0", "meta"));
+    head.append(wrap);
+    card.append(head);
+    if (records.length) this._renderChart(card, period, records, { scroll });
+    else card.append(node("p", empty, "empty"));
     return card;
   }
 
@@ -833,8 +863,8 @@ export class EvnCskhPanel extends HTMLElement {
     const top = node("div", null, "overview-top");
     top.append(this._overviewHero(usage), this._overviewActions(overview));
     const bottom = node("div", null, "overview-bottom");
-    bottom.append(this._overviewComparisonCard(), this._overviewHistoryCard(usage?.monthly));
-    parent.append(top, this._overviewKpis(overview, usage), bottom);
+    bottom.append(this._overviewComparisonCard());
+    parent.append(top, this._overviewKpis(overview, usage), bottom, this._overviewUsageSection());
     if (array(overview?.usage).length > 1) parent.append(this._pointSummary());
   }
 
@@ -902,7 +932,7 @@ export class EvnCskhPanel extends HTMLElement {
     form.append(load);
     const window = this._details?.daily_window;
     const dailyHelp = validDate(window?.start) && validDate(window?.end) ? `Cửa sổ truy vấn ngày thực tế: ${displayDate(window.start)} → ${displayDate(window.end)}.` : "Chưa có cửa sổ truy vấn ngày thực tế.";
-    const help = node("p", `Tối đa 366 ngày cho lịch sử tháng. Dữ liệu ngày được truy vấn tối đa 31 ngày đến ngày kết thúc (không sau hôm nay). ${dailyHelp} Một bản ghi có thể gộp nhiều ngày.`, "meta filter-help");
+    const help = node("p", `Tối đa 5 năm cho lịch sử tháng. Dữ liệu ngày được truy vấn tối đa 31 ngày đến ngày kết thúc (không sau hôm nay). ${dailyHelp} Một bản ghi có thể gộp nhiều ngày.`, "meta filter-help");
     help.id = "range-help";
     const error = node("p", this._rangeError, "filter-error");
     error.id = "range-error";
@@ -915,19 +945,42 @@ export class EvnCskhPanel extends HTMLElement {
   _monthly() {
     if (!this._details || !validDate(this._range.start) || !validDate(this._range.end)) return [];
     const values = new Map(array(this._details.monthly).map(item => [item.period, item.kwh]));
-    const date = new Date(`${this._range.start.slice(0, 7)}-01T00:00:00Z`);
+    const end = new Date(`${this._range.end.slice(0, 7)}-01T00:00:00Z`);
+    const first = this._range.start.slice(0, 7);
     const result = [];
-    for (let i = 0; i < 13 && date.toISOString().slice(0, 7) <= this._range.end.slice(0, 7); i++) {
+    for (let offset = 11; offset >= 0; offset--) {
+      const date = new Date(end);
+      date.setUTCMonth(date.getUTCMonth() - offset);
       const period = date.toISOString().slice(0, 7);
+      if (period < first) continue;
       result.push({ period, kwh: values.get(period) ?? null });
-      date.setUTCMonth(date.getUTCMonth() + 1);
     }
-    return result.slice(-12);
+    return result;
+  }
+
+  _yearly() {
+    if (!this._details) return [];
+    const groups = new Map();
+    for (const item of array(this._details.monthly)) {
+      const year = typeof item?.period === "string" ? item.period.slice(0, 4) : "";
+      if (!/^\d{4}$/.test(year)) continue;
+      const entry = groups.get(year) || { period: year, kwh: 0, months: 0 };
+      if (finite(item.kwh)) {
+        entry.kwh += item.kwh;
+        entry.months += 1;
+      }
+      groups.set(year, entry);
+    }
+    return [...groups.values()]
+      .filter(entry => entry.months > 0)
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .map(entry => ({ ...entry, provisional: entry.months < 12 }));
   }
 
   _renderChart(parent, period, records, options = {}) {
     const values = records.map(item => ({ ...item, provisional: item.provisional === true || (period === "monthly" && array(this._overview?.comparisons?.monthly).some(row => row.period === item.period && row.provisional === true)) }));
-    this._renderColumns(parent, values, { period, title: `Điện năng ${period === "monthly" ? "theo tháng" : "theo ngày"}`, smooth: options.smooth === true, scroll: options.scroll === true });
+    const label = period === "monthly" ? "theo tháng" : period === "yearly" ? "theo năm" : "theo ngày";
+    this._renderColumns(parent, values, { period, title: `Điện năng ${label}`, smooth: options.smooth === true, scroll: options.scroll === true });
   }
 
   _renderColumns(parent, records, { field = "kwh", unit = "kWh", period = "monthly", title, comparison = false, smooth = false, footer = true, scroll = false } = {}) {
@@ -982,7 +1035,17 @@ export class EvnCskhPanel extends HTMLElement {
         track.append(amount);
       }
       const end = dailyEnd(item.period);
-      const label = comparison ? item.label : period === "monthly" ? String(item.period).slice(5, 7) : index % Math.max(1, Math.ceil(records.length / 6)) === 0 ? end ? displayDate(end).slice(0, 5) : "—" : "";
+      const label = comparison
+        ? item.label
+        : period === "monthly"
+          ? String(item.period).slice(5, 7)
+          : period === "yearly"
+            ? String(item.period)
+            : index % Math.max(1, Math.ceil(records.length / 6)) === 0
+              ? end
+                ? displayDate(end).slice(0, 5)
+                : "—"
+              : "";
       column.append(track, node("div", label, "chart-label"));
       if (comparison) {
         if (period === "daily") column.append(node("span", displayDate(item.period), "slot-date"));
