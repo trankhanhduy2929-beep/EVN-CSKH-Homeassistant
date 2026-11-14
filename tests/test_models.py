@@ -44,6 +44,10 @@ vn_now = models.vn_now
 previous_months = models.previous_months
 daily_consumption_on = models.daily_consumption_on
 daily_month_energy = models.daily_month_energy
+daily_month_energy_through = models.daily_month_energy_through
+invoice_unit_price = models.invoice_unit_price
+month_cost_estimate = models.month_cost_estimate
+CostEstimate = models.CostEstimate
 latest_cycle_index = models.latest_cycle_index
 latest_daily_index = models.latest_daily_index
 invoice_for_month = models.invoice_for_month
@@ -445,6 +449,117 @@ def test_daily_month_energy_unknown_inputs_return_none(
     records: list[dict[str, Any]], year: int, month: int
 ) -> None:
     assert daily_month_energy(records, year, month) is None
+
+
+def test_daily_month_energy_through_excludes_today_and_crossing_intervals() -> None:
+    records = [
+        _daily(10, NGAY="01/10/2026", NGAY_HTHI="01/10/2026"),
+        _daily(5, NGAY="02/10/2026", NGAY_HTHI="02/10/2026"),
+        _daily(20, NGAY="06/10/2026", NGAY_HTHI="06/10/2026 - 07/10/2026"),
+        _daily(99, NGAY="07/10/2026", NGAY_HTHI="07/10/2026"),
+    ]
+    assert daily_month_energy_through(records, 2026, 10, date(2026, 10, 1)) == 10.0
+    assert daily_month_energy_through(records, 2026, 10, date(2026, 10, 2)) == 15.0
+    assert daily_month_energy_through(records, 2026, 10, date(2026, 10, 6)) == 15.0
+    assert daily_month_energy_through(records, 2026, 10, date(2026, 10, 7)) == 134.0
+    assert daily_month_energy_through(records, 2026, 10, date(2026, 11, 1)) is None
+
+
+@pytest.mark.parametrize(
+    ("records", "year", "month", "through"),
+    [
+        ([], 2026, 10, date(2026, 10, 6)),
+        ([_daily(1)], 2026, 0, date(2026, 10, 6)),
+        ([_daily(1)], 2026, 13, date(2026, 10, 6)),
+        ([_daily(1)], 2026, 10, datetime(2026, 10, 6, tzinfo=UTC)),
+        (
+            [_daily(1, NGAY="07/10/2026", NGAY_HTHI="07/10/2026")],
+            2026,
+            10,
+            date(2026, 10, 6),
+        ),
+    ],
+)
+def test_daily_month_energy_through_unknown_inputs_return_none(
+    records: list[dict[str, Any]], year: Any, month: Any, through: Any
+) -> None:
+    assert daily_month_energy_through(records, year, month, through) is None
+
+
+def test_invoice_unit_price_uses_latest_invoice_with_energy() -> None:
+    older = _invoice_record(
+        ID_HDON="OLDER", NAM=2026, THANG=9, TONG_TIEN=300000, DIEN_TTHU=30
+    )
+    latest_missing_energy = _invoice_record(
+        ID_HDON="LATEST", NAM=2026, THANG=10, TONG_TIEN=500000, DIEN_TTHU=None
+    )
+    usable = _invoice_record(
+        ID_HDON="USABLE", NAM=2026, THANG=8, TONG_TIEN=100000, DIEN_TTHU=20
+    )
+    assert invoice_unit_price([latest_missing_energy], [older, usable]) == (
+        10000.0,
+        (2026, 9),
+    )
+    assert invoice_unit_price([], []) is None
+    assert invoice_unit_price(None, []) is None
+
+
+@pytest.mark.parametrize(
+    ("amount", "energy"),
+    [(0, 10), (100, 0), (-100, 10), (100, -10), (None, 10), (100, None)],
+)
+def test_invoice_unit_price_rejects_non_positive_values(
+    amount: Any, energy: Any
+) -> None:
+    record = _invoice_record(TONG_TIEN=amount, DIEN_TTHU=energy)
+    assert invoice_unit_price([record], []) is None
+
+
+def test_month_cost_estimate_sums_points_and_marks_last_data_day() -> None:
+    points = [{"MA_DDO": "POINT-A"}, {"MA_DDO": "POINT-B"}]
+    daily = {
+        "POINT-A": [
+            _daily(4, NGAY="01/10/2026", NGAY_HTHI="01/10/2026"),
+            _daily(6, NGAY="02/10/2026", NGAY_HTHI="02/10/2026"),
+        ],
+        "POINT-B": [
+            _daily(5, NGAY="02/10/2026", NGAY_HTHI="02/10/2026"),
+        ],
+    }
+    invoice = _invoice_record(TONG_TIEN=300000, DIEN_TTHU=30)
+    estimate = month_cost_estimate(
+        points, daily, [invoice], [], 2026, 10, date(2026, 10, 5)
+    )
+    assert estimate == CostEstimate(
+        amount=150000.0,
+        energy=15.0,
+        unit_price=10000.0,
+        through=date(2026, 10, 5),
+        last_day=date(2026, 10, 2),
+        price_period=(2026, 10),
+    )
+
+
+def test_month_cost_estimate_requires_daily_data_and_invoice_price() -> None:
+    points = [{"MA_DDO": "POINT-A"}]
+    daily = {"POINT-A": [_daily(4, NGAY="01/10/2026", NGAY_HTHI="01/10/2026")]}
+    no_price = _invoice_record(TONG_TIEN=None)
+    assert (
+        month_cost_estimate(points, daily, [no_price], [], 2026, 10, date(2026, 10, 5))
+        is None
+    )
+    assert (
+        month_cost_estimate(
+            points, {}, [_invoice_record()], [], 2026, 10, date(2026, 10, 5)
+        )
+        is None
+    )
+    assert (
+        month_cost_estimate(
+            points, daily, [_invoice_record()], [], 2026, 10, date(2026, 11, 5)
+        )
+        is None
+    )
 
 
 def test_daily_meter_replacement_same_day_is_not_deduplicated_across_meters() -> None:

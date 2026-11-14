@@ -47,6 +47,7 @@ from .models import (
     daily_summary,
     invoice_for_month,
     latest_reading,
+    month_cost_estimate,
     month_over_month,
     monthly_summary,
     next_outage,
@@ -410,6 +411,29 @@ def _comparisons(snapshot: Snapshot, as_of: date) -> dict[str, Any]:
     }
 
 
+def _estimated_cost(snapshot: Snapshot, as_of: date) -> dict[str, Any] | None:
+    estimate = month_cost_estimate(
+        snapshot.measurement_points,
+        snapshot.daily,
+        snapshot.invoices,
+        snapshot.paid_invoices,
+        as_of.year,
+        as_of.month,
+        as_of - timedelta(days=1),
+    )
+    if estimate is None:
+        return None
+    return {
+        "amount": _number(estimate.amount),
+        "energy_kwh": _number(estimate.energy),
+        "unit_price": _number(estimate.unit_price),
+        "through_date": estimate.through.isoformat(),
+        "last_data_date": estimate.last_day.isoformat(),
+        "price_period": f"{estimate.price_period[0]:04d}-{estimate.price_period[1]:02d}",
+        "provisional": True,
+    }
+
+
 def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
     as_of = _now()
     result: dict[str, Any] = {
@@ -428,10 +452,12 @@ def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
         "outage_count": len(snapshot.outages),
         "next_outage": None,
         "comparisons": {"as_of": as_of.isoformat(), "points": [], "monthly": []},
+        "estimated_cost": None,
     }
     if not available:
         return result
     result["comparisons"] = _comparisons(snapshot, as_of)
+    result["estimated_cost"] = _estimated_cost(snapshot, as_of)
     result["info"] = _info_dto(snapshot.info)
     result["contracts"] = _contracts(snapshot.contracts)
     result["banks"] = _banks(snapshot.banks)

@@ -97,6 +97,9 @@
       "latest_invoice_status": {
         "name": "Latest invoice status"
       },
+      "estimated_month_cost": {
+        "name": "Estimated current month cost through yesterday"
+      },
       "paid_invoice_count": {
         "name": "Paid invoice count"
       },

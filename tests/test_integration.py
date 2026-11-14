@@ -404,7 +404,7 @@ def test_real_homeassistant_types_and_identity() -> None:
     )
     assert DOMAIN == "evn_cskh"
     assert NAME == "EVN CSKH"
-    assert VERSION == "0.8.0"
+    assert VERSION == "0.9.0"
     assert MIN_HA_VERSION == "2025.12"
     assert PLATFORMS == (Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR)
     assert binary_sensor.PLATFORMS is PLATFORMS
@@ -501,6 +501,7 @@ def test_complete_translations() -> None:
         "invoice_this_period": "Kỳ này",
         "invoice_prev_period": "Kỳ trước",
         "invoice_prev_prev_period": "Kỳ trước nữa",
+        "estimated_month_cost": "Tiền điện tháng này (ước tính đến hôm qua)",
         "consumption_this_period": "Tiêu thụ kỳ này",
         "consumption_prev_period": "Tiêu thụ kỳ trước",
         "consumption_prev_prev_period": "Tiêu thụ kỳ trước nữa",
@@ -1193,10 +1194,10 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
     await sensor.async_setup_entry(hass, entry, add)
     add.assert_called_once()
     entities: list[EvnSensor] = add.call_args.args[0]
-    assert len(entities) == 94
-    assert len({entity.unique_id for entity in entities}) == 94
+    assert len(entities) == 96
+    assert len({entity.unique_id for entity in entities}) == 96
     assert len(POINT_SENSORS) == 13
-    assert len(CUSTOMER_SENSORS) == 21
+    assert len(CUSTOMER_SENSORS) == 22
     assert (
         len(
             {
@@ -1228,6 +1229,7 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
         ("outstanding_count", None): 1,
         ("latest_invoice_amount", None): 9999999.0,
         ("latest_invoice_status", None): "Chưa thanh toán",
+        ("estimated_month_cost", None): 2800000.0,
         ("paid_invoice_count", None): 1,
         ("next_outage", None): datetime(2099, 10, 8, 8, tzinfo=LOCAL),
         ("next_outage_end", None): datetime(2099, 10, 8, 10, tzinfo=LOCAL),
@@ -1307,6 +1309,9 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "energy_unit",
             "paid_date",
             "status_label",
+            "through_date",
+            "unit_price",
+            "price_period",
             "org_code",
             "payment_channel_label",
             "customer_name",
@@ -1376,7 +1381,11 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
                 )
                 assert attributes["kind"] == "KT"
                 assert attributes["period"] == expected[("meter_read_date", point)]
-        elif key in ("outstanding_amount", "latest_invoice_amount"):
+        elif key in (
+            "outstanding_amount",
+            "latest_invoice_amount",
+            "estimated_month_cost",
+        ):
             assert entity.device_class is SensorDeviceClass.MONETARY
             assert entity.native_unit_of_measurement == "VND"
             assert entity.state_class is None
@@ -1389,6 +1398,13 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
                 assert attributes["payment_channel_label"] == "Synthetic Bank"
                 assert attributes["paid_date"] is None
                 assert attributes["due_date"] is None
+            if key == "estimated_month_cost":
+                assert attributes["target_date"] == "2026-10-06"
+                assert attributes["through_date"] == "2026-10-06"
+                assert attributes["energy"] == pytest.approx(3.5)
+                assert attributes["unit_price"] == pytest.approx(799999.92)
+                assert attributes["price_period"] == "2026-10"
+                assert attributes["provisional"] is True
         elif key in ("next_outage", "next_outage_end", "fetched_at"):
             assert entity.device_class is SensorDeviceClass.TIMESTAMP
             assert entity.native_unit_of_measurement is None
@@ -1477,6 +1493,7 @@ async def test_empty_and_uncertain_data_not_fabricated(
     assert states[("outstanding_count", None)] == 0
     assert states[("latest_invoice_amount", None)] is None
     assert states[("latest_invoice_status", None)] is None
+    assert states[("estimated_month_cost", None)] is None
     assert states[("paid_invoice_count", None)] == 0
     assert states[("next_outage", None)] is None
     assert all(entity.available for entity in entities)
@@ -1493,7 +1510,7 @@ async def test_empty_and_uncertain_data_not_fabricated(
         if entity.extra_state_attributes.get(
             "measurement_point"
         ) == "POINT-A" or entity.entity_description.key.startswith(
-            ("outstanding", "latest_invoice")
+            ("outstanding", "latest_invoice", "estimated_month")
         ):
             assert entity.native_value is None
             assert entity.available
@@ -1762,6 +1779,10 @@ async def test_native_ha_state_serialization_translation_and_unavailability(
             assert calculated.state == "9999999.0"
             assert attributes["unit_of_measurement"] == "VND"
             assert attributes["device_class"] == "monetary"
+        elif key == "estimated_month_cost":
+            assert calculated.state == "2800000"
+            assert attributes["unit_of_measurement"] == "VND"
+            assert attributes["device_class"] == "monetary"
     coordinator.data[customer_key(customers[0])].outages = []
     outage = next(
         entity for entity in entities if entity.entity_description.key == "next_outage"
@@ -1909,10 +1930,10 @@ async def test_binary_platform_states_identity_and_unavailability(
     entities = add.call_args.args[0]
     sensors = collect_sensor(coordinator, entry)
     buttons = collect_button(coordinator, entry)
-    assert len(sensors) == 94
+    assert len(sensors) == 96
     assert len(buttons) == 2
     assert len(entities) == 6
-    assert len({entity.unique_id for entity in [*sensors, *buttons, *entities]}) == 102
+    assert len({entity.unique_id for entity in [*sensors, *buttons, *entities]}) == 104
     for index, customer in enumerate(customers):
         scheduled, soon, active = entities[index * 3 : index * 3 + 3]
         for entity in (scheduled, soon, active):

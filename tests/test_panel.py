@@ -799,6 +799,7 @@ async def test_overview_cached_refresh_and_unavailable(
         "outage_count": 2,
         "next_outage": None,
         "comparisons": {"as_of": "2026-10-07", "points": [], "monthly": []},
+        "estimated_cost": None,
     }
 
 
@@ -1416,6 +1417,7 @@ async def test_overview_directory_info_and_caps(
         "outage_count",
         "next_outage",
         "comparisons",
+        "estimated_cost",
     }
     assert result["comparisons"] == expected_comparisons()
     assert result["customer"] == panel._customer_dto(make_snapshot())
@@ -1809,6 +1811,32 @@ def test_comparison_calendar_uses_vietnam_now_not_fetch_time(
     assert [row["provisional"] for row in result["monthly"]] == [False, False, True]
     assert all(row["provisional"] is True for row in result["points"][0]["daily"])
     json.dumps(result, allow_nan=False)
+
+
+def test_overview_estimated_cost_through_yesterday() -> None:
+    snapshot = make_snapshot()
+    snapshot.invoices = [invoice_row()]
+    snapshot.paid_invoices = []
+    result = panel._overview(snapshot, True)["estimated_cost"]
+    assert result == {
+        "amount": 22.0,
+        "energy_kwh": 2.5,
+        "unit_price": 8.8,
+        "through_date": "2026-10-06",
+        "last_data_date": "2026-10-06",
+        "price_period": "2026-09",
+        "provisional": True,
+    }
+
+
+def test_overview_estimated_cost_needs_daily_data_and_invoice_price() -> None:
+    snapshot = make_snapshot()
+    snapshot.daily = {}
+    assert panel._overview(snapshot, True)["estimated_cost"] is None
+    snapshot = make_snapshot()
+    snapshot.invoices = [invoice_row(TONG_TIEN=None)]
+    snapshot.paid_invoices = []
+    assert panel._overview(snapshot, True)["estimated_cost"] is None
 
 
 @pytest.mark.parametrize("available", [False, True])

@@ -122,6 +122,7 @@ NAMES = {
         "outstanding_count": "Outstanding invoice count",
         "latest_invoice_amount": "Latest invoice amount",
         "latest_invoice_status": "Latest invoice status",
+        "estimated_month_cost": "Estimated current month cost through yesterday",
         "paid_invoice_count": "Paid invoice count",
         "next_outage": "Next scheduled outage",
         "next_outage_end": "Scheduled restoration time",
@@ -158,6 +159,7 @@ NAMES = {
         "outstanding_count": "Số hóa đơn chưa thanh toán",
         "latest_invoice_amount": "Số tiền hóa đơn gần nhất",
         "latest_invoice_status": "Trạng thái hóa đơn gần nhất",
+        "estimated_month_cost": "Tiền điện tháng này (ước tính đến hôm qua)",
         "paid_invoice_count": "Số hóa đơn đã thanh toán",
         "next_outage": "Lịch ngừng cấp điện tiếp theo",
         "next_outage_end": "Giờ cấp điện lại (dự kiến)",
@@ -235,6 +237,9 @@ PUBLIC_ATTRIBUTES = {
     "energy_unit",
     "paid_date",
     "status_label",
+    "unit_price",
+    "price_period",
+    "through_date",
     "org_code",
     "payment_channel_label",
     "customer_name",
@@ -776,6 +781,15 @@ async def test_installed_loader_setup_and_sensor_states(
     )
     assert states["latest_invoice_status"].state == "Chưa thanh toán"
     assert "unit_of_measurement" not in states["latest_invoice_status"].attributes
+    assert states["estimated_month_cost"].state == "12500"
+    assert states["estimated_month_cost"].attributes["device_class"] == "monetary"
+    assert states["estimated_month_cost"].attributes["unit_of_measurement"] == "VND"
+    assert states["estimated_month_cost"].attributes["target_date"] == "2026-10-06"
+    assert states["estimated_month_cost"].attributes["through_date"] == "2026-10-06"
+    assert states["estimated_month_cost"].attributes["energy"] == 1.25
+    assert states["estimated_month_cost"].attributes["unit_price"] == 10000.0
+    assert states["estimated_month_cost"].attributes["price_period"] == "2026-10"
+    assert states["estimated_month_cost"].attributes["provisional"] is True
     assert states["paid_invoice_count"].state == "1"
     assert rows["paid_invoice_count"].entity_category is EntityCategory.DIAGNOSTIC
     assert states["fetched_at"].attributes["customer_name"] == INFO["tenKhang"]
@@ -802,7 +816,7 @@ async def test_installed_loader_setup_and_sensor_states(
     assert button_state.attributes["friendly_name"] == (
         f"{device.name} {BUTTON_NAMES[language]}"
     )
-    assert len(NAMES["en"]) == 34
+    assert len(NAMES["en"]) == 35
     expected_new = {
         "current_provisional_index": "1012.5",
         "previous_cycle_final_index": STATE_UNKNOWN,
@@ -814,6 +828,7 @@ async def test_installed_loader_setup_and_sensor_states(
         "invoice_this_period": "125000.0",
         "invoice_prev_period": "500000.0",
         "invoice_prev_prev_period": STATE_UNKNOWN,
+        "estimated_month_cost": "12500",
         "consumption_this_period": "12.5",
         "consumption_prev_period": "900.0",
         "consumption_prev_prev_period": STATE_UNKNOWN,
@@ -1544,7 +1559,7 @@ async def test_runtime_actual_daily_schema_unknown_zero_and_month_gap(
     assert states["invoice_this_period"].state == "0.0"
     assert states["current_provisional_index"].state == "100.0"
     identity = registry_identity(hass, entry)
-    assert len({values[1] for values in identity.values()}) == 38
+    assert len({values[1] for values in identity.values()}) == 39
 
 
 @pytest.mark.asyncio

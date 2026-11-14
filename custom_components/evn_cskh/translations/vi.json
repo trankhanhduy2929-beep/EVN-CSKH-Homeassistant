@@ -97,6 +97,9 @@
       "latest_invoice_status": {
         "name": "Trạng thái hóa đơn gần nhất"
       },
+      "estimated_month_cost": {
+        "name": "Tiền điện tháng này (ước tính đến hôm qua)"
+      },
       "paid_invoice_count": {
         "name": "Số hóa đơn đã thanh toán"
       },

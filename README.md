@@ -9,7 +9,8 @@ khiển trong sidebar để xem điện năng, chỉ số công tơ, hóa đơn 
 - **Sensor theo điểm đo:** sản lượng tháng gần nhất/trước đó, % thay đổi,
   trung bình 12 tháng, chỉ số công tơ, hệ số nhân, ngày ghi.
 - **Sensor theo khách hàng:** tiền và số hóa đơn chưa thanh toán, hóa đơn gần
-  nhất, số hóa đơn đã trả, lịch ngừng điện, lần cập nhật gần nhất.
+  nhất, số hóa đơn đã trả, tiền điện tháng hiện tại ước tính đến hôm qua, lịch
+  ngừng điện, lần cập nhật gần nhất.
 - **Sensor chi tiết:** tiêu thụ hôm nay/hôm qua/hôm kia, chỉ số tạm chốt, chỉ số
   cuối kỳ trước, tiền và điện năng ba kỳ gần nhất, hóa đơn năm nay.
 - **Lịch ngừng điện:** binary sensor lịch sắp tới, đang diễn ra, sắp bắt đầu
@@ -50,9 +51,10 @@ Yêu cầu **Home Assistant 2025.12 trở lên**. Chu kỳ cập nhật mặc đ
 
 ### Tổng quan
 
-Hiển thị điện năng tháng này, mức tăng/giảm, khoản cần xử lý, KPI, so sánh
-ngày/tháng và biểu đồ sản lượng, chi phí. Dữ liệu 5 năm được tải tự động, không
-cần bấm nút. Chọn **Cột** hoặc **Sóng** để đổi kiểu biểu đồ tháng/năm.
+Hiển thị điện năng tháng này, mức tăng/giảm, khoản cần xử lý, KPI (gồm **Ước
+tính tháng này**), so sánh ngày/tháng và biểu đồ sản lượng, chi phí. Dữ liệu 5
+năm được tải tự động, không cần bấm nút. Chọn **Cột** hoặc **Sóng** để đổi kiểu
+biểu đồ tháng/năm.
 
 ### Điện năng
 
@@ -80,6 +82,10 @@ bộ chỉ số.
 
 - Ngày/tháng EVN chưa công bố được giữ **unknown**, không đổi thành 0.
 - Tháng hiện tại có thể là số **tạm tính** từ các ngày đã có.
+- **Ước tính tháng này** = điện năng các ngày đã có trong tháng đến hết hôm qua
+  × đơn giá bình quân của hóa đơn gần nhất có đủ tiền và điện năng. Đây là ước
+  tính, không phải hóa đơn chính thức; thiếu dữ liệu ngày hoặc hóa đơn thì giữ
+  unknown.
 - “Kỳ này/trước/trước nữa” theo nhãn tháng EVN trả về, không phải ngày đầu/cuối
   tháng lịch.
 - Hóa đơn chưa có của tháng hiện tại là unknown, không phải hóa đơn 0 đồng.

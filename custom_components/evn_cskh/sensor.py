@@ -21,6 +21,7 @@ from .api import Customer, Snapshot
 from .const import customer_device_info, scope_id
 from .coordinator import EvnConfigEntry, EvnCoordinator, customer_key
 from .models import (
+    CostEstimate,
     PeriodUsage,
     customer_month_energy,
     daily_consumption_on,
@@ -31,6 +32,7 @@ from .models import (
     latest_daily_index,
     latest_invoice,
     latest_reading,
+    month_cost_estimate,
     month_label,
     month_over_month,
     monthly_summary,
@@ -174,6 +176,13 @@ CUSTOMER_SENSORS = (
         key="latest_invoice_status",
         translation_key="latest_invoice_status",
         icon="mdi:check-decagram",
+    ),
+    SensorEntityDescription(
+        key="estimated_month_cost",
+        translation_key="estimated_month_cost",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="VND",
+        icon="mdi:cash-clock",
     ),
     SensorEntityDescription(
         key="paid_invoice_count",
@@ -472,6 +481,21 @@ def _customer_current_month_energy(
     return _customer_daily_month_energy(snapshot, period)
 
 
+def _month_cost_estimate(snapshot: Snapshot) -> CostEstimate | None:
+    today = vn_now()
+    if not isinstance(today, date):
+        return None
+    return month_cost_estimate(
+        snapshot.measurement_points,
+        snapshot.daily,
+        snapshot.invoices,
+        snapshot.paid_invoices,
+        today.year,
+        today.month,
+        today - timedelta(days=1),
+    )
+
+
 def _next_update(coordinator: EvnCoordinator) -> datetime | None:
     candidate = getattr(coordinator, "next_iteration", None)
     if (
@@ -598,6 +622,9 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                 if pair is None:
                     return None
                 return _text(pair[0].get("status_label"), 128) or None
+            case "estimated_month_cost":
+                estimate = _month_cost_estimate(snapshot)
+                return round(estimate.amount) if estimate is not None else None
             case "paid_invoice_count":
                 return len(snapshot.paid_invoices)
             case "next_outage":
@@ -881,6 +908,21 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
             )
         elif key == "latest_invoice_amount":
             attributes.update(self._invoice_attributes(snapshot))
+        elif key == "estimated_month_cost":
+            estimate = _month_cost_estimate(snapshot)
+            if estimate is not None:
+                attributes.update(
+                    {
+                        "target_date": estimate.through.isoformat(),
+                        "through_date": estimate.last_day.isoformat(),
+                        "target_month": f"{estimate.through.year:04d}-{estimate.through.month:02d}",
+                        "energy": estimate.energy,
+                        "unit_price": estimate.unit_price,
+                        "price_period": f"{estimate.price_period[0]:04d}-{estimate.price_period[1]:02d}",
+                        "source": "diennangngay+latest_invoice_average",
+                        "provisional": True,
+                    }
+                )
         elif key == "fetched_at":
             attributes.update(self._info_attributes(snapshot))
         return attributes

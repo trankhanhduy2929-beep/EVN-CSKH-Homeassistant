@@ -43,6 +43,16 @@ class Outage:
     reason: str
 
 
+@dataclass(frozen=True, slots=True)
+class CostEstimate:
+    amount: float
+    energy: float
+    unit_price: float
+    through: date
+    last_day: date
+    price_period: tuple[int, int]
+
+
 def _number(value: Any) -> float | None:
     if isinstance(value, bool):
         return None
@@ -734,6 +744,43 @@ def latest_invoice(records: Any) -> dict[str, Any] | None:
     return _normalized_invoice(selected[1])
 
 
+def invoice_unit_price(active: Any, paid: Any) -> tuple[float, tuple[int, int]] | None:
+    if not isinstance(active, list) or not isinstance(paid, list):
+        return None
+    selected: tuple[float, tuple[int, int]] | None = None
+    for rows in (active, paid):
+        for record in rows:
+            if not isinstance(record, dict):
+                continue
+            year = _integer(record.get("NAM"))
+            month = _integer(record.get("THANG"))
+            if (
+                year is None
+                or month is None
+                or not (1 <= year <= 9999 and 1 <= month <= 12)
+            ):
+                continue
+            period = (year, month)
+            if selected is not None and period <= selected[1]:
+                continue
+            invoice = _normalized_invoice(record)
+            if invoice is None:
+                continue
+            amount = invoice.get("amount")
+            energy = invoice.get("energy")
+            if (
+                not isinstance(amount, (int, float))
+                or isinstance(amount, bool)
+                or not isinstance(energy, (int, float))
+                or isinstance(energy, bool)
+                or amount <= 0
+                or energy <= 0
+            ):
+                continue
+            selected = (amount / energy, period)
+    return selected
+
+
 def month_label(day: date) -> str:
     if type(day) is not date:
         return ""
@@ -782,6 +829,53 @@ def daily_consumption_on(
     return usage.value if usage is not None else None
 
 
+def _daily_energy_between(
+    daily_records: list[dict[str, Any]],
+    start: date,
+    end: date,
+    *,
+    skip_over_end: bool,
+) -> tuple[float, date] | None:
+    if not isinstance(daily_records, list) or not daily_records:
+        return None
+    seen: dict[tuple[Any, ...], dict[str, Any]] = {}
+    last_day: date | None = None
+    for record in daily_records:
+        if not isinstance(record, dict):
+            return None
+        interval = _interval(record)
+        if interval is None:
+            return None
+        if interval[1] < start or interval[0] > end:
+            continue
+        if interval[0] < start:
+            return None
+        if interval[1] > end:
+            if skip_over_end:
+                continue
+            return None
+        meter = record.get("SO_CTO")
+        register = record.get("BCS")
+        if meter is not None and not _valid_id(meter):
+            return None
+        if not isinstance(register, str) or register not in _TARIFF_REGISTERS | {"KT"}:
+            return None
+        if not _remember(seen, (meter, register, interval[0], interval[1]), record):
+            return None
+        if last_day is None or interval[1] > last_day:
+            last_day = interval[1]
+    values: list[float] = []
+    for record in seen.values():
+        value = _number(record.get("DIEN_TTHU"))
+        if value is None:
+            return None
+        values.append(value)
+    total = _total(values)
+    if total is None or last_day is None:
+        return None
+    return total, last_day
+
+
 def daily_month_energy(
     daily_records: list[dict[str, Any]], year: int, month: int
 ) -> float | None:
@@ -795,32 +889,28 @@ def daily_month_energy(
         return None
     start = date(year, month, 1)
     end = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
-    seen: dict[tuple[Any, ...], dict[str, Any]] = {}
-    for record in daily_records:
-        if not isinstance(record, dict):
-            return None
-        interval = _interval(record)
-        if interval is None:
-            return None
-        if interval[1] < start or interval[0] > end:
-            continue
-        if interval[0] < start or interval[1] > end:
-            return None
-        meter = record.get("SO_CTO")
-        register = record.get("BCS")
-        if meter is not None and not _valid_id(meter):
-            return None
-        if not isinstance(register, str) or register not in _TARIFF_REGISTERS | {"KT"}:
-            return None
-        if not _remember(seen, (meter, register, interval[0], interval[1]), record):
-            return None
-    values: list[float] = []
-    for record in seen.values():
-        value = _number(record.get("DIEN_TTHU"))
-        if value is None:
-            return None
-        values.append(value)
-    return _total(values) if values else None
+    result = _daily_energy_between(daily_records, start, end, skip_over_end=False)
+    return result[0] if result is not None else None
+
+
+def daily_month_energy_through(
+    daily_records: list[dict[str, Any]], year: int, month: int, through: date
+) -> float | None:
+    if (
+        not isinstance(daily_records, list)
+        or not daily_records
+        or type(year) is not int
+        or type(month) is not int
+        or not (1 <= year <= 9999 and 1 <= month <= 12)
+        or type(through) is not date
+    ):
+        return None
+    start = date(year, month, 1)
+    end = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
+    if not start <= through <= end:
+        return None
+    result = _daily_energy_between(daily_records, start, through, skip_over_end=True)
+    return result[0] if result is not None else None
 
 
 def latest_cycle_index(
@@ -1127,3 +1217,70 @@ def customer_month_energy(
             return None
         values.append(value)
     return _total(values)
+
+
+def month_cost_estimate(
+    points: list[dict[str, Any]],
+    daily: dict[str, list[dict[str, Any]]],
+    active: Any,
+    paid: Any,
+    year: int,
+    month: int,
+    through: date,
+) -> CostEstimate | None:
+    if (
+        not isinstance(points, list)
+        or not points
+        or not isinstance(daily, dict)
+        or type(year) is not int
+        or type(month) is not int
+        or not (1 <= year <= 9999 and 1 <= month <= 12)
+        or type(through) is not date
+    ):
+        return None
+    start = date(year, month, 1)
+    end = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
+    if not start <= through <= end:
+        return None
+    price = invoice_unit_price(active, paid)
+    if price is None:
+        return None
+    codes: list[str] = []
+    for point in points:
+        code = point.get("MA_DDO") if isinstance(point, dict) else None
+        if not isinstance(code, str) or not _valid_id(code):
+            return None
+        if code not in codes:
+            codes.append(code)
+    values: list[float] = []
+    last_day: date | None = None
+    for code in codes:
+        rows = daily.get(code, [])
+        if not isinstance(rows, list):
+            return None
+        result = _daily_energy_between(
+            rows,
+            start,
+            through,
+            skip_over_end=True,
+        )
+        if result is None:
+            return None
+        value, day = result
+        values.append(value)
+        if last_day is None or day > last_day:
+            last_day = day
+    energy = _total(values)
+    if energy is None or last_day is None:
+        return None
+    amount = energy * price[0]
+    if not isfinite(amount):
+        return None
+    return CostEstimate(
+        amount=amount,
+        energy=energy,
+        unit_price=price[0],
+        through=through,
+        last_day=last_day,
+        price_period=price[1],
+    )

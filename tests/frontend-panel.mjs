@@ -95,6 +95,15 @@ const data = {
       }
     ],
     outstanding: { amount: 1640000, count: 2 },
+    estimated_cost: {
+      amount: 123500,
+      energy_kwh: 41.2,
+      unit_price: 2997.57,
+      through_date: "2026-10-06",
+      last_data_date: "2026-10-06",
+      price_period: "2026-09",
+      provisional: true
+    },
     invoices: [
       invoice("disp-a1", "09/2026", 9, 1520000, 138000, 0, "DATT", "Đã thanh toán", "20/09/2026", "25/09/2026", 873, "VCB", "Quầy VCB", []),
       invoice("disp-a2", "10/2026", 10, 120000, 11000, 120000, "CHUATT", "Chưa thanh toán", "", "25/10/2026", 60.25, "TCB", "", [])
@@ -386,10 +395,20 @@ async function main() {
       const bottom = root.querySelector(".overview-bottom");
       return Boolean(top && hero && !hero.textContent.includes("Chỉ số mới nhất") && !hero.textContent.includes("TB 12 tháng") && top.querySelector(".action-card") && kpis && top.nextElementSibling === kpis && kpis.nextElementSibling === bottom && bottom.querySelectorAll("[data-chart]").length === 1);
     }));
-    check("overview KPI four items", await page.evaluate(() => {
+    check("overview KPI five items", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const items = [...root.querySelectorAll(".kpi-strip .kpi")].map(item => item.textContent);
-      return items.length === 4 && items[0].includes("Chỉ số mới nhất") && items[1].includes("Trung bình 12 tháng") && items[2].includes("Hôm qua") && items[2].includes("18,12 kWh") && items[3].includes("Hóa đơn gần nhất") && items[3].includes("120.000") && items[3].includes("Chưa thanh toán");
+      return items.length === 5 && items[0].includes("Chỉ số mới nhất") && items[1].includes("Trung bình 12 tháng") && items[2].includes("Hôm qua") && items[2].includes("18,12 kWh") && items[3].includes("Ước tính tháng này") && items[3].includes("123.500") && items[3].includes("41,2 kWh") && items[4].includes("Hóa đơn gần nhất") && items[4].includes("120.000") && items[4].includes("Chưa thanh toán");
+    }));
+    check("overview estimated cost unknown not zero", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const original = panel._overview;
+      panel._overview = { ...original, estimated_cost: null };
+      panel._render();
+      const text = panel.shadowRoot.querySelectorAll(".kpi-strip .kpi")[3].textContent;
+      panel._overview = original;
+      panel._render();
+      return text.includes("Ước tính tháng này") && text.includes("Chưa đủ dữ liệu") && !text.includes("0 ₫");
     }));
     const dailyChart = await chartSnapshot(page, "overview-comparison");
     check("daily comparison labels dates values", dailyChart.columns.map(column => column.label).join() === "Hôm kia,Hôm qua,Hôm nay" && dailyChart.columns[0].value === "34,76" && dailyChart.columns[1].value === "0" && dailyChart.columns[2].value === "Chưa có");
