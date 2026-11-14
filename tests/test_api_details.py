@@ -2088,6 +2088,40 @@ async def test_snapshot_bank_directory_is_optional_and_never_latches(
     session.done()
 
 
+async def test_snapshot_contract_failure_falls_back_without_leaking_other_owner() -> (
+    None
+):
+    person = api.Customer(
+        PERSON.code, PERSON.management_unit, PERSON.name, "OFFLINE-CONTRACT"
+    )
+    session = Session(
+        Reply(
+            [
+                {
+                    "maKhang": person.code,
+                    "maDviqly": person.management_unit,
+                    "tenKhang": person.name,
+                    "maHdong": person.contract,
+                    "diaChi": "Offline address",
+                }
+            ]
+        ),
+        config(),
+        *snapshot_replies(person),
+    )
+    session.replies[8] = Reply([owned(OTHER) | {"MA_HDONG": "OTHER-CONTRACT"}])
+    snapshot = await client_for(session).fetch_snapshot(person)
+    assert snapshot.contracts == [
+        {
+            "MA_HDONG": "OFFLINE-CONTRACT",
+            "DUONG_PHO": "Offline address",
+            "MA_DVIQLY": person.management_unit,
+        }
+    ]
+    assert OTHER.code not in repr(snapshot.contracts)
+    session.done()
+
+
 @pytest.mark.parametrize(
     ("index", "path"),
     [
@@ -2096,7 +2130,6 @@ async def test_snapshot_bank_directory_is_optional_and_never_latches(
         (5, "/api/evn/tracuu/diennangngay"),
         (6, "/api/evn/tracuu/chisothang"),
         (7, "/api/evn/tracuu/chisongay"),
-        (8, "/api/evn/customers/info"),
         (9, "/api/evn/tracuu/hoadon"),
         (10, "/api/evn/tracuu/lichsu-hoadon"),
         (12, "/api/evn/tracuu/ngungcapdien"),
@@ -2127,7 +2160,7 @@ async def test_snapshot_every_required_section_is_ownership_checked(
 
 @pytest.mark.parametrize(
     "index",
-    [3, 4, 8, 9, 10, 12],
+    [3, 4, 9, 10, 12],
 )
 @pytest.mark.parametrize("status", [403, 503, 302, 417])
 async def test_snapshot_required_section_failure_aborts(

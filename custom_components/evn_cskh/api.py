@@ -265,6 +265,43 @@ def _owned_rows(
     return rows
 
 
+def _fallback_contracts(
+    customer: Customer, info: dict[str, Any], points: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    candidates: list[tuple[Any, Any, Any]] = [
+        (customer.contract, info.get("diaChi"), customer.management_unit)
+    ]
+    candidates.extend(
+        (point.get("MA_HDONG"), point.get("DIA_CHI"), point.get("MA_DVIQLY"))
+        for point in points
+        if isinstance(point, dict)
+    )
+    for number, address, unit in candidates:
+        try:
+            contract_number = _string(number)
+            management_unit = _string(unit)
+        except EvnResponseError:
+            continue
+        try:
+            street = "" if address is None else _string(address, empty=True)
+        except EvnResponseError:
+            street = ""
+        key = (contract_number, management_unit)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(
+            {
+                "MA_HDONG": contract_number,
+                "DUONG_PHO": street,
+                "MA_DVIQLY": management_unit,
+            }
+        )
+    return result
+
+
 def _invoice_id(value: Any) -> str:
     if type(value) is int and 0 < value < 10**128:
         return str(value)
@@ -620,6 +657,33 @@ class EvnClient:
             _LOGGER.info("EVN endpoint %s is available again", path)
         return _owned_rows(data, customer, point)
 
+    async def _optional_owned_rows_locked(
+        self, base: str, path: str, customer: Customer
+    ) -> list[dict[str, Any]]:
+        if self._tokens is None or self._auth_failed:
+            return []
+        try:
+            rows = _owned_rows(
+                await self._send(
+                    "GET",
+                    _join_url(base, path),
+                    access_token=self._tokens.access_token,
+                ),
+                customer,
+            )
+        except EvnError:
+            if path not in self._degraded:
+                self._degraded.add(path)
+                _LOGGER.warning(
+                    "EVN endpoint %s is unavailable; continuing with reduced data",
+                    path,
+                )
+            return []
+        if path in self._degraded:
+            self._degraded.discard(path)
+            _LOGGER.info("EVN endpoint %s is available again", path)
+        return rows
+
     async def _optional_rows_locked(self, base: str, path: str) -> list[dict[str, Any]]:
         if self._tokens is None or self._auth_failed:
             return []
@@ -800,12 +864,11 @@ class EvnClient:
                     customer,
                     point,
                 )
-            contracts = _owned_rows(
-                await self._authenticated_locked(
-                    "GET", base, "/api/evn/customers/info"
-                ),
-                customer,
+            contracts = await self._optional_owned_rows_locked(
+                base, "/api/evn/customers/info", customer
             )
+            if not contracts:
+                contracts = _fallback_contracts(customer, info, points)
             invoices = _owned_rows(
                 await self._authenticated_locked(
                     "POST", base, "/api/evn/tracuu/hoadon"

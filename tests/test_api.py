@@ -1172,7 +1172,14 @@ async def test_empty_measurement_points_are_valid(
     assert snapshot.measurement_points == snapshot.invoices == snapshot.outages == []
     assert snapshot.monthly == snapshot.daily == {}
     assert snapshot.monthly_readings == snapshot.daily_readings == {}
-    assert snapshot.contracts == snapshot.paid_invoices == snapshot.banks == []
+    assert snapshot.contracts == [
+        {
+            "MA_HDONG": customer().contract,
+            "DUONG_PHO": "",
+            "MA_DVIQLY": customer().management_unit,
+        }
+    ]
+    assert snapshot.paid_invoices == snapshot.banks == []
     assert snapshot.info == contract()
     session.done()
 
@@ -1267,7 +1274,7 @@ async def test_measurement_point_mismatches_fail(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("stage", [1, 2, 6, 7, 8, 10])
+@pytest.mark.parametrize("stage", [1, 2, 7, 8, 10])
 async def test_any_required_regional_failure_aborts_snapshot(
     identity: dict[str, str], tokens: Any, stage: int
 ) -> None:
@@ -1302,6 +1309,49 @@ async def test_optional_daily_regional_failure_degrades(
     assert point_data[stage - 3]["POINT-1"] == []
     assert snapshot.monthly["POINT-1"]
     assert snapshot.invoices
+    assert "unavailable" in caplog.text
+    session.done()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [401, 403, 417, 503, 302])
+async def test_optional_contract_regional_failure_degrades_and_recovers(
+    identity: dict[str, str],
+    tokens: Any,
+    status: int,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    access = secrets.token_urlsafe(24)
+    owner = {
+        "MA_KHANG": customer().code,
+        "MA_DVIQLY": customer().management_unit,
+    }
+    first = snapshot_replies(customer(), access)
+    first[6] = Reply(status=status)
+    second = snapshot_replies(customer(), access)
+    second[6] = Reply([owner | {"MA_HDONG": "CONTRACT-2", "DUONG_PHO": "Street"}])
+    session = Session(Reply([contract()]), config(), *first, *second)
+    client = make_client(session, identity, tokens=tokens)
+    with caplog.at_level("WARNING", logger=api.__name__):
+        snapshot = await client.fetch_snapshot(customer())
+    assert snapshot.contracts == [
+        {
+            "MA_HDONG": customer().contract,
+            "DUONG_PHO": "",
+            "MA_DVIQLY": customer().management_unit,
+        }
+    ]
+    assert snapshot.invoices and snapshot.outages
+    recovered = await client.fetch_snapshot(customer())
+    assert recovered.contracts == [
+        {
+            "MA_HDONG": "CONTRACT-2",
+            "DUONG_PHO": "Street",
+            "MA_KHANG": customer().code,
+            "MA_DVIQLY": customer().management_unit,
+        }
+    ]
+    assert not any(call["url"].endswith("/auth/refresh") for call in session.calls)
     assert "unavailable" in caplog.text
     session.done()
 
