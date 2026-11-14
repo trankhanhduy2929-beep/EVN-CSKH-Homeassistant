@@ -451,6 +451,23 @@ async function main() {
       const yearColumns = yearly ? [...yearly.querySelectorAll(".chart-column")].map(column => column.dataset.period).join() : "";
       return monthlyColumns === 12 && dailyColumns === 4 && yearColumns === "2025,2026" && /Tổng 12 tháng mỗi năm/.test(yearly.textContent) && /Năm chưa đủ 12 tháng: 2025: 3\/12 tháng, 2026: 9\/12 tháng/.test(root.querySelector(".overview-usage").textContent);
     }));
+    check("overview cost monthly yearly charts", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const monthly = root.querySelector('[data-chart="overview-cost-monthly"]');
+      const yearly = root.querySelector('[data-chart="overview-cost-yearly"]');
+      const known = [...monthly.querySelectorAll(".chart-column")].filter(column => column.dataset.state === "known").map(column => column.dataset.period).join();
+      return monthly.querySelectorAll(".chart-column").length === 12 && known === "2026-09,2026-10" && yearly.querySelectorAll(".chart-column").length === 1 && yearly.textContent.includes("1.640.000") && yearly.querySelector(".chart-column").dataset.period === "2026";
+    }));
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("usage-style-smooth").click());
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("usage-style-smooth")?.getAttribute("aria-pressed") === "true");
+    check("usage smooth style renders line overlay", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const monthly = root.querySelector('[data-chart="overview-monthly"]');
+      const yearly = root.querySelector('[data-chart="overview-yearly"]');
+      return Boolean(monthly.querySelector(".smooth-chart svg.history-overlay")) && monthly.querySelectorAll(".history-dot").length === 11 && Boolean(yearly.querySelector(".smooth-chart svg.history-overlay")) && getComputedStyle(monthly.querySelector(".bar")).display === "none";
+    }));
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("usage-style-columns").click());
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("usage-style-columns")?.getAttribute("aria-pressed") === "true");
     await clickTab(page, 1);
     check("energy comparisons once before history", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
@@ -669,6 +686,19 @@ async function main() {
     text = await shadowText();
     check("invoice outstanding banner", text.includes("Tổng tiền còn phải trả: 1.640.000"));
     check("invoice rows rendered", await page.evaluate(() => document.getElementById("p").shadowRoot.querySelectorAll("[data-action=invoice]").length) >= 2);
+    check("invoice year cost chart all years", await page.evaluate(() => {
+      const card = document.getElementById("p").shadowRoot.querySelector('[data-chart="invoice-cost"]');
+      const columns = [...card.querySelectorAll(".chart-column")];
+      return Boolean(document.getElementById("p").shadowRoot.getElementById("invoice-year")) && card.textContent.includes("Chi phí theo năm") && columns.length === 1 && columns[0].dataset.period === "2026" && card.textContent.includes("1.640.000");
+    }));
+    await page.selectOption("#invoice-year", "2026");
+    check("invoice year filter monthly chart", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const card = root.querySelector('[data-chart="invoice-cost"]');
+      const columns = [...card.querySelectorAll(".chart-column")];
+      return card.textContent.includes("Chi phí năm 2026") && columns.length === 12 && columns.filter(column => column.dataset.state === "known").length === 2 && root.querySelectorAll(".invoice-table tbody [data-action=invoice]").length === 2;
+    }));
+    await page.selectOption("#invoice-year", "all");
     check("paid history table", text.includes("Lịch sử thanh toán") && text.includes("App MB"));
     check("details pdf keys hidden", !text.includes("pdf-key"));
     const invoiceChart = await chartSnapshot(page, "invoice-comparison");

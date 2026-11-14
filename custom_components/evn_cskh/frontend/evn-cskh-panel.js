@@ -1,7 +1,7 @@
 const STYLE = `
 :host{display:block;min-width:0;color:var(--primary-text-color,#212121);background:var(--primary-background-color,#f4f5f7);font-family:var(--primary-font-family,inherit);font-size:14px;line-height:1.5;color-scheme:light;--evn-surface:var(--card-background-color,#fff);--evn-line:var(--divider-color,#dce0e4);--evn-muted:var(--secondary-text-color,#61666d);--evn-accent:var(--primary-color,#0b74b8);--evn-chart-1:#0b74b8;--evn-chart-2:#12a19a;--evn-chart-3:#f4a300;--evn-chart-4:#7c5cff;--evn-track-h:164px;--evn-error:var(--error-color,#db4437);--evn-success:var(--success-color,#168039);--evn-warning:var(--warning-color,#9b6511);--evn-hover:color-mix(in srgb,var(--primary-text-color,#212121) 6%,var(--evn-surface))}
 :host([dark]){color-scheme:dark;--evn-chart-1:#4aa3dd;--evn-chart-2:#3cc7bf;--evn-chart-3:#f6b733;--evn-chart-4:#a08cff}*{box-sizing:border-box;min-width:0}h1,h2,h3,p,dl,dd,figure,ul{margin:0}ul{padding:0;list-style:none}h1{font-size:20px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:16px;font-weight:600}p,dd,h2,h3{overflow-wrap:anywhere}button,input,select{font:inherit;color:inherit;max-width:100%}button,input,select{border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);min-height:40px;padding:8px 12px}button{cursor:pointer;font-weight:500;line-height:1.4}button:hover:not(:disabled):not([aria-disabled=true]){background:var(--evn-hover)}button:disabled,button[aria-disabled=true]{cursor:not-allowed;opacity:.6}button[aria-busy=true]{cursor:progress;opacity:1}button.primary{background:var(--evn-accent);border-color:transparent;color:var(--text-primary-color,#fff)}button.primary:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--evn-accent) 85%,var(--primary-text-color,#212121))}button.quiet{background:transparent;border-color:transparent}button.link{border-color:transparent;color:var(--evn-accent);background:transparent;text-align:left}button.link:hover{text-decoration:underline}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--evn-accent);outline-offset:3px}input,select{width:100%;height:40px}input[aria-invalid=true]{border-color:var(--evn-error)}label{display:block;width:fit-content;font-size:12px;font-weight:500;color:var(--evn-muted);margin-bottom:6px}svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}button.icon{display:inline-flex;align-items:center;justify-content:center;width:40px;padding:8px;flex:none;color:var(--evn-muted)}.topbar{background:var(--evn-surface);border-bottom:1px solid var(--evn-line)}.top-inner{max-width:1328px;margin:auto;padding:16px 24px;display:flex;align-items:center;gap:24px}.brand{display:flex;align-items:center;gap:12px;flex:1}.account-tools{display:flex;align-items:end;gap:12px}.account-field{width:320px}.account-tools>button{min-width:106px}#menu{display:none}:host([narrow]) #menu{display:inline-flex}.shell{max-width:1328px;margin:auto;padding:24px;display:grid;gap:20px}.intro{display:flex;align-items:start;justify-content:space-between;gap:16px}.intro h2{font-size:20px}.intro p{margin-top:4px}.muted,.meta{color:var(--evn-muted)}.meta{font-size:12px}.freshness{text-align:right;max-width:300px}.tabs{display:flex;gap:24px;border-bottom:1px solid var(--evn-line);padding:4px 4px 0}.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;min-height:48px;padding:10px 4px;color:var(--evn-muted);white-space:nowrap;flex:none}.tabs button[aria-selected=true]{border-bottom-color:var(--evn-accent);color:var(--evn-accent);font-weight:600}.stack{display:grid;gap:16px}.card{background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:14px;padding:20px;animation:evn-fade .28s ease-out both}.card-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:16px}.card-head p{margin-top:4px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{min-height:134px;display:flex;flex-direction:column;gap:8px}.metric-label{color:var(--evn-muted);font-size:13px}.metric-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric-value.compact{font-size:18px}.metric .meta{margin-top:auto}.overview-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px;align-items:start}.chart-card{min-height:340px}
-.chart{display:grid;gap:6px;margin-top:32px;position:relative}.chart-column{text-align:center;min-width:0}.track{height:var(--evn-track-h,164px);position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-chart-1);border-radius:6px 6px 0 0;transform-origin:bottom;animation:evn-bar .36s ease-out both}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.smooth-chart{column-gap:0}.smooth-chart .bar{display:none}.history-overlay{position:absolute;left:0;right:0;top:0;height:var(--evn-track-h,164px);width:100%;pointer-events:none;overflow:visible}.history-line{fill:none;stroke:var(--evn-chart-1);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1400;animation:evn-draw .6s ease-out both}.history-area{stroke:none}.history-grid{stroke:var(--evn-line);stroke-opacity:.7;stroke-width:1}.history-dot{position:absolute;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--evn-surface);border:2px solid var(--evn-chart-1);pointer-events:auto}.history-dot:hover,.history-dot:focus{background:var(--evn-chart-1)}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted);display:flex;align-items:center;gap:10px}.loading::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--evn-chart-1);opacity:.85}.loading::after{content:"";height:8px;flex:1;max-width:220px;border-radius:999px;background:linear-gradient(90deg,var(--evn-hover),color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-surface)),var(--evn-hover));background-size:200% 100%;animation:evn-shimmer 1.4s ease-out 1}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:720px}.invoice-table tbody tr{cursor:pointer}.pdf-cell{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.invoice-table .pdf-cell button{min-height:34px;padding:6px 10px;font-size:13px}button.pdf-mini{min-height:34px;padding:6px 10px;font-size:13px}.invoice-pdf-head{display:grid;gap:8px;margin-bottom:16px}.invoice-pdf-head h2{font-size:16px}.invoice-pdf-head .pdf-status{min-height:20px}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes evn-fade{from{opacity:0}to{opacity:1}}@keyframes evn-bar{from{transform:scaleY(.02)}to{transform:scaleY(1)}}@keyframes evn-bar-x{from{transform:translateX(-50%) scaleY(.02)}to{transform:translateX(-50%) scaleY(1)}}@keyframes evn-draw{from{stroke-dashoffset:1400}to{stroke-dashoffset:0}}@keyframes evn-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.chart{display:grid;gap:6px;margin-top:32px;position:relative}.chart-column{text-align:center;min-width:0}.track{height:var(--evn-track-h,164px);position:relative;margin:0 auto;max-width:32px}.bar{position:absolute;inset-inline:0;background:var(--evn-chart-1);border-radius:6px 6px 0 0;transform-origin:bottom;animation:evn-bar .36s ease-out both}.bar.current{opacity:.65}.bar-number{position:absolute;width:100%;font-size:12px;color:var(--evn-muted);line-height:20px;white-space:nowrap;display:flex;justify-content:center}.chart.daily .bar-number{display:none}.chart-label{font-size:12px;color:var(--evn-muted);padding-top:12px;margin-top:4px;border-top:1px solid var(--evn-line);white-space:nowrap}.smooth-chart{column-gap:0}.smooth-chart .bar{display:none}.history-overlay{position:absolute;left:0;right:0;top:0;height:var(--evn-track-h,164px);width:100%;pointer-events:none;overflow:visible}.history-line{fill:none;stroke:var(--evn-chart-1);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1400;animation:evn-draw .6s ease-out both}.history-area{stroke:none}.history-grid{stroke:var(--evn-line);stroke-opacity:.7;stroke-width:1}.history-dot{position:absolute;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--evn-surface);border:2px solid var(--evn-chart-1);pointer-events:auto}.history-dot:hover,.history-dot:focus{background:var(--evn-chart-1)}.stat-list{display:grid;gap:12px}.stat-list>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}.stat-list dt{color:var(--evn-muted);font-size:13px}.stat-list dd{font-weight:500;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.notice{border-top:1px solid var(--evn-line);padding-top:16px;margin-top:16px}.notice p{margin-top:8px}.notice button{margin-top:8px}.empty{padding:28px 0;color:var(--evn-muted);text-align:center;overflow-wrap:anywhere}.placeholder{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}.loading{color:var(--evn-muted);display:flex;align-items:center;gap:10px}.loading::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--evn-chart-1);opacity:.85}.loading::after{content:"";height:8px;flex:1;max-width:220px;border-radius:999px;background:linear-gradient(90deg,var(--evn-hover),color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-surface)),var(--evn-hover));background-size:200% 100%;animation:evn-shimmer 1.4s ease-out 1}.banner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px}.banner.error{border-inline-start:3px solid var(--evn-error)}.banner.warn{border-inline-start:3px solid var(--evn-warning)}.banner.ok{border-inline-start:3px solid var(--evn-success)}.banner p{max-width:75ch}.banner button{flex:none}.filters{display:grid;grid-template-columns:minmax(160px,2fr) repeat(2,minmax(140px,1fr)) auto;align-items:end;gap:12px}.filter-help{grid-column:1/-1}.filter-error{color:var(--evn-error);grid-column:1/-1}.section-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.segmented{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface)}.segmented button{border-color:transparent;min-height:32px;border-radius:8px;padding:6px 12px}.segmented button[aria-pressed=true]{background:var(--evn-hover);color:var(--evn-accent)}.table-wrap{width:100%;overflow:auto;border:1px solid var(--evn-line);border-radius:12px;background:var(--evn-surface);scrollbar-width:thin}.table-wrap:focus-visible{outline-offset:2px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;text-align:left}caption{text-align:left;padding:12px 16px;font-weight:500;color:var(--evn-muted);font-size:12px}th,td{padding:12px 16px;border-top:1px solid var(--evn-line);vertical-align:middle;overflow-wrap:anywhere}thead th{color:var(--evn-muted);font-weight:500;font-size:12px;background:var(--evn-surface);white-space:nowrap}td.number,th.number{text-align:right;white-space:nowrap}td.nowrap,th.nowrap{white-space:nowrap}.scroll-table{min-width:680px}.scroll-table tbody th{position:sticky;left:0;background:var(--evn-surface);font-weight:500;max-width:150px}.invoice-table{min-width:720px}.invoice-table tbody tr{cursor:pointer}.pdf-cell{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.invoice-table .pdf-cell button{min-height:34px;padding:6px 10px;font-size:13px}button.pdf-mini{min-height:34px;padding:6px 10px;font-size:13px}.invoice-pdf-head{display:grid;gap:8px;margin-bottom:16px}.invoice-pdf-head h2{font-size:16px}.invoice-pdf-head .pdf-status{min-height:20px}.invoice-table tbody tr:hover{background:var(--evn-hover)}.invoice-table td:first-child{font-weight:500}.invoice-table button{padding-left:0;padding-right:0}.badge{display:inline-flex;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:500;background:var(--evn-hover);color:var(--evn-muted);white-space:nowrap}.badge.paid{color:var(--evn-success);background:color-mix(in srgb,var(--evn-success) 10%,var(--evn-surface))}.badge.unpaid{color:var(--evn-warning);background:color-mix(in srgb,var(--evn-warning) 10%,var(--evn-surface))}.invoice-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,200px) minmax(120px,160px);gap:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}.pagination nav{display:flex;gap:8px;align-items:center}.pagination p{font-size:13px;color:var(--evn-muted)}.invoice-cards{display:none}.invoice-card{border-top:1px solid var(--evn-line);padding:16px 0;display:grid;gap:12px}.invoice-card:first-child{border-top:0;padding-top:0}.invoice-card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}.invoice-card strong{font-size:18px;font-weight:600}.invoice-card button{padding:4px 0}.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.point-card{border:1px solid var(--evn-line);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--evn-surface)}.point-card p{margin-top:4px}.outages li{padding:20px 0;border-top:1px solid var(--evn-line)}.outages li:first-child{padding-top:0;border-top:0}.outage-time{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.outages p{margin-top:8px;white-space:pre-wrap;max-width:80ch}.outages h3{margin-bottom:12px}.lock{padding:32px 0;max-width:640px}.lock h2{margin-bottom:12px}dialog{color:inherit;background:var(--evn-surface);border:1px solid var(--evn-line);border-radius:12px;width:560px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:auto}dialog::backdrop{background:rgba(0,0,0,.42)}.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--evn-line)}.dialog-body{padding:20px;display:grid;gap:20px}.invoice-total{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}.dialog-info{display:grid;gap:12px}.dialog-info>div{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.3fr);gap:16px}.dialog-info dt{color:var(--evn-muted)}.dialog-info dd{font-variant-numeric:tabular-nums}.pdf-actions{display:flex;gap:8px;flex-wrap:wrap}.pdf-status{min-height:24px}.pdf-status[role=alert]{color:var(--evn-error)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.chart-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}[hidden]{display:none!important}@keyframes evn-fade{from{opacity:0}to{opacity:1}}@keyframes evn-bar{from{transform:scaleY(.02)}to{transform:scaleY(1)}}@keyframes evn-bar-x{from{transform:translateX(-50%) scaleY(.02)}to{transform:translateX(-50%) scaleY(1)}}@keyframes evn-draw{from{stroke-dashoffset:1400}to{stroke-dashoffset:0}}@keyframes evn-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 .comparison-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.comparison-card{display:flex;flex-direction:column;gap:12px}.comparison-card h2{font-size:16px}.comparison-card .chart{margin:8px 0 0;gap:12px;align-items:start}.comparison-chart .track{position:relative;height:132px;max-width:none;margin:0 0 12px}.comparison-chart .bar{max-width:32px;min-height:0;left:50%;width:40%;transform:translateX(-50%);transform-origin:bottom;animation:evn-bar-x .36s ease-out both}.comparison-chart .bar.negative{transform-origin:top}.comparison-chart .bar.current{opacity:1;background:color-mix(in srgb,var(--evn-accent) 35%,var(--evn-surface))}.bar.negative{border-radius:0 0 6px 6px}.zero-axis{position:absolute;left:0;right:0;border-top:1px solid var(--evn-line)}.chart-column{position:relative}.comparison-chart .chart-label{font-size:12px;overflow-wrap:anywhere;white-space:normal;text-align:center;border-top:0;padding-top:0;margin-top:0}.slot-value{display:block;text-align:center;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-top:4px}.slot-date,.slot-state{display:block;color:var(--evn-muted);font-size:12px;text-align:center;overflow-wrap:anywhere;margin-top:4px}.comparison-values table{table-layout:fixed;width:100%;min-width:0}.comparison-values th,.comparison-values td{white-space:normal;overflow-wrap:anywhere}.comparison-values th:first-child{width:32%}.comparison-values td{font-variant-numeric:tabular-nums}.comparison-values .slot-state{text-align:left}.index-card{display:flex;flex-direction:column;gap:16px}.index-card svg.index-chart{width:100%;height:auto;max-height:300px;stroke:none;overflow:visible}.index-chart .index-grid{stroke:var(--evn-line);stroke-width:1;vector-effect:non-scaling-stroke}.index-chart .index-line{display:none}.index-chart .index-curve{stroke:var(--evn-chart-1);stroke-width:2;fill:none;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2400;animation:evn-draw .6s ease-out both}.index-chart .index-area{stroke:none}.index-chart .index-point{fill:var(--evn-surface);stroke:var(--evn-chart-1);stroke-width:2;vector-effect:non-scaling-stroke;cursor:pointer}.index-chart .index-point:hover,.index-chart .index-point:focus{fill:var(--evn-accent)}.index-chart text{fill:var(--evn-muted);stroke:none;font-size:12px;font-variant-numeric:tabular-nums}.index-tooltip{min-height:42px;font-variant-numeric:tabular-nums}.index-values{max-height:220px;overflow:auto}.index-values table{min-width:0;width:100%}.index-values th,.index-values td{white-space:normal;overflow-wrap:anywhere}.index-values td{font-variant-numeric:tabular-nums}.index-empty{padding:24px 0}.index-series-field{max-width:100%}
 @media(max-width:1100px){.overview-grid{grid-template-columns:1fr}}
 @media(max-width:767px){.comparison-grid{grid-template-columns:1fr;gap:16px}.comparison-card .chart{gap:8px}.index-card svg.index-chart{min-height:180px}}
@@ -15,7 +15,7 @@ const STYLE = `
 .action-card{padding:0;overflow:hidden;display:flex;flex-direction:column}.action-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 0;margin-bottom:12px}.action-item{padding:16px 20px;border-top:1px solid var(--evn-line-soft)}.action-label{font-size:13px;color:var(--evn-muted)}.action-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.action-value.compact{font-size:18px}.action-value.warn{color:var(--evn-warning-ink)}.action-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;overflow-wrap:anywhere}.action-empty{padding:16px 20px 20px;color:var(--evn-muted);font-size:13px}button.action-link{margin-top:8px;padding:5px 0;min-height:32px;border-color:transparent;background:transparent;color:var(--evn-accent-ink);font-weight:500;text-align:left}button.action-link:hover{background:transparent;text-decoration:underline}
 .kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--evn-surface);border:1px solid var(--evn-line-soft);border-radius:14px;overflow:hidden}.kpi{padding:16px 20px;border-right:1px solid var(--evn-line-soft);min-width:0}.kpi:last-child{border-right:0}.kpi-label{font-size:13px;color:var(--evn-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font-size:20px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.kpi-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .overview-compare .card-head{align-items:center}.overview-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--evn-line-soft) transparent}.overview-chart-scroll .chart{margin-top:24px}
-.overview-usage{display:grid;gap:12px}.usage-head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}.usage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.usage-card{min-height:0}.usage-card.usage-wide{grid-column:1/-1}.usage-card .card-head{padding:16px 20px 0}.usage-card .chart{margin-top:20px}.usage-card .chart-footer{display:none}.usage-card .bar-number{font-size:11px}@media(max-width:900px){.usage-grid{grid-template-columns:minmax(0,1fr)}}
+.overview-usage,.overview-cost{display:grid;gap:12px}.usage-head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}.usage-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.usage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.usage-card{min-height:0}.usage-card.usage-wide{grid-column:1/-1}.usage-card .card-head{padding:16px 20px 0}.usage-card .chart{margin-top:20px}.usage-card .chart-footer{display:none}.usage-card .bar-number{font-size:11px}.cost-card .bar-number{font-size:11px}@media(max-width:900px){.usage-grid{grid-template-columns:minmax(0,1fr)}}@media(max-width:767px){.cost-card .bar-number{display:none}}
 .point-summary-cards{display:none}.point-summary-row{display:grid;gap:4px;padding:12px 0;border-top:1px solid var(--evn-line-soft)}.point-summary-row:first-child{border-top:0;padding-top:0}.point-summary-row strong{font-size:14px}.point-summary-row span{font-size:13px;color:var(--evn-muted)}
 @media(max-width:1100px){.overview-top,.overview-bottom{grid-template-columns:1fr}}
 @media(max-width:1000px){.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:nth-child(2),.kpi:nth-child(4){border-right:0}.kpi:nth-child(n+3){border-top:1px solid var(--evn-line-soft)}}
@@ -296,9 +296,11 @@ export class EvnCskhPanel extends HTMLElement {
     this._tab = 0;
     this._period = "monthly";
     this._overviewCompare = "daily";
+    this._chartStyle = "columns";
     this._readingSeries = "";
     this._query = "";
     this._paid = "all";
+    this._invoiceYear = "all";
     this._invoicePage = this._readingPage = 0;
   }
 
@@ -509,6 +511,7 @@ export class EvnCskhPanel extends HTMLElement {
       if (target.id === "meter-series-select") { this._readingSeries = target.value; this._render(); }
       if (target.id === "date-from" || target.id === "date-to") this._invalidateDetails();
       if (target.id === "paid-select") { this._paid = target.value; this._invoicePage = 0; this._render(); }
+      if (target.id === "invoice-year") { this._invoiceYear = target.value; this._invoicePage = 0; this._render(); }
       return;
     }
     if (event.type === "submit") {
@@ -545,9 +548,10 @@ export class EvnCskhPanel extends HTMLElement {
       this._render();
     }
     if (action === "period") { this._period = control.dataset.value; this._readingPage = 0; this._render(); }
+    if (action === "chart-style") { this._chartStyle = control.dataset.value === "smooth" ? "smooth" : "columns"; this._render(); }
     if (action === "invoice-page") { this._invoicePage += Number(control.dataset.step); this._render(); this.shadowRoot.getElementById("invoice-results")?.focus({ preventScroll: true }); }
     if (action === "reading-page") { this._readingPage += Number(control.dataset.step); this._render(); this.shadowRoot.getElementById("reading-results")?.focus({ preventScroll: true }); }
-    if (action === "clear-search") { this._query = ""; this._paid = "all"; this._invoicePage = 0; this._render(); this.shadowRoot.getElementById("invoice-search")?.focus(); }
+    if (action === "clear-search") { this._query = ""; this._paid = "all"; this._invoiceYear = "all"; this._invoicePage = 0; this._render(); this.shadowRoot.getElementById("invoice-search")?.focus(); }
     if (action === "invoice") this._openInvoice(Number(control.dataset.index));
     if (action === "close-invoice") this._dialog.close();
     if (action === "pdf") void this._download(control.dataset.kind);
@@ -815,7 +819,9 @@ export class EvnCskhPanel extends HTMLElement {
     const head = node("header", null, "card-head usage-head");
     const title = node("div");
     title.append(node("h2", "Sản lượng"), node("p", this._point ? `Điểm đo ${text(this._point)} · kWh` : "Khách hàng chưa có điểm đo", "meta"));
-    head.append(title, node("p", full ? `${displayDate(this._range.start)} → ${displayDate(this._range.end)}` : "Chưa tải lịch sử", "meta usage-range"));
+    const controls = node("div", null, "usage-controls");
+    controls.append(node("p", full ? `${displayDate(this._range.start)} → ${displayDate(this._range.end)}` : "Chưa tải lịch sử", "meta usage-range"), this._segments([["columns", "Cột"], ["smooth", "Sóng"]], this._chartStyle, "chart-style", "Kiểu biểu đồ sản lượng", "usage-style"));
+    head.append(title, controls);
     section.append(head);
     const comparisons = this._overview?.comparisons;
     const daily = full ? dailyRecords(this._details.daily).slice(-7) : comparisonSlots(comparisons, this._point, "daily") || [];
@@ -852,8 +858,82 @@ export class EvnCskhPanel extends HTMLElement {
     wrap.append(node("h3", title), node("p", meta || "\u00a0", "meta"));
     head.append(wrap);
     card.append(head);
-    if (records.length) this._renderChart(card, period, records, { scroll });
+    if (records.length) this._renderChart(card, period, records, { scroll, smooth: this._chartStyle === "smooth" && period !== "daily" });
     else card.append(node("p", empty, "empty"));
+    return card;
+  }
+
+  _invoiceAmount(invoice) {
+    if (finite(invoice?.amount)) return invoice.amount;
+    return payableAmount(invoice);
+  }
+
+  _invoiceMonth(invoice) {
+    const match = /^(\d{2})\/(\d{4})$/.exec(String(invoice?.period || ""));
+    return match ? `${match[2]}-${match[1]}` : "";
+  }
+
+  _invoiceMonthCosts() {
+    if (!this._details || !validDate(this._range.end)) return [];
+    const values = new Map();
+    for (const invoice of array(this._details.invoices)) {
+      const period = this._invoiceMonth(invoice);
+      const amount = this._invoiceAmount(invoice);
+      if (!period || !finite(amount)) continue;
+      values.set(period, (values.get(period) || 0) + amount);
+    }
+    const end = new Date(`${this._range.end.slice(0, 7)}-01T00:00:00Z`);
+    const first = this._range.start.slice(0, 7);
+    const result = [];
+    for (let offset = 11; offset >= 0; offset--) {
+      const date = new Date(end);
+      date.setUTCMonth(date.getUTCMonth() - offset);
+      const period = date.toISOString().slice(0, 7);
+      if (period < first) continue;
+      result.push({ period, vnd: values.get(period) ?? null });
+    }
+    return result;
+  }
+
+  _invoiceYearCosts() {
+    const values = new Map();
+    for (const invoice of array(this._details?.invoices)) {
+      const period = this._invoiceMonth(invoice);
+      const amount = this._invoiceAmount(invoice);
+      if (!period || !finite(amount)) continue;
+      const year = period.slice(0, 4);
+      values.set(year, (values.get(year) || 0) + amount);
+    }
+    return [...values.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([period, vnd]) => ({ period, vnd }));
+  }
+
+  _overviewCostSection() {
+    const section = node("section", null, "overview-cost");
+    const head = node("header", null, "card-head usage-head");
+    const title = node("div");
+    title.append(node("h2", "Chi phí"), node("p", "Tiền hóa đơn · VNĐ · từ lịch sử đã tải", "meta"));
+    const controls = node("div", null, "usage-controls");
+    controls.append(node("p", `${displayDate(this._range.start)} → ${displayDate(this._range.end)}`, "meta usage-range"), this._segments([["columns", "Cột"], ["smooth", "Sóng"]], this._chartStyle, "chart-style", "Kiểu biểu đồ chi phí", "cost-style"));
+    head.append(title, controls);
+    const grid = node("div", null, "usage-grid");
+    grid.append(
+      this._costChart("Tháng", "12 tháng đến ngày kết thúc · VNĐ", "overview-cost-monthly", "monthly", this._invoiceMonthCosts(), { scroll: true, wide: true }),
+      this._costChart("Năm", "Tổng tiền hóa đơn theo năm · VNĐ", "overview-cost-yearly", "yearly", this._invoiceYearCosts(), {}),
+    );
+    section.append(head, grid);
+    return section;
+  }
+
+  _costChart(title, meta, chartName, period, records, { scroll = false, wide = false } = {}) {
+    const card = node("section", null, `card chart-card usage-card cost-card${wide ? " usage-wide" : ""}`);
+    card.dataset.chart = chartName;
+    const head = node("header", null, "card-head");
+    const wrap = node("div");
+    wrap.append(node("h3", title), node("p", meta, "meta"));
+    head.append(wrap);
+    card.append(head);
+    if (records.some(item => finite(item.vnd))) this._renderChart(card, period, records, { field: "vnd", unit: "VNĐ", scroll, smooth: this._chartStyle === "smooth", title: `Chi phí ${period === "monthly" ? "theo tháng" : "theo năm"}` });
+    else card.append(node("p", "Chưa có hóa đơn trong khoảng đã tải.", "empty"));
     return card;
   }
 
@@ -865,6 +945,7 @@ export class EvnCskhPanel extends HTMLElement {
     const bottom = node("div", null, "overview-bottom");
     bottom.append(this._overviewComparisonCard());
     parent.append(top, this._overviewKpis(overview, usage), bottom, this._overviewUsageSection());
+    if (this._details) parent.append(this._overviewCostSection());
     if (array(overview?.usage).length > 1) parent.append(this._pointSummary());
   }
 
@@ -978,9 +1059,12 @@ export class EvnCskhPanel extends HTMLElement {
   }
 
   _renderChart(parent, period, records, options = {}) {
+    const field = options.field || "kwh";
+    const unit = options.unit || "kWh";
     const values = records.map(item => ({ ...item, provisional: item.provisional === true || (period === "monthly" && array(this._overview?.comparisons?.monthly).some(row => row.period === item.period && row.provisional === true)) }));
     const label = period === "monthly" ? "theo tháng" : period === "yearly" ? "theo năm" : "theo ngày";
-    this._renderColumns(parent, values, { period, title: `Điện năng ${label}`, smooth: options.smooth === true, scroll: options.scroll === true });
+    const title = options.title || `${field === "vnd" ? "Chi phí" : "Điện năng"} ${label}`;
+    this._renderColumns(parent, values, { field, unit, period, title, smooth: options.smooth === true, scroll: options.scroll === true, footer: options.footer !== false });
   }
 
   _renderColumns(parent, records, { field = "kwh", unit = "kWh", period = "monthly", title, comparison = false, smooth = false, footer = true, scroll = false } = {}) {
@@ -1120,12 +1204,12 @@ export class EvnCskhPanel extends HTMLElement {
     return grid;
   }
 
-  _segments(items, current, action, label) {
+  _segments(items, current, action, label, prefix = action) {
     const group = node("div", null, "segmented");
     group.setAttribute("role", "group");
     group.setAttribute("aria-label", label);
     for (const [value, caption] of items) {
-      const button = this._button(caption, action, `${action}-${value}`);
+      const button = this._button(caption, action, `${prefix}-${value}`);
       button.dataset.value = value;
       button.setAttribute("aria-pressed", String(current === value));
       group.append(button);
@@ -1305,6 +1389,41 @@ export class EvnCskhPanel extends HTMLElement {
     parent.append(content);
   }
 
+  _invoiceYearMonths(year) {
+    const values = new Map();
+    for (const invoice of array(this._details?.invoices)) {
+      const period = this._invoiceMonth(invoice);
+      const amount = this._invoiceAmount(invoice);
+      if (!period || !finite(amount) || period.slice(0, 4) !== year) continue;
+      values.set(period, (values.get(period) || 0) + amount);
+    }
+    return Array.from({ length: 12 }, (_, index) => {
+      const period = `${year}-${String(index + 1).padStart(2, "0")}`;
+      return { period, vnd: values.get(period) ?? null };
+    });
+  }
+
+  _invoiceYears() {
+    return [...new Set(array(this._details?.invoices).map(invoice => this._invoiceMonth(invoice).slice(0, 4)).filter(year => /^\d{4}$/.test(year)))].sort().reverse();
+  }
+
+  _invoiceCostCard() {
+    if (!this._details) return null;
+    const yearly = this._invoiceYear === "all";
+    const records = yearly ? this._invoiceYearCosts() : this._invoiceYearMonths(this._invoiceYear);
+    const card = node("section", null, "card chart-card cost-card");
+    card.dataset.chart = "invoice-cost";
+    const head = node("header", null, "card-head");
+    const title = node("div");
+    title.append(node("h2", yearly ? "Chi phí theo năm" : `Chi phí năm ${this._invoiceYear}`), node("p", "Tiền hóa đơn · VNĐ · từ lịch sử đã tải", "meta"));
+    head.append(title, this._segments([["columns", "Cột"], ["smooth", "Sóng"]], this._chartStyle, "chart-style", "Kiểu biểu đồ chi phí hóa đơn", "invoice-style"));
+    card.append(head);
+    if (records.some(item => finite(item.vnd))) {
+      this._renderChart(card, yearly ? "yearly" : "monthly", records, { field: "vnd", unit: "VNĐ", scroll: true, smooth: this._chartStyle === "smooth", title: yearly ? "Chi phí theo năm" : `Chi phí tháng năm ${this._invoiceYear}` });
+    } else card.append(node("p", "Chưa có hóa đơn trong khoảng đã tải.", "empty"));
+    return card;
+  }
+
   _renderInvoices(parent) {
     const overview = this._overview;
     if (overview) {
@@ -1317,6 +1436,8 @@ export class EvnCskhPanel extends HTMLElement {
       parent.append(banner);
     }
     parent.append(this._comparisonCard("invoice"));
+    const costCard = this._invoiceCostCard();
+    if (costCard) parent.append(costCard);
     const filters = node("div", null, "invoice-filters");
     const search = node("input");
     search.id = "invoice-search";
@@ -1333,7 +1454,24 @@ export class EvnCskhPanel extends HTMLElement {
       paid.append(option);
     }
     filters.append(this._field("Tìm kỳ hóa đơn", search), this._field("Trạng thái thanh toán", paid));
-    if (this._query || this._paid !== "all") filters.append(this._button("Xóa lọc", "clear-search", "clear-search", "link"));
+    const years = this._invoiceYears();
+    if (years.length) {
+      if (this._invoiceYear !== "all" && !years.includes(this._invoiceYear)) this._invoiceYear = "all";
+      const year = node("select");
+      year.id = "invoice-year";
+      const all = node("option", "Tất cả các năm");
+      all.value = "all";
+      all.selected = this._invoiceYear === "all";
+      year.append(all);
+      for (const value of years) {
+        const option = node("option", value);
+        option.value = value;
+        option.selected = this._invoiceYear === value;
+        year.append(option);
+      }
+      filters.append(this._field("Năm hóa đơn", year));
+    }
+    if (this._query || this._paid !== "all" || this._invoiceYear !== "all") filters.append(this._button("Xóa lọc", "clear-search", "clear-search", "link"));
     parent.append(filters);
     this._detailState(parent);
     if (this._details) parent.append(this._invoiceTable());
@@ -1354,10 +1492,11 @@ export class EvnCskhPanel extends HTMLElement {
     results.setAttribute("aria-label", "Kết quả hóa đơn");
     const invoices = this._details.invoices.map((invoice, index) => ({ invoice, index })).filter(({ invoice }) => {
       const haystack = `${invoice.period} ${invoice.status_label}`.toLocaleLowerCase("vi");
-      return haystack.includes(this._query.trim().toLocaleLowerCase("vi")) && (this._paid === "all" || paymentState(invoice) === this._paid);
+      const yearMatch = this._invoiceYear === "all" || invoice.period.endsWith(this._invoiceYear);
+      return haystack.includes(this._query.trim().toLocaleLowerCase("vi")) && (this._paid === "all" || paymentState(invoice) === this._paid) && yearMatch;
     });
     if (!invoices.length) {
-      results.append(node("p", this._query || this._paid !== "all" ? "Không có hóa đơn khớp bộ lọc. Thử kỳ khác hoặc bỏ bộ lọc." : "Chưa có hóa đơn của khách hàng này trong khoảng đã chọn.", "empty"));
+      results.append(node("p", this._query || this._paid !== "all" || this._invoiceYear !== "all" ? "Không có hóa đơn khớp bộ lọc. Thử kỳ khác hoặc bỏ bộ lọc." : "Chưa có hóa đơn của khách hàng này trong khoảng đã chọn.", "empty"));
       return results;
     }
     this._invoicePage = Math.max(0, Math.min(this._invoicePage, Math.ceil(invoices.length / 12) - 1));

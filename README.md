@@ -9,6 +9,10 @@ và không phát hành kèm.
 
 ## Trạng thái
 
+- **v0.7.0:** thêm khối **Chi phí** trong **Tổng quan** (tiền hóa đơn theo tháng
+  và theo năm) và biểu đồ chi phí trong tab **Hóa đơn**, có lọc **Năm hóa đơn**.
+  Biểu đồ tháng/năm đổi được kiểu **Cột / Sóng** (đường cong + vùng gradient).
+  Không đổi API dữ liệu hay entity.
 - **v0.6.0:** thêm khối **Sản lượng** trong tab **Tổng quan** với ba biểu đồ
   **Tháng, Ngày, Năm**; **Năm** cộng dồn 12 tháng mỗi năm và ghi rõ năm thiếu
   tháng. Nút **Tải 5 năm** mở rộng lịch sử tháng từ 366 ngày lên **5 năm** (backend
@@ -41,7 +45,7 @@ và không phát hành kèm.
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
 - Qua **2.167 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **217 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+  **221 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
@@ -73,9 +77,11 @@ và không phát hành kèm.
   + lọc trạng thái, chi tiết + tải **PDF/bảng kê/thông báo**, lịch sử thanh
   toán), **Lịch ngừng điện**, **Thông tin** (KH, hợp đồng, điểm đo, ngân hàng).
   Theo theme sáng/tối HA, responsive tới 375px, điều hướng bàn phím.
-- **Biểu đồ mới:** cột ba ngày gần nhất tại Tổng quan/Điện năng; cột ba kỳ
-  điện năng theo tổng khách hàng; cột tiền hóa đơn ba kỳ tại Hóa đơn; đường
-  chỉ số gốc ở Công tơ, chọn từng công tơ/bộ chỉ số. Có số và bảng đi kèm,
+- **Biểu đồ:** cột ba ngày gần nhất tại Tổng quan/Điện năng; cột ba kỳ điện
+  năng theo tổng khách hàng; cột tiền hóa đơn ba kỳ tại Hóa đơn; đường chỉ số
+  gốc ở Công tơ, chọn từng công tơ/bộ chỉ số; **sản lượng ngày/tháng/năm** và
+  **chi phí tháng/năm** tại Tổng quan, tab Hóa đơn có biểu đồ chi phí theo năm
+  đã chọn. Biểu đồ tháng/năm đổi được **Cột / Sóng**. Có số và bảng đi kèm,
   xem bằng bàn phím; đường bị ngắt khi thiếu kỳ hoặc đổi công tơ.
 - Không dùng `total_increasing` hay Energy Dashboard vì kỳ tháng không phải bộ
   đếm suốt đời và dữ liệu ngày có thể gộp nhiều ngày.
@@ -128,7 +134,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.6.0.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.7.0.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).
