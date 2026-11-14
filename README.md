@@ -9,6 +9,11 @@ và không phát hành kèm.
 
 ## Trạng thái
 
+- **v0.8.0:** **Tổng quan tự tải lịch sử 5 năm** khi mở panel, không cần bấm nút;
+  biểu đồ **Ngày** dùng 30 ngày gần nhất, **Tháng** 12 tháng, **Năm** tối đa 5
+  năm. Mỗi biểu đồ có dải màu riêng, thẻ **Tổng / Trung bình / Cao nhất**, cột
+  chuyển màu, animation so le và kiểu **Sóng** có vùng gradient + điểm dữ liệu.
+  Không đổi API dữ liệu hay entity.
 - **v0.7.0:** thêm khối **Chi phí** trong **Tổng quan** (tiền hóa đơn theo tháng
   và theo năm) và biểu đồ chi phí trong tab **Hóa đơn**, có lọc **Năm hóa đơn**.
   Biểu đồ tháng/năm đổi được kiểu **Cột / Sóng** (đường cong + vùng gradient).
@@ -45,7 +50,7 @@ và không phát hành kèm.
   đổi thành 0. Hóa đơn `hoadon` gồm cả bản ghi đã trả; số lượng hóa đơn không
   đồng nghĩa số hóa đơn còn nợ, phải xét trạng thái thanh toán.
 - Qua **2.167 pytest** (offline + runtime HA 2025.12.5 với API giả lập) và
-  **221 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
+  **223 kiểm tra biểu đồ/giao diện** trên Chromium mock loopback.
 - Người dùng báo bản trước hoạt động ổn. Bản 0.4.0 chưa được đối chiếu từng
   giá trị với app hay kiểm chứng trực tiếp trên HA production của người dùng.
 
@@ -134,7 +139,7 @@ và không phát hành kèm.
    HA rồi tải lại trình duyệt/app HA để nạp module biểu đồ mới; không cần xóa
    integration hay cấu hình lại tài khoản.
 
-Cài thủ công: giải nén `dist/evn_cskh-0.7.0.zip` vào thư mục cấu hình HA rồi
+Cài thủ công: giải nén `dist/evn_cskh-0.8.0.zip` vào thư mục cấu hình HA rồi
 restart. `dist/evn_cskh.zip` là layout cho HACS zip-release.
 
 Yêu cầu **Home Assistant 2025.12 trở lên**. Poll mặc định 6 giờ (60–1440 phút).

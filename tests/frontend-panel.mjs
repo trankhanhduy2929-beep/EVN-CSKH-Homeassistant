@@ -264,6 +264,7 @@ async function main() {
     page.on("pageerror", error => consoleErrors.push(String(error)));
 
     await page.goto(url);
+    await page.evaluate(() => { window.__detailsWait = new Promise(resolve => { window.__detailsResolve = resolve; }); });
     await attach(page);
     await settled(page);
 
@@ -408,16 +409,23 @@ async function main() {
       return getComputedStyle(bars[0]).backgroundColor !== getComputedStyle(bars[2]).backgroundColor;
     }));
     check("latest usage label truthful", text.includes("Điện năng tháng 09/2026") && !text.includes("Sản lượng tháng này"));
-    check("overview usage three chart blocks fallback", await page.evaluate(() => {
+    check("overview auto-loads history without buttons", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const cards = [...root.querySelectorAll(".overview-usage [data-chart]")];
       const names = cards.map(card => card.dataset.chart).join();
       const monthly = cards.find(card => card.dataset.chart === "overview-monthly");
       const daily = cards.find(card => card.dataset.chart === "overview-daily");
       const yearly = cards.find(card => card.dataset.chart === "overview-yearly");
-      return names === "overview-monthly,overview-daily,overview-yearly" && monthly.querySelectorAll(".chart-column").length === 3 && daily.querySelectorAll(".chart-column").length === 3 && !yearly.querySelector(".chart") && yearly.textContent.includes("Cần tải lịch sử") && root.getElementById("history-load") && root.getElementById("history-long");
+      return names === "overview-monthly,overview-daily,overview-yearly" && monthly.querySelectorAll(".chart-column").length === 3 && daily.querySelectorAll(".chart-column").length === 3 && !yearly.querySelector(".chart") && yearly.textContent.includes("Cần lịch sử") && root.textContent.includes("Đang tự tải lịch sử 5 năm") && !root.getElementById("history-load") && !root.getElementById("history-long") && window.__wsLog.some(message => message.type === "evn_cskh/details");
+    }));
+    check("overview auto request spans five years", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const request = window.__wsLog.find(message => message.type === "evn_cskh/details");
+      return request.start === panel._range.start && request.end === panel._range.end && (Date.parse(request.end) - Date.parse(request.start)) / 86400000 + 1 >= 1825;
     }));
     check("comparison as_of backend not UI clock", dailyChart.asOf === "2026-10-07" && monthlyChart.asOf === "2026-10-07");
+    await page.evaluate(() => { window.__detailsResolve(); delete window.__detailsWait; });
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.querySelector('[data-chart="overview-monthly"] .chart-column') !== null);
     await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-daily").click());
     await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("overview-compare-daily")?.getAttribute("aria-pressed") === "true");
     await page.screenshot({ path: join(outDir, "desktop-overview.png"), fullPage: true });
@@ -458,13 +466,24 @@ async function main() {
       const known = [...monthly.querySelectorAll(".chart-column")].filter(column => column.dataset.state === "known").map(column => column.dataset.period).join();
       return monthly.querySelectorAll(".chart-column").length === 12 && known === "2026-09,2026-10" && yearly.querySelectorAll(".chart-column").length === 1 && yearly.textContent.includes("1.640.000") && yearly.querySelector(".chart-column").dataset.period === "2026";
     }));
+    check("chart stats and distinct series colors", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const cards = ["overview-monthly", "overview-daily", "overview-yearly"].map(name => root.querySelector(`[data-chart="${name}"]`));
+      const stats = cards.every(card => card.querySelectorAll(".chart-stat").length === 3 && card.textContent.includes("Cao nhất"));
+      const colors = cards.map(card => getComputedStyle(card.querySelector(".bar")).backgroundImage);
+      const colorsUnique = new Set(colors).size === 3;
+      const bars = cards[0].querySelectorAll(".bar");
+      const animation = getComputedStyle(bars[0]).animationName === "evn-bar" && getComputedStyle(bars[0]).animationDelay !== getComputedStyle(bars[1]).animationDelay;
+      return stats && colorsUnique && animation;
+    }));
     await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("usage-style-smooth").click());
     await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("usage-style-smooth")?.getAttribute("aria-pressed") === "true");
     check("usage smooth style renders line overlay", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const monthly = root.querySelector('[data-chart="overview-monthly"]');
       const yearly = root.querySelector('[data-chart="overview-yearly"]');
-      return Boolean(monthly.querySelector(".smooth-chart svg.history-overlay")) && monthly.querySelectorAll(".history-dot").length === 11 && Boolean(yearly.querySelector(".smooth-chart svg.history-overlay")) && getComputedStyle(monthly.querySelector(".bar")).display === "none";
+      const dot = monthly.querySelector(".history-dot");
+      return Boolean(monthly.querySelector(".smooth-chart svg.history-overlay")) && monthly.querySelectorAll(".history-dot").length === 11 && Boolean(yearly.querySelector(".smooth-chart svg.history-overlay")) && getComputedStyle(monthly.querySelector(".bar")).display === "none" && Boolean(dot) && getComputedStyle(dot).animationName === "evn-dot";
     }));
     await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("usage-style-columns").click());
     await page.waitForFunction(() => document.getElementById("p").shadowRoot.getElementById("usage-style-columns")?.getAttribute("aria-pressed") === "true");
