@@ -13,9 +13,9 @@ const panelFile = join(root, "custom_components", "evn_cskh", "frontend", "evn-c
 const outDir = join(root, "analysis", "ui-preview");
 
 const results = [];
-function check(name, condition) {
+function check(name, condition, detail = "") {
   results.push({ name, ok: Boolean(condition) });
-  if (!condition) throw new Error(`FAILED: ${name}`);
+  if (!condition) throw new Error(`FAILED: ${name}${detail ? ` (${detail})` : ""}`);
 }
 
 const xssName = "Nguyễn <img src=x onerror=alert(1)> Văn A";
@@ -95,13 +95,30 @@ const data = {
       }
     ],
     outstanding: { amount: 1640000, count: 2 },
+    current_period: {
+      period: "2026-10",
+      kwh: 82.25,
+      previous_period: "2026-09",
+      previous_kwh: 1025.5,
+      delta: -943.25,
+      percent: -91.979,
+      through_date: "2026-10-07",
+      days: 7,
+      days_in_month: 31,
+      source: "daily",
+      provisional: true
+    },
+    tariff: { mode: "auto", label: "Theo hóa đơn gần nhất" },
     estimated_cost: {
       amount: 123500,
       energy_kwh: 41.2,
       unit_price: 2997.57,
+      projected_amount: 552000,
+      projected_energy: 182.5,
       through_date: "2026-10-06",
       last_data_date: "2026-10-06",
       price_period: "2026-09",
+      mode: "auto",
       provisional: true
     },
     invoices: [
@@ -175,6 +192,10 @@ window.__mock = (options = {}) => {
         if (window.__overviewWait) await window.__overviewWait;
         return data.overview;
       }
+      if (message.type === "evn_cskh/set_tariff") {
+        window.__tariff = message.tariff;
+        return { tariff: { ...message.tariff, label: message.tariff.mode === "fixed" ? "Giá cố định" : message.tariff.mode === "tiered" ? "Bậc thang" : "Theo hóa đơn gần nhất" } };
+      }
       if (message.type === "evn_cskh/details") {
         if (window.__detailsWait) await window.__detailsWait;
         const dailyStart = new Date(Math.max(Date.parse(message.start), Date.parse(message.end) - 30 * 86400000)).toISOString().slice(0, 10);
@@ -201,7 +222,7 @@ async function settled(page) {
   await page.waitForFunction(() => {
     const root = document.getElementById("p").shadowRoot;
     const hero = root?.querySelector(".hero-card");
-    return hero && hero.textContent.includes("873 kWh");
+    return hero && hero.textContent.includes("82,25 kWh");
   });
 }
 
@@ -377,8 +398,8 @@ async function main() {
 
     let text = await shadowText();
     check("six tab labels", ["Tổng quan", "Điện năng", "Công tơ", "Hóa đơn", "Lịch ngừng điện", "Thông tin"].every(label => text.includes(label)));
-    check("overview monthly kwh", text.includes("Điện năng tháng 09/2026") && text.includes("873 kWh"));
-    check("overview mom percent", text.includes("Tăng 9,1%") && text.includes("so với 800 kWh kỳ trước"));
+    check("overview current period kwh", text.includes("Tiêu thụ kỳ này · Tháng 10/2026") && text.includes("82,25 kWh"));
+    check("overview current period comparison", text.includes("Giảm 92%") && text.includes("so với 1.025,5 kWh tháng trước"));
     check("overview average 12m", text.includes("654,25"));
     check("overview latest index", text.includes("1.873"));
     check("overview outstanding", text.includes("Cần xử lý") && text.includes("1.640.000") && text.includes("2 hóa đơn chưa trả") && text.includes("hạn gần nhất 25/10/2026"));
@@ -387,29 +408,94 @@ async function main() {
     check("xss literal only", text.includes("<img src=x onerror=alert(1)>") && (await imgCount()) === 0);
     check("no display keys leak", !text.includes("disp-"));
     check("select shows code and unit", text.includes("PC01 · PC01"));
-    check("overview A order and kpi strip", await page.evaluate(() => {
+    check("overview layout order", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const top = root.querySelector(".overview-top");
       const hero = root.querySelector(".hero-card");
+      const estimate = root.querySelector(".estimate-card");
       const kpis = root.querySelector(".kpi-strip");
       const bottom = root.querySelector(".overview-bottom");
-      return Boolean(top && hero && !hero.textContent.includes("Chỉ số mới nhất") && !hero.textContent.includes("TB 12 tháng") && top.querySelector(".action-card") && kpis && top.nextElementSibling === kpis && kpis.nextElementSibling === bottom && bottom.querySelectorAll("[data-chart]").length === 1);
+      return Boolean(top && hero && estimate && !hero.textContent.includes("TB 12 tháng") && top.querySelectorAll(".card").length === 2 && kpis && top.nextElementSibling === kpis && kpis.nextElementSibling === bottom && bottom.querySelectorAll("[data-chart]").length === 1 && bottom.querySelector(".action-card"));
     }));
-    check("overview KPI five items", await page.evaluate(() => {
+    check("overview KPI four items", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const items = [...root.querySelectorAll(".kpi-strip .kpi")].map(item => item.textContent);
-      return items.length === 5 && items[0].includes("Chỉ số mới nhất") && items[1].includes("Trung bình 12 tháng") && items[2].includes("Hôm qua") && items[2].includes("18,12 kWh") && items[3].includes("Ước tính tháng này") && items[3].includes("123.500") && items[3].includes("41,2 kWh") && items[4].includes("Hóa đơn gần nhất") && items[4].includes("120.000") && items[4].includes("Chưa thanh toán");
+      return items.length === 4 && items[0].includes("Chỉ số mới nhất") && items[0].includes("1.873") && items[1].includes("Hôm qua") && items[1].includes("18,12 kWh") && items[2].includes("Trung bình 12 tháng") && items[2].includes("654,25") && items[3].includes("Hóa đơn gần nhất") && items[3].includes("120.000") && items[3].includes("Chưa thanh toán");
+    }));
+    check("overview estimate projected and settings", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const card = root.querySelector(".estimate-card");
+      return card.textContent.includes("552.000") && card.textContent.includes("Dự kiến cả tháng") && card.textContent.includes("123.500") && card.textContent.includes("41,2 kWh") && card.textContent.includes("182,5 kWh") && card.textContent.includes("Theo hóa đơn gần nhất") && Boolean(card.querySelector("#tariff-open"));
     }));
     check("overview estimated cost unknown not zero", await page.evaluate(() => {
       const panel = document.getElementById("p");
       const original = panel._overview;
       panel._overview = { ...original, estimated_cost: null };
       panel._render();
-      const text = panel.shadowRoot.querySelectorAll(".kpi-strip .kpi")[3].textContent;
+      const text = panel.shadowRoot.querySelector(".estimate-card").textContent;
       panel._overview = original;
       panel._render();
-      return text.includes("Ước tính tháng này") && text.includes("Chưa đủ dữ liệu") && !text.includes("0 ₫");
+      return text.includes("Chưa đủ dữ liệu") && !text.includes("0 ₫") && Boolean(panel.shadowRoot.querySelector("#tariff-open"));
     }));
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("tariff-open").click());
+    await page.waitForFunction(() => document.getElementById("p").shadowRoot.querySelector("#tariff-form") !== null);
+    const tariffDialog = await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const dialog = root.querySelector("dialog[aria-labelledby=tariff-title]");
+      return { open: dialog?.open, inputs: root.querySelectorAll(".tariff-grid input[type=number]").length, disabled: root.querySelector("#tariff-limit-5")?.disabled, mode: root.querySelector("#tariff-mode")?.value };
+    });
+    check("tariff dialog opens with EVN six tiers", tariffDialog.open && tariffDialog.inputs === 12 && tariffDialog.disabled === true && tariffDialog.mode === "auto", JSON.stringify(tariffDialog));
+    await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      root.querySelector("#tariff-mode").value = "fixed";
+      root.querySelector("#tariff-mode").dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    check("tariff fixed fields shown", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      return root.querySelector("#tariff-fixed-fields").hidden === false && root.querySelector("#tariff-tiered-fields").hidden === true;
+    }));
+    await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      root.querySelector("#tariff-fixed-price").value = "3500";
+      root.querySelector("#tariff-save").click();
+    });
+    await page.waitForFunction(() => window.__tariff?.mode === "fixed");
+    check("tariff save sends fixed price", await page.evaluate(() => window.__tariff.mode === "fixed" && window.__tariff.fixed_price === 3500 && !document.getElementById("p").shadowRoot.querySelector("dialog[aria-labelledby=tariff-title]").open));
+    await settled(page);
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("tariff-open").click());
+    await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      root.querySelector("#tariff-mode").value = "tiered";
+      root.querySelector("#tariff-mode").dispatchEvent(new Event("change", { bubbles: true }));
+      root.querySelector("#tariff-price-0").value = "0";
+      root.querySelector("#tariff-save").click();
+    });
+    check("tariff tiered validates price before save", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      return root.querySelector("#tariff-status").textContent.includes("bậc 1") && root.querySelector("dialog[aria-labelledby=tariff-title]").open && window.__tariff.mode === "fixed";
+    }));
+    await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      root.querySelector("#tariff-price-0").value = "3000";
+      root.querySelector("#tariff-save").click();
+    });
+    await page.waitForFunction(() => window.__tariff?.mode === "tiered");
+    check("tariff tiered save sends six EVN tiers", await page.evaluate(() => {
+      const tiers = window.__tariff?.tiers || [];
+      return tiers.length === 6 && tiers[0].limit === 50 && tiers[4].limit === 400 && tiers[5].limit === null && tiers.every(tier => tier.price > 0);
+    }));
+    await settled(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("tariff-open").click());
+    check("tariff dialog readable on mobile", await page.evaluate(() => {
+      const root = document.getElementById("p").shadowRoot;
+      const dialog = root.querySelector("dialog[aria-labelledby=tariff-title]");
+      const rect = dialog.getBoundingClientRect();
+      return dialog.open && rect.left >= 0 && rect.right <= innerWidth && dialog.scrollWidth <= dialog.clientWidth + 1 && root.querySelector("#tariff-title").textContent === "Thiết lập giá điện";
+    }));
+    await page.screenshot({ path: join(outDir, "mobile-tariff.png"), fullPage: false });
+    await page.evaluate(() => document.getElementById("p").shadowRoot.getElementById("tariff-cancel").click());
+    await page.setViewportSize({ width: 1280, height: 900 });
     const dailyChart = await chartSnapshot(page, "overview-comparison");
     check("daily comparison labels dates values", dailyChart.columns.map(column => column.label).join() === "Hôm kia,Hôm qua,Hôm nay" && dailyChart.columns[0].value === "34,76" && dailyChart.columns[1].value === "0" && dailyChart.columns[2].value === "Chưa có");
     check("comparison null no bar zero height bar", dailyChart.columns[2].height === null && dailyChart.columns[1].height === "0%" && parseFloat(dailyChart.columns[0].height) > 0);
@@ -427,7 +513,7 @@ async function main() {
       const bars = root.querySelectorAll('[data-chart="overview-comparison"] .bar');
       return getComputedStyle(bars[0]).backgroundColor !== getComputedStyle(bars[2]).backgroundColor;
     }));
-    check("latest usage label truthful", text.includes("Điện năng tháng 09/2026") && !text.includes("Sản lượng tháng này"));
+    check("latest usage label truthful", text.includes("Tiêu thụ kỳ này · Tháng 10/2026") && !text.includes("Sản lượng tháng này"));
     check("overview auto-loads history without buttons", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const cards = [...root.querySelectorAll(".overview-usage [data-chart]")];
@@ -1168,7 +1254,7 @@ async function main() {
     await page.waitForFunction(() => document.getElementById("p").shadowRoot.textContent.includes("Chỉ dành cho quản trị viên"));
     check("non-admin lock shown", (await shadowText()).includes("Chỉ dành cho quản trị viên"));
     check("non-admin no ws calls", (await page.evaluate(() => window.__wsCalls)) === callsBefore);
-    check("non-admin hides data", !/873|1\.640\.000/.test(await shadowText()));
+    check("non-admin hides data", !/873|1\.640\.000/.test(await shadowText()) && !(await page.evaluate(() => Boolean(document.getElementById("p").shadowRoot.getElementById("tariff-open")))));
 
     await page.evaluate(() => {
       window.__pending = { error: { code: "invalid_response" } };

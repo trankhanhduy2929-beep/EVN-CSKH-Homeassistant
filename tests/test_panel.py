@@ -43,6 +43,7 @@ from custom_components.evn_cskh.api import (
 from custom_components.evn_cskh.const import (
     CONF_CUSTOMERS,
     CONF_SELECTED_CUSTOMERS,
+    CONF_TARIFF,
     DOMAIN,
     VERSION,
 )
@@ -552,7 +553,7 @@ async def test_registration_once_dynamic_entries(
     await panel.async_attach_entry(hass, first)
     assert custom.await_count == 2
     assert static.await_count == view.call_count == 1
-    assert register.call_count == 3
+    assert register.call_count == 4
     config = static.call_args.args[0][0]
     assert config.url_path == "/evn_cskh_static/evn-cskh-panel.js"
     assert (
@@ -566,6 +567,7 @@ async def test_registration_once_dynamic_entries(
         "evn_cskh/list_entries",
         "evn_cskh/overview",
         "evn_cskh/details",
+        "evn_cskh/set_tariff",
     }
 
 
@@ -799,8 +801,110 @@ async def test_overview_cached_refresh_and_unavailable(
         "outage_count": 2,
         "next_outage": None,
         "comparisons": {"as_of": "2026-10-07", "points": [], "monthly": []},
+        "current_period": None,
+        "tariff": {"mode": "auto", "label": "Theo hóa đơn gần nhất"},
         "estimated_cost": None,
     }
+
+
+async def test_ws_set_tariff_updates_options_and_overview(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    hass.config_entries._entries[entry.entry_id] = entry
+    original = dict(entry.options)
+    response = await ws(
+        hass,
+        "set_tariff",
+        entry_id=entry.entry_id,
+        tariff={"mode": "fixed", "fixed_price": 3500},
+    )
+    assert response["result"] == {
+        "tariff": {
+            "mode": "fixed",
+            "fixed_price": 3500,
+            "label": "Giá cố định",
+        }
+    }
+    assert entry.options[CONF_TARIFF] == {"mode": "fixed", "fixed_price": 3500}
+    assert entry.options[CONF_SELECTED_CUSTOMERS] == original[CONF_SELECTED_CUSTOMERS]
+    overview = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert overview["tariff"]["mode"] == "fixed"
+    assert overview["estimated_cost"]["amount"] == 8750
+    assert overview["estimated_cost"]["mode"] == "fixed"
+    assert overview["estimated_cost"]["price_period"] is None
+
+
+async def test_ws_set_tariff_tiered_round_trip(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    hass.config_entries._entries[entry.entry_id] = entry
+    tiers = [
+        {"limit": limit, "price": 3000 + index * 100}
+        for index, limit in enumerate((50, 100, 200, 300, 400, None))
+    ]
+    response = await ws(
+        hass,
+        "set_tariff",
+        entry_id=entry.entry_id,
+        tariff={"mode": "tiered", "tiers": tiers},
+    )
+    assert response["result"]["tariff"] == {
+        "mode": "tiered",
+        "tiers": tiers,
+        "label": "Bậc thang",
+    }
+    assert entry.options[CONF_TARIFF] == {"mode": "tiered", "tiers": tiers}
+    overview = (
+        await ws(
+            hass,
+            "overview",
+            entry_id=entry.entry_id,
+            customer_key=customer_key(PERSON),
+        )
+    )["result"]
+    assert overview["tariff"] == {
+        "mode": "tiered",
+        "tiers": tiers,
+        "label": "Bậc thang",
+    }
+    assert overview["estimated_cost"]["mode"] == "tiered"
+    assert overview["estimated_cost"]["price_period"] is None
+    assert overview["estimated_cost"]["amount"] == pytest.approx(7500)
+
+
+async def test_ws_set_tariff_rejects_invalid_without_change(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    hass.config_entries._entries[entry.entry_id] = entry
+    original = dict(entry.options)
+    response = await ws(
+        hass,
+        "set_tariff",
+        entry_id=entry.entry_id,
+        tariff={"mode": "tiered", "tiers": []},
+    )
+    assert response["error"]["code"] == "invalid_response"
+    assert entry.options == original
+
+
+async def test_ws_set_tariff_requires_admin(
+    hass: HomeAssistant, entry: EvnConfigEntry
+) -> None:
+    with pytest.raises(Unauthorized):
+        await ws(
+            hass,
+            "set_tariff",
+            user=admin(owner=False),
+            entry_id=entry.entry_id,
+            tariff={"mode": "auto"},
+        )
 
 
 async def test_details_contract_aggregation_and_redaction(
@@ -1417,6 +1521,8 @@ async def test_overview_directory_info_and_caps(
         "outage_count",
         "next_outage",
         "comparisons",
+        "current_period",
+        "tariff",
         "estimated_cost",
     }
     assert result["comparisons"] == expected_comparisons()
@@ -1822,9 +1928,33 @@ def test_overview_estimated_cost_through_yesterday() -> None:
         "amount": 22.0,
         "energy_kwh": 2.5,
         "unit_price": 8.8,
+        "projected_amount": 113.66666666666667,
+        "projected_energy": 12.916666666666666,
         "through_date": "2026-10-06",
         "last_data_date": "2026-10-06",
         "price_period": "2026-09",
+        "mode": "auto",
+        "provisional": True,
+    }
+
+
+def test_overview_estimated_cost_uses_configured_fixed_tariff() -> None:
+    snapshot = make_snapshot()
+    snapshot.invoices = [invoice_row(TONG_TIEN=None)]
+    snapshot.paid_invoices = []
+    result = panel._overview(snapshot, True, {"mode": "fixed", "fixed_price": 3500})[
+        "estimated_cost"
+    ]
+    assert result == {
+        "amount": 8750.0,
+        "energy_kwh": 2.5,
+        "unit_price": 3500.0,
+        "projected_amount": pytest.approx(45208.33333333333),
+        "projected_energy": 12.916666666666666,
+        "through_date": "2026-10-06",
+        "last_data_date": "2026-10-06",
+        "price_period": None,
+        "mode": "fixed",
         "provisional": True,
     }
 

@@ -50,7 +50,23 @@ class CostEstimate:
     unit_price: float
     through: date
     last_day: date
-    price_period: tuple[int, int]
+    price_period: tuple[int, int] | None
+    mode: str = "auto"
+    projected_energy: float | None = None
+    projected_amount: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TariffTier:
+    limit: float | None
+    price: float
+
+
+@dataclass(frozen=True, slots=True)
+class TariffConfig:
+    mode: str = "auto"
+    fixed_price: float | None = None
+    tiers: tuple[TariffTier, ...] = ()
 
 
 def _number(value: Any) -> float | None:
@@ -1219,6 +1235,69 @@ def customer_month_energy(
     return _total(values)
 
 
+def parse_tariff(value: Any) -> TariffConfig | None:
+    if not isinstance(value, dict):
+        return None
+    mode = value.get("mode")
+    if mode == "auto":
+        return TariffConfig()
+    if mode == "fixed":
+        price = _number(value.get("fixed_price"))
+        if price is None or price <= 0:
+            return None
+        return TariffConfig(mode="fixed", fixed_price=price)
+    if mode != "tiered":
+        return None
+    rows = value.get("tiers")
+    if not isinstance(rows, list) or not 1 <= len(rows) <= 6:
+        return None
+    tiers: list[TariffTier] = []
+    previous = 0.0
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            return None
+        price = _number(row.get("price"))
+        limit = _number(row.get("limit")) if row.get("limit") is not None else None
+        if price is None or price <= 0:
+            return None
+        if limit is not None and (limit <= previous or limit > 10**9):
+            return None
+        if limit is None and index != len(rows) - 1:
+            return None
+        tiers.append(TariffTier(limit, price))
+        if limit is not None:
+            previous = limit
+    if tiers[-1].limit is not None:
+        return None
+    return TariffConfig(mode="tiered", tiers=tuple(tiers))
+
+
+def tariff_amount(energy: Any, tariff: TariffConfig) -> float | None:
+    value = _number(energy)
+    if value is None or value < 0 or not isinstance(tariff, TariffConfig):
+        return None
+    if tariff.mode == "fixed":
+        if tariff.fixed_price is None:
+            return None
+        amount = value * tariff.fixed_price
+        return amount if isfinite(amount) else None
+    if tariff.mode != "tiered" or not tariff.tiers:
+        return None
+    amount = 0.0
+    previous = 0.0
+    for tier in tariff.tiers:
+        upper = tier.limit if tier.limit is not None else value
+        portion = min(value, upper) - previous
+        if portion < 0:
+            return None
+        if portion > 0:
+            amount += portion * tier.price
+        previous = upper
+        if value <= upper:
+            break
+    return amount if isfinite(amount) else None
+
+
 def month_cost_estimate(
     points: list[dict[str, Any]],
     daily: dict[str, list[dict[str, Any]]],
@@ -1227,6 +1306,7 @@ def month_cost_estimate(
     year: int,
     month: int,
     through: date,
+    tariff: TariffConfig | None = None,
 ) -> CostEstimate | None:
     if (
         not isinstance(points, list)
@@ -1242,8 +1322,9 @@ def month_cost_estimate(
     end = date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
     if not start <= through <= end:
         return None
-    price = invoice_unit_price(active, paid)
-    if price is None:
+    tariff = tariff if isinstance(tariff, TariffConfig) else TariffConfig()
+    invoice_price = invoice_unit_price(active, paid)
+    if tariff.mode == "auto" and invoice_price is None:
         return None
     codes: list[str] = []
     for point in points:
@@ -1273,14 +1354,39 @@ def month_cost_estimate(
     energy = _total(values)
     if energy is None or last_day is None:
         return None
-    amount = energy * price[0]
-    if not isfinite(amount):
+    amount: float | None
+    if tariff.mode == "auto":
+        assert invoice_price is not None
+        unit_price, price_period = invoice_price
+        amount = energy * unit_price
+    elif tariff.mode == "fixed":
+        assert tariff.fixed_price is not None
+        amount = tariff_amount(energy, tariff)
+        unit_price, price_period = tariff.fixed_price, None
+    else:
+        amount = tariff_amount(energy, tariff)
+        unit_price = amount / energy if amount is not None and energy else 0.0
+        price_period = None
+    if amount is None or not isfinite(amount):
         return None
+    projected_energy = energy * end.day / last_day.day if last_day.day else None
+    projected_amount: float | None = None
+    if projected_energy is not None and isfinite(projected_energy):
+        if tariff.mode == "auto":
+            assert invoice_price is not None
+            projected_amount = projected_energy * invoice_price[0]
+        else:
+            projected_amount = tariff_amount(projected_energy, tariff)
+        if projected_amount is not None and not isfinite(projected_amount):
+            projected_amount = None
     return CostEstimate(
         amount=amount,
         energy=energy,
-        unit_price=price[0],
+        unit_price=unit_price,
         through=through,
         last_day=last_day,
-        price_period=price[1],
+        price_period=price_period,
+        mode=tariff.mode,
+        projected_energy=projected_energy,
+        projected_amount=projected_amount,
     )

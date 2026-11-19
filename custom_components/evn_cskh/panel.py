@@ -31,10 +31,18 @@ from .api import (
     Snapshot,
     _invoice_body,
 )
-from .const import CONF_CUSTOMERS, CONF_SELECTED_CUSTOMERS, DOMAIN, VERSION
+from .const import (
+    CONF_CUSTOMERS,
+    CONF_SELECTED_CUSTOMERS,
+    CONF_TARIFF,
+    DOMAIN,
+    VERSION,
+)
 from .coordinator import EvnConfigEntry, EvnCoordinator, customer_key
 from .models import (
+    CostEstimate,
     PeriodUsage,
+    TariffConfig,
     _date,
     _integer,
     _interval,
@@ -52,6 +60,7 @@ from .models import (
     monthly_summary,
     next_outage,
     outstanding_from_active,
+    parse_tariff,
     previous_months,
     trailing_average,
 )
@@ -411,8 +420,88 @@ def _comparisons(snapshot: Snapshot, as_of: date) -> dict[str, Any]:
     }
 
 
-def _estimated_cost(snapshot: Snapshot, as_of: date) -> dict[str, Any] | None:
-    estimate = month_cost_estimate(
+def _tariff_config(value: Any) -> TariffConfig:
+    return parse_tariff(value) or TariffConfig()
+
+
+def _tariff_value(tariff: TariffConfig) -> dict[str, Any]:
+    if tariff.mode == "fixed":
+        return {"mode": "fixed", "fixed_price": tariff.fixed_price}
+    if tariff.mode == "tiered":
+        return {
+            "mode": "tiered",
+            "tiers": [
+                {"limit": tier.limit, "price": tier.price} for tier in tariff.tiers
+            ],
+        }
+    return {"mode": "auto"}
+
+
+def _tariff_dto(tariff: TariffConfig) -> dict[str, Any]:
+    labels = {
+        "auto": "Theo hóa đơn gần nhất",
+        "fixed": "Giá cố định",
+        "tiered": "Bậc thang",
+    }
+    return _tariff_value(tariff) | {
+        "label": labels.get(tariff.mode, labels["auto"]),
+    }
+
+
+def _current_period(snapshot: Snapshot, as_of: date) -> dict[str, Any]:
+    year, month = as_of.year, as_of.month
+    value = _month_energy(snapshot, year, month, as_of)
+    earlier = previous_months(as_of, 1)
+    previous = (
+        _month_energy(snapshot, earlier[0][0], earlier[0][1], as_of)
+        if earlier
+        else None
+    )
+    delta = (
+        _number(value - previous)
+        if value is not None and previous is not None
+        else None
+    )
+    percent = (
+        _number(delta / previous * 100)
+        if delta is not None and previous not in (None, 0)
+        else None
+    )
+    official = customer_month_energy(
+        snapshot.measurement_points,
+        snapshot.monthly,
+        snapshot.monthly_readings,
+        year,
+        month,
+    )
+    source = None
+    if value is not None:
+        source = "monthly" if official is not None and official != 0 else "daily"
+    days_in_month = (
+        date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)
+    ).day
+    return {
+        "period": f"{year:04d}-{month:02d}",
+        "kwh": _number(value),
+        "previous_period": (
+            f"{earlier[0][0]:04d}-{earlier[0][1]:02d}" if earlier else None
+        ),
+        "previous_kwh": _number(previous),
+        "delta": delta,
+        "percent": percent,
+        "through_date": as_of.isoformat(),
+        "days": as_of.day,
+        "days_in_month": days_in_month,
+        "source": source,
+        "provisional": source != "monthly",
+    }
+
+
+def _estimated_cost(
+    snapshot: Snapshot, as_of: date, tariff_value: Any = None
+) -> dict[str, Any] | None:
+    tariff = _tariff_config(tariff_value)
+    estimate: CostEstimate | None = month_cost_estimate(
         snapshot.measurement_points,
         snapshot.daily,
         snapshot.invoices,
@@ -420,6 +509,7 @@ def _estimated_cost(snapshot: Snapshot, as_of: date) -> dict[str, Any] | None:
         as_of.year,
         as_of.month,
         as_of - timedelta(days=1),
+        tariff,
     )
     if estimate is None:
         return None
@@ -427,14 +517,23 @@ def _estimated_cost(snapshot: Snapshot, as_of: date) -> dict[str, Any] | None:
         "amount": _number(estimate.amount),
         "energy_kwh": _number(estimate.energy),
         "unit_price": _number(estimate.unit_price),
+        "projected_amount": _number(estimate.projected_amount),
+        "projected_energy": _number(estimate.projected_energy),
         "through_date": estimate.through.isoformat(),
         "last_data_date": estimate.last_day.isoformat(),
-        "price_period": f"{estimate.price_period[0]:04d}-{estimate.price_period[1]:02d}",
+        "price_period": (
+            f"{estimate.price_period[0]:04d}-{estimate.price_period[1]:02d}"
+            if estimate.price_period is not None
+            else None
+        ),
+        "mode": estimate.mode,
         "provisional": True,
     }
 
 
-def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
+def _overview(
+    snapshot: Snapshot, available: bool, tariff_value: Any = None
+) -> dict[str, Any]:
     as_of = _now()
     result: dict[str, Any] = {
         "customer": _customer_dto(snapshot),
@@ -452,12 +551,14 @@ def _overview(snapshot: Snapshot, available: bool) -> dict[str, Any]:
         "outage_count": len(snapshot.outages),
         "next_outage": None,
         "comparisons": {"as_of": as_of.isoformat(), "points": [], "monthly": []},
+        "current_period": _current_period(snapshot, as_of) if available else None,
+        "tariff": _tariff_dto(_tariff_config(tariff_value)),
         "estimated_cost": None,
     }
     if not available:
         return result
     result["comparisons"] = _comparisons(snapshot, as_of)
-    result["estimated_cost"] = _estimated_cost(snapshot, as_of)
+    result["estimated_cost"] = _estimated_cost(snapshot, as_of, tariff_value)
     result["info"] = _info_dto(snapshot.info)
     result["contracts"] = _contracts(snapshot.contracts)
     result["banks"] = _banks(snapshot.banks)
@@ -709,6 +810,7 @@ class _PanelManager:
                 ("list_entries", _ws_list_entries),
                 ("overview", _ws_overview),
                 ("details", _ws_details),
+                ("set_tariff", _ws_set_tariff),
             ):
                 if command not in self.commands_registered:
                     websocket_api.async_register_command(self.hass, handler)
@@ -851,8 +953,21 @@ class _PanelManager:
                     await self.work(state, state.coordinator.async_request_refresh())
         self.check(state, generation)
         return _overview(
-            self.snapshot(state, key), bool(state.coordinator.last_update_success)
+            self.snapshot(state, key),
+            bool(state.coordinator.last_update_success),
+            state.entry.options.get(CONF_TARIFF),
         )
+
+    def set_tariff(self, state: _Entry, value: Any) -> dict[str, Any]:
+        tariff = parse_tariff(value)
+        if tariff is None:
+            raise _PanelError("invalid_response")
+        self.hass.config_entries.async_update_entry(
+            state.entry,
+            options={**state.entry.options, CONF_TARIFF: _tariff_value(tariff)},
+        )
+        state.coordinator.async_update_listeners()
+        return {"tariff": _tariff_dto(tariff)}
 
     def prune(self, state: _Entry) -> None:
         now = monotonic()
@@ -1055,6 +1170,35 @@ async def _ws_overview(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     await _ws_request(hass, connection, msg, "overview")
+
+
+@websocket_api.websocket_command(
+    {
+        "type": "evn_cskh/set_tariff",
+        vol.Required("entry_id"): _IDENTIFIER_SCHEMA,
+        vol.Required("tariff"): dict,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def _ws_set_tariff(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    manager = _manager(hass)
+    try:
+        if not _admin(connection.user):
+            raise _PanelError("unauthorized")
+        state = manager.entry(msg["entry_id"])
+        generation = state.generation
+        result = manager.set_tariff(state, msg["tariff"])
+        manager.check(state, generation)
+        if not _admin(connection.user):
+            raise _PanelError("unauthorized")
+    except Exception as error:  # noqa: BLE001
+        code = _error_code(error)
+        connection.send_error(msg["id"], code, _MESSAGES[code])
+        return
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command(

@@ -48,6 +48,10 @@ daily_month_energy_through = models.daily_month_energy_through
 invoice_unit_price = models.invoice_unit_price
 month_cost_estimate = models.month_cost_estimate
 CostEstimate = models.CostEstimate
+TariffTier = models.TariffTier
+TariffConfig = models.TariffConfig
+parse_tariff = models.parse_tariff
+tariff_amount = models.tariff_amount
 latest_cycle_index = models.latest_cycle_index
 latest_daily_index = models.latest_daily_index
 invoice_for_month = models.invoice_for_month
@@ -537,6 +541,8 @@ def test_month_cost_estimate_sums_points_and_marks_last_data_day() -> None:
         through=date(2026, 10, 5),
         last_day=date(2026, 10, 2),
         price_period=(2026, 10),
+        projected_energy=232.5,
+        projected_amount=2325000.0,
     )
 
 
@@ -559,6 +565,167 @@ def test_month_cost_estimate_requires_daily_data_and_invoice_price() -> None:
             points, daily, [_invoice_record()], [], 2026, 10, date(2026, 11, 5)
         )
         is None
+    )
+
+
+def test_parse_tariff_auto_and_invalid_modes() -> None:
+    assert parse_tariff({"mode": "auto", "fixed_price": -1}) == TariffConfig()
+    assert parse_tariff({"mode": "other"}) is None
+    assert parse_tariff(None) is None
+    assert parse_tariff([]) is None
+
+
+@pytest.mark.parametrize("price", [3500, "3500.5"])
+def test_parse_tariff_fixed_accepts_positive_price(price: Any) -> None:
+    assert parse_tariff({"mode": "fixed", "fixed_price": price}) == TariffConfig(
+        mode="fixed", fixed_price=3500 if price == 3500 else 3500.5
+    )
+
+
+@pytest.mark.parametrize(
+    "price", [None, 0, -1, True, "NaN", "Infinity", "1e3", 10**400]
+)
+def test_parse_tariff_fixed_rejects_invalid_price(price: Any) -> None:
+    assert parse_tariff({"mode": "fixed", "fixed_price": price}) is None
+
+
+def test_parse_tariff_tiered_six_tiers_without_last_limit() -> None:
+    rows = [
+        {"limit": limit, "price": 1000 + index}
+        for index, limit in enumerate((50, 100, 200, 300, 400, None))
+    ]
+    assert parse_tariff({"mode": "tiered", "tiers": rows}) == TariffConfig(
+        mode="tiered",
+        tiers=tuple(
+            TariffTier(limit, 1000 + index)
+            for index, limit in enumerate((50, 100, 200, 300, 400, None))
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [],
+        [{"limit": None, "price": 1000}],
+        [{"limit": 50, "price": 1000}, {"limit": None, "price": 2000}],
+        [{"limit": 50, "price": 1000}, {"price": 2000}],
+    ],
+)
+def test_parse_tariff_tiered_valid_minimal_and_one_tier(
+    rows: list[dict[str, Any]],
+) -> None:
+    parsed = parse_tariff({"mode": "tiered", "tiers": rows})
+    if not rows:
+        assert parsed is None
+    else:
+        assert parsed is not None and parsed.tiers[-1].limit is None
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [
+            {"limit": 50, "price": 1000},
+            {"limit": 50, "price": 2000},
+            {"limit": None, "price": 3000},
+        ],
+        [
+            {"limit": 100, "price": 1000},
+            {"limit": 50, "price": 2000},
+            {"limit": None, "price": 3000},
+        ],
+        [{"limit": None, "price": 1000}, {"limit": 100, "price": 2000}],
+        [{"limit": 0, "price": 1000}, {"limit": None, "price": 2000}],
+        [{"limit": 50, "price": 0}, {"limit": None, "price": 2000}],
+        [{"limit": 50}, {"limit": None, "price": 2000}],
+    ],
+)
+def test_parse_tariff_tiered_rejects_invalid_rows(
+    rows: list[dict[str, Any]],
+) -> None:
+    assert parse_tariff({"mode": "tiered", "tiers": rows}) is None
+
+
+def test_parse_tariff_tiered_rejects_more_than_six_tiers() -> None:
+    rows = [{"limit": limit, "price": 1000} for limit in range(10, 70, 10)]
+    rows.append({"limit": None, "price": 2000})
+    assert parse_tariff({"mode": "tiered", "tiers": rows}) is None
+
+
+def test_tariff_amount_fixed_and_tiered_boundaries() -> None:
+    fixed = TariffConfig(mode="fixed", fixed_price=3500)
+    assert tariff_amount(0, fixed) == 0
+    assert tariff_amount(120, fixed) == 420000
+    assert tariff_amount(-1, fixed) is None
+    tiered = TariffConfig(
+        mode="tiered",
+        tiers=(
+            TariffTier(50, 1000),
+            TariffTier(100, 2000),
+            TariffTier(None, 3000),
+        ),
+    )
+    assert tariff_amount(0, tiered) == 0
+    assert tariff_amount(50, tiered) == 50000
+    assert tariff_amount(100, tiered) == 150000
+    assert tariff_amount(120, tiered) == 210000
+    assert tariff_amount(None, tiered) is None
+
+
+def test_month_cost_estimate_uses_configured_tariff_without_invoice() -> None:
+    points = [{"MA_DDO": "POINT-A"}, {"MA_DDO": "POINT-B"}]
+    daily = {
+        "POINT-A": [
+            _daily(4, NGAY="01/10/2026", NGAY_HTHI="01/10/2026"),
+            _daily(6, NGAY="02/10/2026", NGAY_HTHI="02/10/2026"),
+        ],
+        "POINT-B": [_daily(5, NGAY="02/10/2026", NGAY_HTHI="02/10/2026")],
+    }
+    fixed = month_cost_estimate(
+        points,
+        daily,
+        [],
+        [],
+        2026,
+        10,
+        date(2026, 10, 5),
+        TariffConfig(mode="fixed", fixed_price=3500),
+    )
+    assert fixed == CostEstimate(
+        amount=52500.0,
+        energy=15.0,
+        unit_price=3500.0,
+        through=date(2026, 10, 5),
+        last_day=date(2026, 10, 2),
+        price_period=None,
+        mode="fixed",
+        projected_energy=232.5,
+        projected_amount=813750.0,
+    )
+    tiered = month_cost_estimate(
+        points,
+        daily,
+        [],
+        [],
+        2026,
+        10,
+        date(2026, 10, 5),
+        TariffConfig(
+            mode="tiered",
+            tiers=(TariffTier(10, 3000), TariffTier(None, 4000)),
+        ),
+    )
+    assert tiered == CostEstimate(
+        amount=50000.0,
+        energy=15.0,
+        unit_price=50000 / 15,
+        through=date(2026, 10, 5),
+        last_day=date(2026, 10, 2),
+        price_period=None,
+        mode="tiered",
+        projected_energy=232.5,
+        projected_amount=920000.0,
     )
 
 

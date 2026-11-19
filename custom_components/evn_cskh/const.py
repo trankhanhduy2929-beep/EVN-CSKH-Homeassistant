@@ -8,7 +8,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 DOMAIN = "evn_cskh"
 NAME = "EVN CSKH"
-VERSION = "0.9.2"
+VERSION = "0.10.0"
 MIN_HA_VERSION = "2025.12"
 PLATFORMS = (Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR)
 
@@ -17,6 +17,7 @@ CONF_DEVICE_ID = "device_id"
 CONF_SELECTED_CUSTOMERS = "selected_customers"
 CONF_TOKENS = "tokens"
 CONF_UPDATE_INTERVAL = "update_interval"
+CONF_TARIFF = "tariff"
 
 DEFAULT_UPDATE_INTERVAL = 360
 MIN_UPDATE_INTERVAL = 60

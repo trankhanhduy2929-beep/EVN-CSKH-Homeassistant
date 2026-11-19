@@ -18,7 +18,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import Customer, Snapshot
-from .const import customer_device_info, scope_id
+from .const import CONF_TARIFF, customer_device_info, scope_id
 from .coordinator import EvnConfigEntry, EvnCoordinator, customer_key
 from .models import (
     CostEstimate,
@@ -39,6 +39,7 @@ from .models import (
     next_outage,
     outage_duration_hours,
     outstanding_from_active,
+    parse_tariff,
     previous_months,
     trailing_average,
     vn_now,
@@ -481,7 +482,9 @@ def _customer_current_month_energy(
     return _customer_daily_month_energy(snapshot, period)
 
 
-def _month_cost_estimate(snapshot: Snapshot) -> CostEstimate | None:
+def _month_cost_estimate(
+    snapshot: Snapshot, tariff: object = None
+) -> CostEstimate | None:
     today = vn_now()
     if not isinstance(today, date):
         return None
@@ -493,6 +496,7 @@ def _month_cost_estimate(snapshot: Snapshot) -> CostEstimate | None:
         today.year,
         today.month,
         today - timedelta(days=1),
+        parse_tariff(tariff),
     )
 
 
@@ -623,7 +627,9 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                     return None
                 return _text(pair[0].get("status_label"), 128) or None
             case "estimated_month_cost":
-                estimate = _month_cost_estimate(snapshot)
+                estimate = _month_cost_estimate(
+                    snapshot, self.coordinator.entry.options.get(CONF_TARIFF)
+                )
                 return round(estimate.amount) if estimate is not None else None
             case "paid_invoice_count":
                 return len(snapshot.paid_invoices)
@@ -909,7 +915,9 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
         elif key == "latest_invoice_amount":
             attributes.update(self._invoice_attributes(snapshot))
         elif key == "estimated_month_cost":
-            estimate = _month_cost_estimate(snapshot)
+            estimate = _month_cost_estimate(
+                snapshot, self.coordinator.entry.options.get(CONF_TARIFF)
+            )
             if estimate is not None:
                 attributes.update(
                     {
@@ -918,10 +926,26 @@ class EvnSensor(CoordinatorEntity[EvnCoordinator], SensorEntity):
                         "target_month": f"{estimate.through.year:04d}-{estimate.through.month:02d}",
                         "energy": estimate.energy,
                         "unit_price": estimate.unit_price,
-                        "price_period": f"{estimate.price_period[0]:04d}-{estimate.price_period[1]:02d}",
-                        "source": "diennangngay+latest_invoice_average",
+                        "mode": estimate.mode,
+                        "projected_energy": estimate.projected_energy,
+                        "projected_amount": estimate.projected_amount,
+                        "source": (
+                            "diennangngay+latest_invoice_average"
+                            if estimate.mode == "auto"
+                            else "diennangngay+configured_tariff"
+                        ),
                         "provisional": True,
                     }
+                    | (
+                        {
+                            "price_period": (
+                                f"{estimate.price_period[0]:04d}-"
+                                f"{estimate.price_period[1]:02d}"
+                            )
+                        }
+                        if estimate.price_period is not None
+                        else {}
+                    )
                 )
         elif key == "fetched_at":
             attributes.update(self._info_attributes(snapshot))

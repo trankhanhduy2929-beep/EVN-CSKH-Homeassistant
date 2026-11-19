@@ -9,8 +9,8 @@ khiển trong sidebar để xem điện năng, chỉ số công tơ, hóa đơn 
 - **Sensor theo điểm đo:** sản lượng tháng gần nhất/trước đó, % thay đổi,
   trung bình 12 tháng, chỉ số công tơ, hệ số nhân, ngày ghi.
 - **Sensor theo khách hàng:** tiền và số hóa đơn chưa thanh toán, hóa đơn gần
-  nhất, số hóa đơn đã trả, tiền điện tháng hiện tại ước tính đến hôm qua, lịch
-  ngừng điện, lần cập nhật gần nhất.
+  nhất, số hóa đơn đã trả, tiền điện tháng hiện tại ước tính đến hôm qua và dự
+  kiến cả tháng, lịch ngừng điện, lần cập nhật gần nhất.
 - **Sensor chi tiết:** tiêu thụ hôm nay/hôm qua/hôm kia, chỉ số tạm chốt, chỉ số
   cuối kỳ trước, tiền và điện năng ba kỳ gần nhất, hóa đơn năm nay.
 - **Lịch ngừng điện:** binary sensor lịch sắp tới, đang diễn ra, sắp bắt đầu
@@ -22,6 +22,8 @@ khiển trong sidebar để xem điện năng, chỉ số công tơ, hóa đơn 
   riêng, thống kê Tổng/Trung bình/Cao nhất, animation.
 - **Hóa đơn:** tìm kiếm, lọc trạng thái và năm, xem chi tiết, tải PDF hóa đơn,
   bảng kê và thông báo.
+- **Giá điện trong panel:** chọn đơn giá bình quân hóa đơn gần nhất, giá cố
+  định hoặc 6 bậc lũy tiến để ước tính tiền điện; lưu riêng cho từng tài khoản.
 
 ## Cài đặt
 
@@ -51,10 +53,12 @@ Yêu cầu **Home Assistant 2025.12 trở lên**. Chu kỳ cập nhật mặc đ
 
 ### Tổng quan
 
-Hiển thị điện năng tháng này, mức tăng/giảm, khoản cần xử lý, KPI (gồm **Ước
-tính tháng này**), so sánh ngày/tháng và biểu đồ sản lượng, chi phí. Dữ liệu 5
-năm được tải tự động, không cần bấm nút. Chọn **Cột** hoặc **Sóng** để đổi kiểu
-biểu đồ tháng/năm.
+Hiển thị điện năng kỳ này, mức tăng/giảm so với tháng trước, tiến độ ngày, thẻ
+**Ước tính tiền điện** (đã tính đến hôm qua và dự kiến cả tháng), KPI, khoản cần
+xử lý, so sánh ngày/tháng và biểu đồ sản lượng, chi phí. Dữ liệu 5 năm được tải
+tự động, không cần bấm nút. Chọn **Cột** hoặc **Sóng** để đổi kiểu biểu đồ
+tháng/năm. Quản trị viên bấm **Thiết lập giá** trên thẻ ước tính để chọn cách
+tính giá điện.
 
 ### Điện năng
 
@@ -82,10 +86,13 @@ bộ chỉ số.
 
 - Ngày/tháng EVN chưa công bố được giữ **unknown**, không đổi thành 0.
 - Tháng hiện tại có thể là số **tạm tính** từ các ngày đã có.
-- **Ước tính tháng này** = điện năng các ngày đã có trong tháng đến hết hôm qua
-  × đơn giá bình quân của hóa đơn gần nhất có đủ tiền và điện năng. Đây là ước
-  tính, không phải hóa đơn chính thức; thiếu dữ liệu ngày hoặc hóa đơn thì giữ
-  unknown.
+- **Ước tính tiền điện** dùng điện năng các ngày đã có trong tháng đến hết hôm
+  qua. Cách tính giá mặc định là đơn giá bình quân của hóa đơn gần nhất có đủ
+  tiền và điện năng; có thể đổi sang giá cố định hoặc 6 bậc lũy tiến trong
+  **Tổng quan → Thiết lập giá**. Thiếu dữ liệu ngày thì giữ unknown; thiếu hóa
+  đơn chỉ ảnh hưởng cách tính mặc định.
+- **Dự kiến cả tháng** = tiền của phần đã có × số ngày trong tháng ÷ ngày có dữ
+  liệu cuối cùng. Đây là ngoại suy tuyến tính, không phải hóa đơn chính thức.
 - “Kỳ này/trước/trước nữa” theo nhãn tháng EVN trả về, không phải ngày đầu/cuối
   tháng lịch.
 - Hóa đơn chưa có của tháng hiện tại là unknown, không phải hóa đơn 0 đồng.

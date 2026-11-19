@@ -201,6 +201,7 @@ class EvnOptionsFlow(OptionsFlowWithReload):
                 return self.async_create_entry(
                     title="",
                     data={
+                        **self.config_entry.options,
                         CONF_UPDATE_INTERVAL: minutes,
                         CONF_SELECTED_CUSTOMERS: list(dict.fromkeys(selected)),
                     },

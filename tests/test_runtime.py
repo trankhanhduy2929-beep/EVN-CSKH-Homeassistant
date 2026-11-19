@@ -239,6 +239,9 @@ PUBLIC_ATTRIBUTES = {
     "status_label",
     "unit_price",
     "price_period",
+    "mode",
+    "projected_energy",
+    "projected_amount",
     "through_date",
     "org_code",
     "payment_channel_label",
@@ -789,6 +792,13 @@ async def test_installed_loader_setup_and_sensor_states(
     assert states["estimated_month_cost"].attributes["energy"] == 1.25
     assert states["estimated_month_cost"].attributes["unit_price"] == 10000.0
     assert states["estimated_month_cost"].attributes["price_period"] == "2026-10"
+    assert states["estimated_month_cost"].attributes["mode"] == "auto"
+    assert states["estimated_month_cost"].attributes[
+        "projected_energy"
+    ] == pytest.approx(6.458333)
+    assert states["estimated_month_cost"].attributes[
+        "projected_amount"
+    ] == pytest.approx(64583.333)
     assert states["estimated_month_cost"].attributes["provisional"] is True
     assert states["paid_invoice_count"].state == "1"
     assert rows["paid_invoice_count"].entity_category is EntityCategory.DIAGNOSTIC

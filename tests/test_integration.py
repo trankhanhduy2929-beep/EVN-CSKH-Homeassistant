@@ -63,6 +63,7 @@ from custom_components.evn_cskh.const import (
     CONF_CUSTOMERS,
     CONF_DEVICE_ID,
     CONF_SELECTED_CUSTOMERS,
+    CONF_TARIFF,
     CONF_TOKENS,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
@@ -404,7 +405,7 @@ def test_real_homeassistant_types_and_identity() -> None:
     )
     assert DOMAIN == "evn_cskh"
     assert NAME == "EVN CSKH"
-    assert VERSION == "0.9.2"
+    assert VERSION == "0.10.0"
     assert MIN_HA_VERSION == "2025.12"
     assert PLATFORMS == (Platform.SENSOR, Platform.BUTTON, Platform.BINARY_SENSOR)
     assert binary_sensor.PLATFORMS is PLATFORMS
@@ -849,6 +850,35 @@ async def test_options_native_reload_exactly_once_when_changed(
     assert dict(entry.options) == result["data"]
     await hass.config_entries.options.async_finish_flow(flow, result)
     cast(Mock, hass.config_entries.async_schedule_reload).assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_options_preserve_panel_tariff(
+    hass: HomeAssistant, customers: list[Customer], tokens: TokenState
+) -> None:
+    tariff = {"mode": "fixed", "fixed_price": 3500}
+    entry = make_entry(
+        hass,
+        customers,
+        tokens,
+        options={
+            CONF_SELECTED_CUSTOMERS: [customer_key(customers[0])],
+            CONF_TARIFF: tariff,
+        },
+    )
+    flow = make_options(hass, entry)
+    result = await flow.async_step_init(
+        {
+            CONF_UPDATE_INTERVAL: 60,
+            CONF_SELECTED_CUSTOMERS: [customer_key(customers[1])],
+        }
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {
+        CONF_UPDATE_INTERVAL: 60,
+        CONF_SELECTED_CUSTOMERS: [customer_key(customers[1])],
+        CONF_TARIFF: tariff,
+    }
 
 
 @pytest.mark.asyncio
@@ -1314,6 +1344,9 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
             "through_date",
             "unit_price",
             "price_period",
+            "mode",
+            "projected_energy",
+            "projected_amount",
             "org_code",
             "payment_channel_label",
             "customer_name",
@@ -1406,6 +1439,9 @@ async def test_sensor_platform_all_points_native_values_and_private_attributes(
                 assert attributes["energy"] == pytest.approx(3.5)
                 assert attributes["unit_price"] == pytest.approx(799999.92)
                 assert attributes["price_period"] == "2026-10"
+                assert attributes["mode"] == "auto"
+                assert attributes["projected_energy"] == pytest.approx(18.083333)
+                assert attributes["projected_amount"] == pytest.approx(14466665.22)
                 assert attributes["provisional"] is True
         elif key in ("next_outage", "next_outage_end", "fetched_at"):
             assert entity.device_class is SensorDeviceClass.TIMESTAMP

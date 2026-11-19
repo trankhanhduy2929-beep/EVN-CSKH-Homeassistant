@@ -10,16 +10,16 @@ const STYLE = `
 :host{--evn-line-soft:color-mix(in srgb,var(--evn-line) 55%,var(--evn-surface));--evn-accent-ink:#0a6aa6;--evn-error-ink:#b3261e;--evn-warning-ink:#8a5a0f;--evn-success-ink:#12702f}
 :host([dark]){--evn-accent-ink:#8cc7e8;--evn-error-ink:#ffb4ab;--evn-warning-ink:#f0c77a;--evn-success-ink:#8fd9a8}
 .card,.table-wrap,.point-card,.kpi-strip{border-color:var(--evn-line-soft)}.tabs{border-bottom-color:var(--evn-line-soft)}.chart-label{border-top-color:var(--evn-line-soft)}.badge.paid{color:var(--evn-success-ink)}.badge.unpaid{color:var(--evn-warning-ink)}
-.overview-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:stretch}.overview-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
-.hero-card{display:flex;flex-direction:column;gap:10px;padding:24px}.hero-eyebrow{font-size:13px;color:var(--evn-muted)}.hero-value{font-size:40px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hero-unit{font-size:18px;font-weight:500;color:var(--evn-muted)}.hero-delta{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-weight:600;font-variant-numeric:tabular-nums}.hero-delta svg{width:16px;height:16px;flex:none;color:var(--evn-muted)}.hero-delta .meta{font-weight:400}
+.overview-top{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:16px;align-items:stretch}.overview-bottom{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:16px;align-items:start}
+.hero-card{display:flex;flex-direction:column;gap:10px;padding:24px}.hero-eyebrow{font-size:13px;color:var(--evn-muted)}.hero-value{font-size:40px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hero-unit{font-size:18px;font-weight:500;color:var(--evn-muted)}.hero-delta{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-weight:600;font-variant-numeric:tabular-nums}.hero-delta svg{width:16px;height:16px;flex:none;color:var(--evn-muted)}.hero-delta .meta{font-weight:400}.hero-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-line));background:radial-gradient(circle at 88% 4%,color-mix(in srgb,var(--evn-chart-1) 20%,transparent) 0,transparent 38%),linear-gradient(145deg,color-mix(in srgb,var(--evn-chart-1) 12%,var(--evn-surface)) 0,var(--evn-surface) 62%)}.hero-card::after{content:"";position:absolute;width:220px;height:220px;right:-96px;bottom:-128px;border-radius:50%;background:color-mix(in srgb,var(--evn-chart-2) 14%,transparent);pointer-events:none}.hero-card>*{position:relative;z-index:1}.hero-number{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.hero-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--evn-chart-3) 18%,var(--evn-surface));color:color-mix(in srgb,var(--evn-chart-3) 60%,var(--evn-primary-ink,#1c1c1c));border:1px solid color-mix(in srgb,var(--evn-chart-3) 30%,var(--evn-surface))}.hero-progress{display:grid;gap:8px;margin-top:auto;padding-top:14px}.hero-progress-track{height:8px;border-radius:999px;background:color-mix(in srgb,var(--evn-chart-1) 12%,var(--evn-surface));overflow:hidden}.hero-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--evn-chart-1),var(--evn-chart-2));min-width:4px}.hero-facts{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--evn-muted);font-variant-numeric:tabular-nums}.estimate-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--evn-chart-4) 24%,var(--evn-line));background:radial-gradient(circle at 108% -10%,color-mix(in srgb,var(--evn-chart-4) 20%,transparent) 0,transparent 42%),linear-gradient(155deg,color-mix(in srgb,var(--evn-chart-4) 8%,var(--evn-surface)) 0,var(--evn-surface) 70%)}.estimate-head{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}.estimate-head .badge{margin-top:8px}.estimate-settings{color:var(--evn-accent-ink);font-size:13px;padding:2px 0;min-height:28px}.estimate-value{font-size:34px;line-height:1.15;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:12px;overflow-wrap:anywhere}.estimate-caption{font-size:13px;color:var(--evn-muted);margin-top:2px}.estimate-facts{display:grid;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--evn-chart-4) 18%,var(--evn-line-soft))}.estimate-facts>div{display:flex;justify-content:space-between;gap:12px;font-size:13px}.estimate-facts dt{color:var(--evn-muted)}.estimate-facts dd{font-weight:600;font-variant-numeric:tabular-nums}.estimate-empty{margin-top:18px;font-size:15px;font-weight:600}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.tariff-form{gap:16px}.tariff-field label{font-size:12px}.tariff-section{border-top:1px solid var(--evn-line-soft);padding-top:16px;display:grid;gap:12px}.tariff-section[hidden]{display:none!important}.tariff-grid{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1fr);gap:8px 10px;align-items:center}.tariff-grid-head{font-size:11px;color:var(--evn-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}.tariff-tier-name{font-size:13px;font-weight:600}.tariff-grid input{min-height:36px;height:36px}
 .action-card{padding:0;overflow:hidden;display:flex;flex-direction:column}.action-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 0;margin-bottom:12px}.action-item{padding:16px 20px;border-top:1px solid var(--evn-line-soft)}.action-label{font-size:13px;color:var(--evn-muted)}.action-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.action-value.compact{font-size:18px}.action-value.warn{color:var(--evn-warning-ink)}.action-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;overflow-wrap:anywhere}.action-empty{padding:16px 20px 20px;color:var(--evn-muted);font-size:13px}button.action-link{margin-top:8px;padding:5px 0;min-height:32px;border-color:transparent;background:transparent;color:var(--evn-accent-ink);font-weight:500;text-align:left}button.action-link:hover{background:transparent;text-decoration:underline}
-.kpi-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--evn-surface);border:1px solid var(--evn-line-soft);border-radius:14px;overflow:hidden}.kpi{padding:16px 20px;border-right:1px solid var(--evn-line-soft);min-width:0}.kpi:last-child{border-right:0}.kpi-label{font-size:13px;color:var(--evn-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font-size:20px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.kpi-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--evn-surface);border:1px solid var(--evn-line-soft);border-radius:14px;overflow:hidden}.kpi{padding:16px 20px;border-right:1px solid var(--evn-line-soft);min-width:0}.kpi:last-child{border-right:0}.kpi-label{font-size:13px;color:var(--evn-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font-size:20px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.kpi-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .overview-compare .card-head{align-items:center}.overview-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--evn-line-soft) transparent}.overview-chart-scroll .chart{margin-top:24px}
 .overview-usage,.overview-cost{display:grid;gap:12px}.usage-head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}.usage-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.usage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.chart-card{position:relative;background:linear-gradient(180deg,color-mix(in srgb,var(--evn-series) 6%,var(--evn-surface)) 0,var(--evn-surface) 150px)}.chart-card::before{content:"";position:absolute;inset:0 0 auto;height:3px;border-radius:14px 14px 0 0;background:linear-gradient(90deg,var(--evn-series),color-mix(in srgb,var(--evn-series) 30%,transparent) 62%,transparent);pointer-events:none}.series-1{--evn-series:var(--evn-chart-1)}.series-2{--evn-series:var(--evn-chart-2)}.series-3{--evn-series:var(--evn-chart-3)}.series-4{--evn-series:var(--evn-chart-4)}.chart-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.chart-stat{display:flex;align-items:baseline;gap:5px;padding:6px 10px;border-radius:999px;background:color-mix(in srgb,var(--evn-series) 10%,var(--evn-surface));border:1px solid color-mix(in srgb,var(--evn-series) 20%,var(--evn-surface))}.chart-stat-label{font-size:11px;color:var(--evn-muted)}.chart-stat-value{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--evn-series) 55%,var(--primary-text-color,#212121))}.chart-stat-unit{font-size:11px;color:var(--evn-muted)}.usage-card{min-height:0}.usage-card.usage-wide{grid-column:1/-1}.usage-card .card-head{padding:16px 20px 0}.usage-card .chart{margin-top:20px}.usage-card .chart-footer{display:none}.usage-card .bar-number{font-size:11px}.cost-card .bar-number{font-size:11px}@media(max-width:900px){.usage-grid{grid-template-columns:minmax(0,1fr)}}@media(max-width:767px){.cost-card .bar-number{display:none}.chart-stats{gap:6px;margin-top:10px}.chart-stat{padding:5px 8px}.chart-stat-unit{display:none}}
 .point-summary-cards{display:none}.point-summary-row{display:grid;gap:4px;padding:12px 0;border-top:1px solid var(--evn-line-soft)}.point-summary-row:first-child{border-top:0;padding-top:0}.point-summary-row strong{font-size:14px}.point-summary-row span{font-size:13px;color:var(--evn-muted)}
 @media(max-width:1100px){.overview-top,.overview-bottom{grid-template-columns:1fr}}
-@media(max-width:1000px){.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-right:1px solid var(--evn-line-soft)}.kpi:nth-child(2n){border-right:0}.kpi:nth-child(n+3){border-top:1px solid var(--evn-line-soft)}.kpi:last-child{grid-column:1/-1}}
-@media(max-width:767px){.hero-card{padding:16px}.hero-value{font-size:32px}.action-head{padding:16px 16px 0}.action-item{padding:14px 16px}.action-value{font-size:20px}.action-value.compact{font-size:16px}.kpi{padding:14px 16px}.kpi-value{font-size:18px}.overview-compare .card-head{flex-wrap:wrap}.overview-point-table{display:none}.point-summary-cards{display:grid}.overview-chart-scroll{margin-right:-16px;padding-right:16px}.overview-chart-scroll .chart{min-width:560px}}
+@media(max-width:1000px){.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-right:1px solid var(--evn-line-soft)}.kpi:nth-child(2n){border-right:0}.kpi:nth-child(n+3){border-top:1px solid var(--evn-line-soft)}}
+@media(max-width:767px){.hero-card{padding:16px}.hero-value{font-size:32px}.estimate-value{font-size:28px}.tariff-grid{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr)}.dialog-actions button{flex:1}.action-head{padding:16px 16px 0}.action-item{padding:14px 16px}.action-value{font-size:20px}.action-value.compact{font-size:16px}.kpi{padding:14px 16px}.kpi-value{font-size:18px}.overview-compare .card-head{flex-wrap:wrap}.overview-point-table{display:none}.point-summary-cards{display:grid}.overview-chart-scroll{margin-right:-16px;padding-right:16px}.overview-chart-scroll .chart{min-width:560px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 `;
 
@@ -234,7 +234,9 @@ export class EvnCskhPanel extends HTMLElement {
     this._view = node("div");
     this._dialog = node("dialog");
     this._dialog.setAttribute("aria-labelledby", "invoice-title");
-    this.shadowRoot.append(style, this._view, this._dialog);
+    this._tariffDialog = node("dialog");
+    this._tariffDialog.setAttribute("aria-labelledby", "tariff-title");
+    this.shadowRoot.append(style, this._view, this._dialog, this._tariffDialog);
     this._generation = 0;
     this._overviewRequest = 0;
     this._detailsRequest = 0;
@@ -264,6 +266,7 @@ export class EvnCskhPanel extends HTMLElement {
       this.shadowRoot.addEventListener(type, event => this._event(event), { signal: this._events.signal });
     }
     this._dialog.addEventListener("close", () => { if (!this._dialog.open) this._closeInvoice(); }, { signal: this._events.signal });
+    this._tariffDialog.addEventListener("close", () => { if (!this._tariffDialog.open) this._closeTariff(); }, { signal: this._events.signal });
     this._ready();
   }
 
@@ -280,6 +283,8 @@ export class EvnCskhPanel extends HTMLElement {
   _reset() {
     this._generation++;
     this._cancelPdf();
+    if (this._tariffDialog?.open) this._tariffDialog.close();
+    this._tariffDialog?.replaceChildren();
     clearTimeout(this._rateTimer);
     this._cooldown = 0;
     this._choices = [];
@@ -302,6 +307,9 @@ export class EvnCskhPanel extends HTMLElement {
     this._paid = "all";
     this._invoiceYear = "all";
     this._invoicePage = this._readingPage = 0;
+    this._tariffFocus = null;
+    this._tariffBusy = false;
+    this._tariffError = "";
   }
 
   _ready() {
@@ -516,11 +524,13 @@ export class EvnCskhPanel extends HTMLElement {
       if (target.id === "date-from" || target.id === "date-to") this._invalidateDetails();
       if (target.id === "paid-select") { this._paid = target.value; this._invoicePage = 0; this._render(); }
       if (target.id === "invoice-year") { this._invoiceYear = target.value; this._invoicePage = 0; this._render(); }
+      if (target.id === "tariff-mode") this._syncTariffMode();
       return;
     }
     if (event.type === "submit") {
       event.preventDefault();
       if (target.id === "history-filter") void this._loadDetails(true);
+      if (target.id === "tariff-form") void this._saveTariff();
       return;
     }
     if (event.type !== "click") return;
@@ -551,6 +561,9 @@ export class EvnCskhPanel extends HTMLElement {
     if (action === "clear-search") { this._query = ""; this._paid = "all"; this._invoiceYear = "all"; this._invoicePage = 0; this._render(); this.shadowRoot.getElementById("invoice-search")?.focus(); }
     if (action === "invoice") this._openInvoice(Number(control.dataset.index));
     if (action === "close-invoice") this._dialog.close();
+    if (action === "tariff-open") this._openTariff();
+    if (action === "close-tariff") this._tariffDialog.close();
+    if (action === "tariff-save") void this._saveTariff();
     if (action === "pdf") void this._download(control.dataset.kind);
     if (action === "pdf-row") void this._downloadRow(Number(control.dataset.index), control.dataset.kind);
     if (action === "pdf-row-retry") this._retryRowDownload();
@@ -701,25 +714,88 @@ export class EvnCskhPanel extends HTMLElement {
   }
 
   _overviewHero(usage) {
+    const period = this._overview?.current_period;
     const monthly = usage?.monthly;
-    const mom = usage?.mom;
+    const value = finite(period?.kwh) ? period.kwh : monthly?.kwh;
+    const periodLabel = period?.period ? `Tháng ${displayMonth(period.period)}` : monthly?.period ? `Tháng ${displayMonth(monthly.period)}` : "Kỳ gần nhất";
     const card = node("section", null, "card hero-card");
-    card.setAttribute("aria-label", "Điện năng tháng gần nhất");
-    card.append(node("p", monthly?.period ? `Điện năng tháng ${displayMonth(monthly.period)}` : "Điện năng tháng gần nhất", "hero-eyebrow"));
-    const value = node("p", null, "hero-value");
-    if (finite(monthly?.kwh)) value.append(document.createTextNode(`${numeric(monthly.kwh)} `), node("span", "kWh", "hero-unit"));
-    else value.textContent = this._overviewBusy && !this._overview ? "Đang tải…" : "Chưa có dữ liệu";
-    card.append(value);
+    card.setAttribute("aria-label", "Tiêu thụ kỳ này");
+    card.append(node("p", `Tiêu thụ kỳ này · ${periodLabel}`, "hero-eyebrow"));
+    const line = node("div", null, "hero-number");
+    const number = node("p", null, "hero-value");
+    if (finite(value)) number.append(document.createTextNode(`${numeric(value)} `), node("span", "kWh", "hero-unit"));
+    else number.textContent = this._overviewBusy && !this._overview ? "Đang tải…" : "Chưa có dữ liệu";
+    line.append(number);
+    if (period?.provisional) line.append(node("span", "Tạm tính", "hero-badge"));
+    card.append(line);
     const delta = node("p", null, "hero-delta");
-    if (finite(mom?.percent)) {
-      const direction = mom.percent > 0 ? "Tăng" : mom.percent < 0 ? "Giảm" : "Không đổi";
+    if (finite(period?.percent)) {
+      const direction = period.percent > 0 ? "Tăng" : period.percent < 0 ? "Giảm" : "Không đổi";
       const icon = svgNode("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" });
-      icon.append(svgNode("path", { d: mom.percent > 0 ? "M12 19V5M5 12l7-7 7 7" : mom.percent < 0 ? "M12 5v14M19 12l-7 7-7-7" : "M5 12h14" }));
-      delta.append(icon, document.createTextNode(direction === "Không đổi" ? direction : `${direction} ${percentFormat.format(Math.abs(mom.percent))}%`));
-      delta.append(node("span", finite(mom.previous) ? `so với ${numeric(mom.previous)} kWh kỳ trước` : "so với kỳ trước", "meta"));
-    } else delta.append(node("span", monthly?.period ? "Chưa có kỳ trước" : "Chưa có kỳ ghi nhận", "meta"));
+      icon.append(svgNode("path", { d: period.percent > 0 ? "M12 19V5M5 12l7-7 7 7" : period.percent < 0 ? "M12 5v14M19 12l-7 7-7-7" : "M5 12h14" }));
+      delta.append(icon, document.createTextNode(direction === "Không đổi" ? direction : `${direction} ${percentFormat.format(Math.abs(period.percent))}%`));
+      delta.append(node("span", finite(period.previous_kwh) ? `so với ${numeric(period.previous_kwh)} kWh tháng trước` : "so với tháng trước", "meta"));
+    } else if (finite(period?.previous_kwh) || finite(monthly?.mom?.percent)) {
+      const mom = monthly?.mom;
+      if (finite(mom?.percent)) {
+        const direction = mom.percent > 0 ? "Tăng" : mom.percent < 0 ? "Giảm" : "Không đổi";
+        delta.append(document.createTextNode(direction === "Không đổi" ? direction : `${direction} ${percentFormat.format(Math.abs(mom.percent))}%`), node("span", "so với kỳ trước", "meta"));
+      } else delta.append(node("span", "Chưa có kỳ trước", "meta"));
+    } else delta.append(node("span", "Chưa có kỳ ghi nhận", "meta"));
     card.append(delta);
+    if (period && finite(period.days) && finite(period.days_in_month)) {
+      const progress = node("div", null, "hero-progress");
+      const track = node("div", null, "hero-progress-track");
+      const fill = node("div", null, "hero-progress-fill");
+      fill.style.width = `${Math.max(0, Math.min(100, period.days / period.days_in_month * 100))}%`;
+      track.append(fill);
+      progress.append(track, node("div", null, "hero-facts"));
+      progress.lastChild.append(
+        node("span", `Ngày ${numeric(period.days)}/${numeric(period.days_in_month)}`),
+        node("span", finite(period.kwh) && period.days ? `TB ${numeric(period.kwh / period.days)} kWh/ngày` : "Chưa đủ dữ liệu ngày")
+      );
+      card.append(progress);
+    }
     if (this._point) card.append(node("p", `Điểm đo ${text(this._point)}`, "meta"));
+    return card;
+  }
+
+  _overviewEstimateCard(overview) {
+    const estimate = overview?.estimated_cost;
+    const tariff = overview?.tariff;
+    const card = node("section", null, "card estimate-card");
+    card.setAttribute("aria-label", "Ước tính tiền điện");
+    const head = node("div", null, "estimate-head");
+    const title = node("div");
+    title.append(node("p", "Ước tính tiền điện", "hero-eyebrow"), node("span", text(tariff?.label || "Theo hóa đơn gần nhất"), "badge"));
+    head.append(title);
+    if (this._admin()) {
+      const settings = this._button("Thiết lập giá", "tariff-open", "tariff-open", "link estimate-settings");
+      head.append(settings);
+    }
+    card.append(head);
+    if (finite(estimate?.projected_amount) || finite(estimate?.amount)) {
+      const projected = finite(estimate.projected_amount) ? estimate.projected_amount : estimate.amount;
+      card.append(node("p", money(projected), "estimate-value"));
+      card.append(node("p", finite(estimate.projected_amount) ? "Dự kiến cả tháng" : "Tạm tính đến nay", "estimate-caption"));
+      const facts = node("dl", null, "estimate-facts");
+      for (const [label, value] of [
+        ["Đã tính đến", finite(estimate.amount) ? money(estimate.amount) : "—"],
+        ["Điện năng", finite(estimate.energy_kwh) ? `${numeric(estimate.energy_kwh)} kWh` : "—"],
+        ["Dự kiến", finite(estimate.projected_energy) ? `${numeric(estimate.projected_energy)} kWh` : "—"],
+        ["Đơn giá", finite(estimate.unit_price) ? `${numeric(estimate.unit_price)} đ/kWh` : "—"]
+      ]) {
+        const row = node("div");
+        row.append(node("dt", label), node("dd", value));
+        facts.append(row);
+      }
+      card.append(facts);
+      const date = estimate.last_data_date || estimate.through_date;
+      card.append(node("p", `Dữ liệu ngày đến ${displayDate(date)} · ${estimate.mode === "auto" ? "đơn giá bình quân hóa đơn gần nhất" : "theo giá bạn đã đặt"}`, "meta"));
+    } else {
+      card.append(node("p", this._overviewBusy && !overview ? "Đang tải…" : "Chưa đủ dữ liệu để ước tính.", "estimate-empty"));
+      card.append(node("p", tariff?.mode === "auto" ? "Cần dữ liệu ngày và hóa đơn gần nhất, hoặc đặt giá điện thủ công." : "Kiểm tra lại giá điện và dữ liệu ngày.", "meta"));
+    }
     return card;
   }
 
@@ -776,14 +852,12 @@ export class EvnCskhPanel extends HTMLElement {
     const reading = usage?.reading;
     const daily = usage?.daily;
     const latest = this._latestInvoice(overview);
-    const estimate = overview?.estimated_cost;
     const waiting = this._overviewBusy && !overview;
     const point = this._point ? `Điểm đo ${text(this._point)}` : "Chưa có điểm đo";
     strip.append(
       this._kpi("Chỉ số mới nhất", finite(reading?.new) ? numeric(reading.new) : waiting ? "Đang tải…" : "Chưa có dữ liệu", reading?.period ? `Kỳ ${reading.period} · ${KINDS[reading.kind] || text(reading.kind)}` : point),
-      this._kpi("Trung bình 12 tháng", finite(usage?.average_12m) ? `${numeric(usage.average_12m)} kWh` : waiting ? "Đang tải…" : "Chưa có dữ liệu", point),
       this._kpi("Hôm qua", finite(daily?.kwh) ? `${numeric(daily.kwh)} kWh` : waiting ? "Đang tải…" : "Chưa có dữ liệu", daily?.period ? `Kỳ ${text(daily.period)}` : "Chưa có dữ liệu ngày"),
-      this._kpi("Ước tính tháng này", finite(estimate?.amount) ? money(estimate.amount) : waiting ? "Đang tải…" : overview ? "Chưa đủ dữ liệu" : "Chưa có dữ liệu", estimate ? `Đến ${displayDate(estimate.last_data_date || estimate.through_date)} · ${numeric(estimate.energy_kwh)} kWh` : "Cần dữ liệu ngày và hóa đơn gần nhất"),
+      this._kpi("Trung bình 12 tháng", finite(usage?.average_12m) ? `${numeric(usage.average_12m)} kWh` : waiting ? "Đang tải…" : "Chưa có dữ liệu", point),
       this._kpi("Hóa đơn gần nhất", latest ? money(latest.amount) : waiting ? "Đang tải…" : overview ? "Chưa có hóa đơn" : "Chưa có dữ liệu", latest ? `${text(latest.period)} · ${text(latest.status_label)}` : overview ? "Chưa có hóa đơn" : "Chưa có dữ liệu")
     );
     return strip;
@@ -962,9 +1036,9 @@ export class EvnCskhPanel extends HTMLElement {
     const overview = this._overview;
     const usage = this._usageFor(this._point);
     const top = node("div", null, "overview-top");
-    top.append(this._overviewHero(usage), this._overviewActions(overview));
+    top.append(this._overviewHero(usage), this._overviewEstimateCard(overview));
     const bottom = node("div", null, "overview-bottom");
-    bottom.append(this._overviewComparisonCard());
+    bottom.append(this._overviewComparisonCard(), this._overviewActions(overview));
     parent.append(top, this._overviewKpis(overview, usage), bottom, this._overviewUsageSection());
     if (this._details) parent.append(this._overviewCostSection());
     if (array(overview?.usage).length > 1) parent.append(this._pointSummary());
@@ -1851,6 +1925,178 @@ export class EvnCskhPanel extends HTMLElement {
     const stale = this._stalePdf;
     this._cancelPdf();
     if (stale) void this._loadDetails(true);
+    this.shadowRoot.getElementById(focus)?.focus({ preventScroll: true });
+  }
+
+  _openTariff() {
+    if (!this._admin()) return;
+    const tariff = this._overview?.tariff || { mode: "auto" };
+    const mode = ["auto", "fixed", "tiered"].includes(tariff.mode) ? tariff.mode : "auto";
+    const estimate = this._overview?.estimated_cost;
+    const defaultPrice = finite(estimate?.unit_price) && estimate.unit_price > 0 ? Math.round(estimate.unit_price) : "";
+    const savedTiers = array(tariff.tiers);
+    const savedLimits = [50, 100, 200, 300, 400, null];
+    const rows = savedLimits.map((limit, index) => {
+      const row = savedTiers[index];
+      return { limit: finite(row?.limit) ? row.limit : limit, price: finite(row?.price) ? row.price : defaultPrice };
+    });
+    this._tariffFocus = this.shadowRoot.activeElement?.id || "tariff-open";
+    this._tariffBusy = false;
+    this._tariffError = "";
+    const header = node("header", null, "dialog-head");
+    const title = node("h2", "Thiết lập giá điện");
+    title.id = "tariff-title";
+    header.append(title, this._iconButton("Đóng thiết lập giá điện", "close-tariff", "tariff-close", "m6 6 12 12M6 18 18 6"));
+    const form = node("form", null, "dialog-body tariff-form");
+    form.id = "tariff-form";
+    const field = (label, input) => {
+      const wrap = node("div", null, "tariff-field");
+      const caption = node("label", label);
+      caption.htmlFor = input.id;
+      wrap.append(caption, input);
+      return wrap;
+    };
+    const select = node("select");
+    select.id = "tariff-mode";
+    for (const [value, label] of [["auto", "Theo hóa đơn gần nhất"], ["fixed", "Giá cố định"], ["tiered", "Bậc thang"]]) {
+      const option = node("option", label);
+      option.value = value;
+      option.selected = value === mode;
+      select.append(option);
+    }
+    form.append(field("Cách tính giá", select));
+    form.append(node("p", "Chọn cách tính phù hợp. Giá thủ công chỉ dùng để ước tính, không thay đổi hóa đơn của EVN.", "meta"));
+    const auto = node("section", null, "tariff-section");
+    auto.id = "tariff-auto-note";
+    auto.append(node("p", "Dùng đơn giá bình quân của hóa đơn gần nhất có cả số tiền và sản lượng. Đây là cách an toàn nhất khi bạn không chắc giá hiện hành.", "meta"));
+    const fixed = node("section", null, "tariff-section");
+    fixed.id = "tariff-fixed-fields";
+    const fixedInput = node("input");
+    fixedInput.id = "tariff-fixed-price";
+    fixedInput.type = "number";
+    fixedInput.min = "0";
+    fixedInput.step = "1";
+    fixedInput.inputMode = "numeric";
+    fixedInput.value = finite(tariff.fixed_price) ? String(tariff.fixed_price) : defaultPrice === "" ? "" : String(defaultPrice);
+    fixed.append(field("Giá cố định (đ/kWh)", fixedInput), node("p", "Áp dụng một mức giá cho toàn bộ điện năng trong tháng.", "meta"));
+    const tiered = node("section", null, "tariff-section");
+    tiered.id = "tariff-tiered-fields";
+    tiered.append(node("p", "Giá lũy tiến theo 6 bậc. Bậc cuối áp dụng cho phần vượt trên mốc 400 kWh.", "meta"));
+    const table = node("div", null, "tariff-grid");
+    table.append(node("span", "Bậc", "tariff-grid-head"), node("span", "Đến kWh", "tariff-grid-head"), node("span", "Giá đ/kWh", "tariff-grid-head"));
+    rows.forEach((row, index) => {
+      table.append(node("span", `Bậc ${index + 1}`, "tariff-tier-name"));
+      const limit = node("input");
+      limit.id = `tariff-limit-${index}`;
+      limit.type = "number";
+      limit.min = "0";
+      limit.step = "1";
+      limit.inputMode = "numeric";
+      limit.value = index === rows.length - 1 ? "" : String(row.limit ?? "");
+      limit.disabled = index === rows.length - 1;
+      limit.setAttribute("aria-label", `Giới hạn bậc ${index + 1} (kWh)`);
+      limit.placeholder = index === rows.length - 1 ? "Trở lên" : "";
+      const price = node("input");
+      price.id = `tariff-price-${index}`;
+      price.type = "number";
+      price.min = "0";
+      price.step = "1";
+      price.inputMode = "numeric";
+      price.value = row.price === "" ? "" : String(row.price);
+      price.setAttribute("aria-label", `Giá bậc ${index + 1} (đồng trên kWh)`);
+      price.placeholder = "Nhập giá";
+      table.append(limit, price);
+    });
+    tiered.append(table);
+    form.append(auto, fixed, tiered);
+    const status = node("p", "", "pdf-status");
+    status.id = "tariff-status";
+    status.setAttribute("role", "alert");
+    const actions = node("div", null, "dialog-actions");
+    actions.append(this._button("Hủy", "close-tariff", "tariff-cancel"), this._button("Lưu thiết lập", "tariff-save", "tariff-save", "primary"));
+    form.append(status, actions);
+    this._tariffDialog.replaceChildren(header, form);
+    this._tariffDialog.showModal();
+    this._syncTariffMode();
+    select.focus();
+  }
+
+  _syncTariffMode() {
+    const mode = this._tariffDialog.querySelector("#tariff-mode")?.value || "auto";
+    const auto = this._tariffDialog.querySelector("#tariff-auto-note");
+    const fixed = this._tariffDialog.querySelector("#tariff-fixed-fields");
+    const tiered = this._tariffDialog.querySelector("#tariff-tiered-fields");
+    if (auto) auto.hidden = mode !== "auto";
+    if (fixed) fixed.hidden = mode !== "fixed";
+    if (tiered) tiered.hidden = mode !== "tiered";
+  }
+
+  _tariffStatus(message) {
+    const status = this._tariffDialog.querySelector("#tariff-status");
+    if (status) status.textContent = message;
+  }
+
+  async _saveTariff() {
+    if (this._tariffBusy || !this._choice) return;
+    const form = this._tariffDialog.querySelector("#tariff-form");
+    if (!form) return;
+    const mode = form.querySelector("#tariff-mode")?.value || "auto";
+    const value = { mode };
+    if (mode === "fixed") {
+      const price = Number(form.querySelector("#tariff-fixed-price")?.value);
+      if (!Number.isFinite(price) || price <= 0) {
+        this._tariffStatus("Nhập giá cố định lớn hơn 0 đ/kWh.");
+        return;
+      }
+      value.fixed_price = price;
+    }
+    if (mode === "tiered") {
+      const tiers = [];
+      let previous = 0;
+      for (let index = 0; index < 6; index++) {
+        const price = Number(form.querySelector(`#tariff-price-${index}`)?.value);
+        if (!Number.isFinite(price) || price <= 0) {
+          this._tariffStatus(`Nhập giá dương cho bậc ${index + 1}.`);
+          return;
+        }
+        const limit = index === 5 ? null : Number(form.querySelector(`#tariff-limit-${index}`)?.value);
+        if (index < 5 && (!Number.isFinite(limit) || limit <= previous)) {
+          this._tariffStatus(`Mốc bậc ${index + 1} phải lớn hơn mốc bậc ${index}.`);
+          return;
+        }
+        tiers.push({ limit, price });
+        if (limit !== null) previous = limit;
+      }
+      value.tiers = tiers;
+    }
+    const generation = this._generation;
+    this._tariffBusy = true;
+    const button = this._tariffDialog.querySelector("#tariff-save");
+    if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+    this._tariffStatus("Đang lưu thiết lập…");
+    try {
+      const response = await this._hass.callWS({ type: "evn_cskh/set_tariff", entry_id: this._choice.entry.entry_id, tariff: value });
+      if (!this._current(generation)) return;
+      this._tariffBusy = false;
+      if (!response?.tariff) throw new Error("schema");
+      this._tariffStatus("");
+      this._tariffDialog.close();
+      void this._loadOverview();
+    } catch (error) {
+      if (!this._current(generation)) return;
+      this._tariffBusy = false;
+      if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }
+      const message = this._error(error);
+      if (this._authError) this._render();
+      else this._tariffStatus(message);
+    }
+  }
+
+  _closeTariff() {
+    const focus = this._tariffFocus;
+    this._tariffFocus = null;
+    this._tariffBusy = false;
+    this._tariffDialog.replaceChildren();
     this.shadowRoot.getElementById(focus)?.focus({ preventScroll: true });
   }
 
