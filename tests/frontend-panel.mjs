@@ -194,7 +194,7 @@ window.__mock = (options = {}) => {
       }
       if (message.type === "evn_cskh/set_tariff") {
         window.__tariff = message.tariff;
-        return { tariff: { ...message.tariff, label: message.tariff.mode === "fixed" ? "Giá cố định" : message.tariff.mode === "tiered" ? "Bậc thang" : "Theo hóa đơn gần nhất" } };
+        return { tariff: { ...message.tariff, label: message.tariff.mode === "fixed" ? "Giá cố định theo kWh" : message.tariff.mode === "tiered" ? "Bậc thang" : "Theo hóa đơn gần nhất" } };
       }
       if (message.type === "evn_cskh/details") {
         if (window.__detailsWait) await window.__detailsWait;
@@ -425,7 +425,34 @@ async function main() {
     check("overview estimate projected and settings", await page.evaluate(() => {
       const root = document.getElementById("p").shadowRoot;
       const card = root.querySelector(".estimate-card");
-      return card.textContent.includes("552.000") && card.textContent.includes("Dự kiến cả tháng") && card.textContent.includes("123.500") && card.textContent.includes("41,2 kWh") && card.textContent.includes("182,5 kWh") && card.textContent.includes("Theo hóa đơn gần nhất") && Boolean(card.querySelector("#tariff-open"));
+      const actualEl = card.querySelector(".estimate-value");
+      const projectedEl = card.querySelector(".estimate-projected-value");
+      const actual = actualEl?.textContent.replace(/\s/g, " ");
+      const projected = projectedEl?.textContent.replace(/\s/g, " ");
+      const actualSize = parseFloat(getComputedStyle(actualEl).fontSize);
+      const projectedSize = parseFloat(getComputedStyle(projectedEl).fontSize);
+      return actualSize > projectedSize && actualEl.getBoundingClientRect().top < projectedEl.getBoundingClientRect().top && actual === "123.500 ₫" && projected === "552.000 ₫" && card.textContent.includes("Tạm tính đến nay") && card.textContent.includes("Ước tính cả tháng") && card.textContent.includes("41,2 kWh") && card.textContent.includes("182,5 kWh (6/31 ngày dữ liệu) × 2.997,57 đ/kWh") && card.textContent.includes("Theo hóa đơn gần nhất") && Boolean(card.querySelector("#tariff-open"));
+    }));
+    check("overview fixed tariff projection uses configured price", await page.evaluate(() => {
+      const panel = document.getElementById("p");
+      const original = panel._overview;
+      panel._overview = {
+        ...original,
+        tariff: { mode: "fixed", label: "Giá cố định theo kWh" },
+        estimated_cost: {
+          amount: 696211, energy_kwh: 367.2, unit_price: 1896,
+          projected_amount: 1044317, projected_energy: 550.8,
+          through_date: "2026-11-19", last_data_date: "2026-11-20",
+          mode: "fixed", provisional: true
+        }
+      };
+      panel._render();
+      const card = panel.shadowRoot.querySelector(".estimate-card");
+      const actual = card.querySelector(".estimate-value")?.textContent.replace(/\s/g, " ");
+      const projected = card.querySelector(".estimate-projected-value")?.textContent.replace(/\s/g, " ");
+      panel._overview = original;
+      panel._render();
+      return actual === "696.211 ₫" && projected === "1.044.317 ₫" && card.textContent.includes("550,8 kWh (20/30 ngày dữ liệu) × 1.896 đ/kWh") && card.textContent.includes("Giá cố định theo kWh");
     }));
     check("overview estimated cost unknown not zero", await page.evaluate(() => {
       const panel = document.getElementById("p");

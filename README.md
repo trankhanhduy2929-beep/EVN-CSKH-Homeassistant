@@ -23,7 +23,8 @@ khiển trong sidebar để xem điện năng, chỉ số công tơ, hóa đơn 
 - **Hóa đơn:** tìm kiếm, lọc trạng thái và năm, xem chi tiết, tải PDF hóa đơn,
   bảng kê và thông báo.
 - **Giá điện trong panel:** chọn đơn giá bình quân hóa đơn gần nhất, giá cố
-  định hoặc 6 bậc lũy tiến để ước tính tiền điện; lưu riêng cho từng tài khoản.
+  định theo kWh (một mức cho mọi kWh, phù hợp giá kinh doanh) hoặc 6 bậc lũy
+  tiến để ước tính tiền điện; lưu riêng cho từng tài khoản.
 
 ## Cài đặt
 
@@ -54,8 +55,8 @@ Yêu cầu **Home Assistant 2025.12 trở lên**. Chu kỳ cập nhật mặc đ
 ### Tổng quan
 
 Hiển thị điện năng kỳ này, mức tăng/giảm so với tháng trước, tiến độ ngày, thẻ
-**Ước tính tiền điện** (đã tính đến hôm qua và dự kiến cả tháng), KPI, khoản cần
-xử lý, so sánh ngày/tháng và biểu đồ sản lượng, chi phí. Dữ liệu 5 năm được tải
+**Tiền điện tháng này** (số tạm tính đến nay ở trên, ước tính cả tháng ở dưới),
+KPI, khoản cần xử lý, so sánh ngày/tháng và biểu đồ sản lượng, chi phí. Dữ liệu 5 năm được tải
 tự động, không cần bấm nút. Chọn **Cột** hoặc **Sóng** để đổi kiểu biểu đồ
 tháng/năm. Quản trị viên bấm **Thiết lập giá** trên thẻ ước tính để chọn cách
 tính giá điện.
@@ -86,12 +87,12 @@ bộ chỉ số.
 
 - Ngày/tháng EVN chưa công bố được giữ **unknown**, không đổi thành 0.
 - Tháng hiện tại có thể là số **tạm tính** từ các ngày đã có.
-- **Ước tính tiền điện** dùng điện năng các ngày đã có trong tháng đến hết hôm
+- **Tiền điện tháng này** dùng điện năng các ngày đã có trong tháng đến hết hôm
   qua. Cách tính giá mặc định là đơn giá bình quân của hóa đơn gần nhất có đủ
-  tiền và điện năng; có thể đổi sang giá cố định hoặc 6 bậc lũy tiến trong
-  **Tổng quan → Thiết lập giá**. Thiếu dữ liệu ngày thì giữ unknown; thiếu hóa
-  đơn chỉ ảnh hưởng cách tính mặc định.
-- **Dự kiến cả tháng** = tiền của phần đã có × số ngày trong tháng ÷ ngày có dữ
+  tiền và điện năng; có thể đổi sang giá cố định theo kWh hoặc 6 bậc lũy tiến
+  trong **Tổng quan → Thiết lập giá**. Thiếu dữ liệu ngày thì giữ unknown; thiếu
+  hóa đơn chỉ ảnh hưởng cách tính mặc định.
+- **Ước tính cả tháng** = tiền của phần đã có × số ngày trong tháng ÷ ngày có dữ
   liệu cuối cùng. Đây là ngoại suy tuyến tính, không phải hóa đơn chính thức.
 - “Kỳ này/trước/trước nữa” theo nhãn tháng EVN trả về, không phải ngày đầu/cuối
   tháng lịch.

@@ -822,7 +822,7 @@ async def test_ws_set_tariff_updates_options_and_overview(
         "tariff": {
             "mode": "fixed",
             "fixed_price": 3500,
-            "label": "Giá cố định",
+            "label": "Giá cố định theo kWh",
         }
     }
     assert entry.options[CONF_TARIFF] == {"mode": "fixed", "fixed_price": 3500}

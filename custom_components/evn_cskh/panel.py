@@ -440,7 +440,7 @@ def _tariff_value(tariff: TariffConfig) -> dict[str, Any]:
 def _tariff_dto(tariff: TariffConfig) -> dict[str, Any]:
     labels = {
         "auto": "Theo hóa đơn gần nhất",
-        "fixed": "Giá cố định",
+        "fixed": "Giá cố định theo kWh",
         "tiered": "Bậc thang",
     }
     return _tariff_value(tariff) | {

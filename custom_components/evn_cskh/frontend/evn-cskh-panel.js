@@ -11,7 +11,7 @@ const STYLE = `
 :host([dark]){--evn-accent-ink:#8cc7e8;--evn-error-ink:#ffb4ab;--evn-warning-ink:#f0c77a;--evn-success-ink:#8fd9a8}
 .card,.table-wrap,.point-card,.kpi-strip{border-color:var(--evn-line-soft)}.tabs{border-bottom-color:var(--evn-line-soft)}.chart-label{border-top-color:var(--evn-line-soft)}.badge.paid{color:var(--evn-success-ink)}.badge.unpaid{color:var(--evn-warning-ink)}
 .overview-top{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:16px;align-items:stretch}.overview-bottom{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:16px;align-items:start}
-.hero-card{display:flex;flex-direction:column;gap:10px;padding:24px}.hero-eyebrow{font-size:13px;color:var(--evn-muted)}.hero-value{font-size:40px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hero-unit{font-size:18px;font-weight:500;color:var(--evn-muted)}.hero-delta{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-weight:600;font-variant-numeric:tabular-nums}.hero-delta svg{width:16px;height:16px;flex:none;color:var(--evn-muted)}.hero-delta .meta{font-weight:400}.hero-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-line));background:radial-gradient(circle at 88% 4%,color-mix(in srgb,var(--evn-chart-1) 20%,transparent) 0,transparent 38%),linear-gradient(145deg,color-mix(in srgb,var(--evn-chart-1) 12%,var(--evn-surface)) 0,var(--evn-surface) 62%)}.hero-card::after{content:"";position:absolute;width:220px;height:220px;right:-96px;bottom:-128px;border-radius:50%;background:color-mix(in srgb,var(--evn-chart-2) 14%,transparent);pointer-events:none}.hero-card>*{position:relative;z-index:1}.hero-number{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.hero-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--evn-chart-3) 18%,var(--evn-surface));color:color-mix(in srgb,var(--evn-chart-3) 60%,var(--evn-primary-ink,#1c1c1c));border:1px solid color-mix(in srgb,var(--evn-chart-3) 30%,var(--evn-surface))}.hero-progress{display:grid;gap:8px;margin-top:auto;padding-top:14px}.hero-progress-track{height:8px;border-radius:999px;background:color-mix(in srgb,var(--evn-chart-1) 12%,var(--evn-surface));overflow:hidden}.hero-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--evn-chart-1),var(--evn-chart-2));min-width:4px}.hero-facts{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--evn-muted);font-variant-numeric:tabular-nums}.estimate-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--evn-chart-4) 24%,var(--evn-line));background:radial-gradient(circle at 108% -10%,color-mix(in srgb,var(--evn-chart-4) 20%,transparent) 0,transparent 42%),linear-gradient(155deg,color-mix(in srgb,var(--evn-chart-4) 8%,var(--evn-surface)) 0,var(--evn-surface) 70%)}.estimate-head{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}.estimate-head .badge{margin-top:8px}.estimate-settings{color:var(--evn-accent-ink);font-size:13px;padding:2px 0;min-height:28px}.estimate-value{font-size:34px;line-height:1.15;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:12px;overflow-wrap:anywhere}.estimate-caption{font-size:13px;color:var(--evn-muted);margin-top:2px}.estimate-facts{display:grid;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--evn-chart-4) 18%,var(--evn-line-soft))}.estimate-facts>div{display:flex;justify-content:space-between;gap:12px;font-size:13px}.estimate-facts dt{color:var(--evn-muted)}.estimate-facts dd{font-weight:600;font-variant-numeric:tabular-nums}.estimate-empty{margin-top:18px;font-size:15px;font-weight:600}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.tariff-form{gap:16px}.tariff-field label{font-size:12px}.tariff-section{border-top:1px solid var(--evn-line-soft);padding-top:16px;display:grid;gap:12px}.tariff-section[hidden]{display:none!important}.tariff-grid{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1fr);gap:8px 10px;align-items:center}.tariff-grid-head{font-size:11px;color:var(--evn-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}.tariff-tier-name{font-size:13px;font-weight:600}.tariff-grid input{min-height:36px;height:36px}
+.hero-card{display:flex;flex-direction:column;gap:10px;padding:24px}.hero-eyebrow{font-size:13px;color:var(--evn-muted)}.hero-value{font-size:40px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hero-unit{font-size:18px;font-weight:500;color:var(--evn-muted)}.hero-delta{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-weight:600;font-variant-numeric:tabular-nums}.hero-delta svg{width:16px;height:16px;flex:none;color:var(--evn-muted)}.hero-delta .meta{font-weight:400}.hero-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--evn-chart-1) 22%,var(--evn-line));background:radial-gradient(circle at 88% 4%,color-mix(in srgb,var(--evn-chart-1) 20%,transparent) 0,transparent 38%),linear-gradient(145deg,color-mix(in srgb,var(--evn-chart-1) 12%,var(--evn-surface)) 0,var(--evn-surface) 62%)}.hero-card::after{content:"";position:absolute;width:220px;height:220px;right:-96px;bottom:-128px;border-radius:50%;background:color-mix(in srgb,var(--evn-chart-2) 14%,transparent);pointer-events:none}.hero-card>*{position:relative;z-index:1}.hero-number{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.hero-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--evn-chart-3) 18%,var(--evn-surface));color:color-mix(in srgb,var(--evn-chart-3) 60%,var(--evn-primary-ink,#1c1c1c));border:1px solid color-mix(in srgb,var(--evn-chart-3) 30%,var(--evn-surface))}.hero-progress{display:grid;gap:8px;margin-top:auto;padding-top:14px}.hero-progress-track{height:8px;border-radius:999px;background:color-mix(in srgb,var(--evn-chart-1) 12%,var(--evn-surface));overflow:hidden}.hero-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--evn-chart-1),var(--evn-chart-2));min-width:4px}.hero-facts{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--evn-muted);font-variant-numeric:tabular-nums}.estimate-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--evn-chart-4) 24%,var(--evn-line));background:radial-gradient(circle at 108% -10%,color-mix(in srgb,var(--evn-chart-4) 20%,transparent) 0,transparent 42%),linear-gradient(155deg,color-mix(in srgb,var(--evn-chart-4) 8%,var(--evn-surface)) 0,var(--evn-surface) 70%)}.estimate-head{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}.estimate-head .badge{margin-top:8px}.estimate-settings{color:var(--evn-accent-ink);font-size:13px;padding:2px 0;min-height:28px}.estimate-value{font-size:34px;line-height:1.15;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:12px;overflow-wrap:anywhere}.estimate-caption{font-size:13px;color:var(--evn-muted);margin-top:2px}.estimate-projection{display:grid;gap:4px;margin-top:16px;padding:12px;border:1px solid color-mix(in srgb,var(--evn-chart-4) 16%,var(--evn-line-soft));border-radius:10px;background:color-mix(in srgb,var(--evn-chart-4) 5%,var(--evn-surface))}.estimate-projection-label{font-size:13px;color:var(--evn-muted)}.estimate-projected-value{font-size:22px;line-height:1.2;font-weight:650;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.estimate-formula{font-size:12px;color:var(--evn-muted);margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.estimate-facts{display:grid;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--evn-chart-4) 18%,var(--evn-line-soft))}.estimate-facts>div{display:flex;justify-content:space-between;gap:12px;font-size:13px}.estimate-facts dt{color:var(--evn-muted)}.estimate-facts dd{font-weight:600;font-variant-numeric:tabular-nums}.estimate-empty{margin-top:18px;font-size:15px;font-weight:600}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.tariff-form{gap:16px}.tariff-field label{font-size:12px}.tariff-section{border-top:1px solid var(--evn-line-soft);padding-top:16px;display:grid;gap:12px}.tariff-section[hidden]{display:none!important}.tariff-grid{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1fr);gap:8px 10px;align-items:center}.tariff-grid-head{font-size:11px;color:var(--evn-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}.tariff-tier-name{font-size:13px;font-weight:600}.tariff-grid input{min-height:36px;height:36px}
 .action-card{padding:0;overflow:hidden;display:flex;flex-direction:column}.action-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 0;margin-bottom:12px}.action-item{padding:16px 20px;border-top:1px solid var(--evn-line-soft)}.action-label{font-size:13px;color:var(--evn-muted)}.action-value{font-size:24px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.action-value.compact{font-size:18px}.action-value.warn{color:var(--evn-warning-ink)}.action-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;overflow-wrap:anywhere}.action-empty{padding:16px 20px 20px;color:var(--evn-muted);font-size:13px}button.action-link{margin-top:8px;padding:5px 0;min-height:32px;border-color:transparent;background:transparent;color:var(--evn-accent-ink);font-weight:500;text-align:left}button.action-link:hover{background:transparent;text-decoration:underline}
 .kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--evn-surface);border:1px solid var(--evn-line-soft);border-radius:14px;overflow:hidden}.kpi{padding:16px 20px;border-right:1px solid var(--evn-line-soft);min-width:0}.kpi:last-child{border-right:0}.kpi-label{font-size:13px;color:var(--evn-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font-size:20px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px;overflow-wrap:anywhere}.kpi-meta{font-size:12px;color:var(--evn-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .overview-compare .card-head{align-items:center}.overview-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--evn-line-soft) transparent}.overview-chart-scroll .chart{margin-top:24px}
@@ -19,7 +19,7 @@ const STYLE = `
 .point-summary-cards{display:none}.point-summary-row{display:grid;gap:4px;padding:12px 0;border-top:1px solid var(--evn-line-soft)}.point-summary-row:first-child{border-top:0;padding-top:0}.point-summary-row strong{font-size:14px}.point-summary-row span{font-size:13px;color:var(--evn-muted)}
 @media(max-width:1100px){.overview-top,.overview-bottom{grid-template-columns:1fr}}
 @media(max-width:1000px){.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-right:1px solid var(--evn-line-soft)}.kpi:nth-child(2n){border-right:0}.kpi:nth-child(n+3){border-top:1px solid var(--evn-line-soft)}}
-@media(max-width:767px){.hero-card{padding:16px}.hero-value{font-size:32px}.estimate-value{font-size:28px}.tariff-grid{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr)}.dialog-actions button{flex:1}.action-head{padding:16px 16px 0}.action-item{padding:14px 16px}.action-value{font-size:20px}.action-value.compact{font-size:16px}.kpi{padding:14px 16px}.kpi-value{font-size:18px}.overview-compare .card-head{flex-wrap:wrap}.overview-point-table{display:none}.point-summary-cards{display:grid}.overview-chart-scroll{margin-right:-16px;padding-right:16px}.overview-chart-scroll .chart{min-width:560px}}
+@media(max-width:767px){.hero-card{padding:16px}.hero-value{font-size:32px}.estimate-value{font-size:28px}.estimate-projected-value{font-size:19px}.tariff-grid{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr)}.dialog-actions button{flex:1}.action-head{padding:16px 16px 0}.action-item{padding:14px 16px}.action-value{font-size:20px}.action-value.compact{font-size:16px}.kpi{padding:14px 16px}.kpi-value{font-size:18px}.overview-compare .card-head{flex-wrap:wrap}.overview-point-table{display:none}.point-summary-cards{display:grid}.overview-chart-scroll{margin-right:-16px;padding-right:16px}.overview-chart-scroll .chart{min-width:560px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 `;
 
@@ -760,29 +760,39 @@ export class EvnCskhPanel extends HTMLElement {
     return card;
   }
 
+  _estimateFormula(estimate) {
+    if (!finite(estimate?.projected_energy) || !finite(estimate?.unit_price)) return "";
+    const last = String(estimate.last_data_date || "");
+    const [year, month, day] = last.split("-").map(Number);
+    const days = validDate(last) ? new Date(year, month, 0).getDate() : null;
+    const basis = finite(day) && finite(days) ? ` (${numeric(day)}/${numeric(days)} ngày dữ liệu)` : "";
+    const average = estimate.mode === "tiered" ? " · bình quân 6 bậc" : "";
+    return `${numeric(estimate.projected_energy)} kWh${basis} × ${numeric(estimate.unit_price)} đ/kWh${average}`;
+  }
+
   _overviewEstimateCard(overview) {
     const estimate = overview?.estimated_cost;
     const tariff = overview?.tariff;
     const card = node("section", null, "card estimate-card");
-    card.setAttribute("aria-label", "Ước tính tiền điện");
+    card.setAttribute("aria-label", "Tiền điện tháng này");
     const head = node("div", null, "estimate-head");
     const title = node("div");
-    title.append(node("p", "Ước tính tiền điện", "hero-eyebrow"), node("span", text(tariff?.label || "Theo hóa đơn gần nhất"), "badge"));
+    title.append(node("p", "Tiền điện tháng này", "hero-eyebrow"), node("span", text(tariff?.label || "Theo hóa đơn gần nhất"), "badge"));
     head.append(title);
     if (this._admin()) {
       const settings = this._button("Thiết lập giá", "tariff-open", "tariff-open", "link estimate-settings");
       head.append(settings);
     }
     card.append(head);
-    if (finite(estimate?.projected_amount) || finite(estimate?.amount)) {
-      const projected = finite(estimate.projected_amount) ? estimate.projected_amount : estimate.amount;
-      card.append(node("p", money(projected), "estimate-value"));
-      card.append(node("p", finite(estimate.projected_amount) ? "Dự kiến cả tháng" : "Tạm tính đến nay", "estimate-caption"));
+    const amount = finite(estimate?.amount) ? estimate.amount : null;
+    const projected = finite(estimate?.projected_amount) ? estimate.projected_amount : null;
+    if (amount !== null || projected !== null) {
+      const highlight = amount !== null ? amount : projected;
+      card.append(node("p", money(highlight), "estimate-value"));
+      card.append(node("p", amount !== null ? "Tạm tính đến nay" : "Ước tính cả tháng", "estimate-caption"));
       const facts = node("dl", null, "estimate-facts");
       for (const [label, value] of [
-        ["Đã tính đến", finite(estimate.amount) ? money(estimate.amount) : "—"],
-        ["Điện năng", finite(estimate.energy_kwh) ? `${numeric(estimate.energy_kwh)} kWh` : "—"],
-        ["Dự kiến", finite(estimate.projected_energy) ? `${numeric(estimate.projected_energy)} kWh` : "—"],
+        ["Điện năng đã dùng", finite(estimate.energy_kwh) ? `${numeric(estimate.energy_kwh)} kWh` : "—"],
         ["Đơn giá", finite(estimate.unit_price) ? `${numeric(estimate.unit_price)} đ/kWh` : "—"]
       ]) {
         const row = node("div");
@@ -790,10 +800,19 @@ export class EvnCskhPanel extends HTMLElement {
         facts.append(row);
       }
       card.append(facts);
+      const formula = this._estimateFormula(estimate);
+      if (projected !== null && amount !== null) {
+        const projection = node("div", null, "estimate-projection");
+        projection.append(node("p", "Ước tính cả tháng", "estimate-projection-label"), node("p", money(projected), "estimate-projected-value"));
+        if (formula) projection.append(node("p", formula, "estimate-formula"));
+        card.append(projection);
+      } else if (projected !== null && formula) {
+        card.append(node("p", formula, "estimate-formula"));
+      }
       const date = estimate.last_data_date || estimate.through_date;
       card.append(node("p", `Dữ liệu ngày đến ${displayDate(date)} · ${estimate.mode === "auto" ? "đơn giá bình quân hóa đơn gần nhất" : "theo giá bạn đã đặt"}`, "meta"));
     } else {
-      card.append(node("p", this._overviewBusy && !overview ? "Đang tải…" : "Chưa đủ dữ liệu để ước tính.", "estimate-empty"));
+      card.append(node("p", this._overviewBusy && !overview ? "Đang tải…" : "Chưa đủ dữ liệu để tính tiền điện.", "estimate-empty"));
       card.append(node("p", tariff?.mode === "auto" ? "Cần dữ liệu ngày và hóa đơn gần nhất, hoặc đặt giá điện thủ công." : "Kiểm tra lại giá điện và dữ liệu ngày.", "meta"));
     }
     return card;
@@ -1958,7 +1977,7 @@ export class EvnCskhPanel extends HTMLElement {
     };
     const select = node("select");
     select.id = "tariff-mode";
-    for (const [value, label] of [["auto", "Theo hóa đơn gần nhất"], ["fixed", "Giá cố định"], ["tiered", "Bậc thang"]]) {
+    for (const [value, label] of [["auto", "Theo hóa đơn gần nhất"], ["fixed", "Giá cố định theo kWh"], ["tiered", "Bậc thang"]]) {
       const option = node("option", label);
       option.value = value;
       option.selected = value === mode;
@@ -1978,7 +1997,7 @@ export class EvnCskhPanel extends HTMLElement {
     fixedInput.step = "1";
     fixedInput.inputMode = "numeric";
     fixedInput.value = finite(tariff.fixed_price) ? String(tariff.fixed_price) : defaultPrice === "" ? "" : String(defaultPrice);
-    fixed.append(field("Giá cố định (đ/kWh)", fixedInput), node("p", "Áp dụng một mức giá cho toàn bộ điện năng trong tháng.", "meta"));
+    fixed.append(field("Giá cố định (đ/kWh)", fixedInput), node("p", "Áp dụng một mức giá cho mọi kWh trong tháng, phù hợp giá kinh doanh hoặc hợp đồng không theo bậc thang.", "meta"));
     const tiered = node("section", null, "tariff-section");
     tiered.id = "tariff-tiered-fields";
     tiered.append(node("p", "Giá lũy tiến theo 6 bậc. Bậc cuối áp dụng cho phần vượt trên mốc 400 kWh.", "meta"));
